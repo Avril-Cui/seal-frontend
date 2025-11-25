@@ -21,12 +21,6 @@
         >
       </div>
 
-      <div class="skip-link">
-        <a href="#" @click.prevent="skipLogin"
-          >Skip Login (Continue as Guest)</a
-        >
-      </div>
-
       <div class="mascot">
         <div class="pig">🐷</div>
       </div>
@@ -37,22 +31,24 @@
 <script setup>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import { useAuth } from "../composables/useAuth";
 
 const router = useRouter();
+const { login } = useAuth();
 const email = ref("");
 const password = ref("");
 
 const handleLogin = () => {
-  // Navigate to main swipe screen (no backend implementation)
+  // Login with user data (no backend implementation)
+  login({
+    email: email.value,
+    name: email.value.split("@")[0], // Simple name extraction
+  });
   router.push("/swipe");
 };
 
 const goToRegister = () => {
   router.push("/register");
-};
-
-const skipLogin = () => {
-  router.push("/swipe");
 };
 </script>
 

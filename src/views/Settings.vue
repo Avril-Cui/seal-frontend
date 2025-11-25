@@ -20,20 +20,51 @@
           <div class="profile-picture">
             <div class="avatar-placeholder">👤</div>
           </div>
-          <button class="edit-picture-button">EDIT</button>
         </div>
 
         <div class="user-details">
           <div class="detail-item">
             <span class="detail-label">Name</span>
-            <span class="detail-value">Name Name</span>
+            <div class="detail-value-with-icon">
+              <input
+                v-if="isEditingName"
+                v-model="userName"
+                @blur="saveName"
+                @keyup.enter="saveName"
+                class="edit-input"
+                autofocus
+              />
+              <span v-else>{{ userName }}</span>
+              <button
+                class="edit-icon-button"
+                @click="isEditingName = true"
+                v-if="!isEditingName"
+              >
+                ✎
+              </button>
+            </div>
           </div>
 
           <div class="detail-item">
             <span class="detail-label">email</span>
             <div class="detail-value-with-icon">
-              <span>email@example.com</span>
-              <button class="edit-icon-button">✎</button>
+              <input
+                v-if="isEditingEmail"
+                v-model="userEmail"
+                @blur="saveEmail"
+                @keyup.enter="saveEmail"
+                type="email"
+                class="edit-input"
+                autofocus
+              />
+              <span v-else>{{ userEmail }}</span>
+              <button
+                class="edit-icon-button"
+                @click="isEditingEmail = true"
+                v-if="!isEditingEmail"
+              >
+                ✎
+              </button>
             </div>
           </div>
 
@@ -41,6 +72,10 @@
             <a href="#" class="reset-password-link">reset password</a>
           </div>
         </div>
+      </div>
+
+      <div class="logout-section">
+        <button @click="handleLogout" class="logout-button">LOGOUT</button>
       </div>
 
       <div class="accessibility-section">
@@ -60,7 +95,12 @@
       </div>
 
       <div class="interests-section">
-        <h2 class="section-title">FIELDS OF INTEREST</h2>
+        <div class="interests-header">
+          <h2 class="section-title">FIELDS OF INTEREST</h2>
+          <button @click="goToEditInterests" class="edit-interests-button">
+            ✎ EDIT
+          </button>
+        </div>
         <div class="interests-tags">
           <span
             v-for="interest in fieldsOfInterest"
@@ -80,9 +120,11 @@
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useColors } from "../composables/useColors";
+import { useAuth } from "../composables/useAuth";
 
 const router = useRouter();
 const { colorBlindMode, toggleColorBlindMode } = useColors();
+const { logout, currentUser } = useAuth();
 
 // Create a local ref that syncs with the composable
 const isColorBlindMode = computed({
@@ -94,7 +136,54 @@ const isColorBlindMode = computed({
   },
 });
 
-const fieldsOfInterest = ref(["FASHION", "ART", "TECH"]);
+// User data
+const userName = ref(currentUser.value?.name || "Name Name");
+const userEmail = ref(currentUser.value?.email || "email@example.com");
+const isEditingName = ref(false);
+const isEditingEmail = ref(false);
+
+const saveName = () => {
+  isEditingName.value = false;
+  // In a real app, you'd save this to the backend
+  if (currentUser.value) {
+    currentUser.value.name = userName.value;
+    localStorage.setItem("currentUser", JSON.stringify(currentUser.value));
+  }
+};
+
+const saveEmail = () => {
+  isEditingEmail.value = false;
+  // In a real app, you'd save this to the backend
+  if (currentUser.value) {
+    currentUser.value.email = userEmail.value;
+    localStorage.setItem("currentUser", JSON.stringify(currentUser.value));
+  }
+};
+
+const handleLogout = () => {
+  logout();
+  router.push("/login");
+};
+
+const fieldsOfInterest = ref(
+  currentUser.value?.interests
+    ? currentUser.value.interests.map((id) => {
+        const interestMap = {
+          1: "TECH",
+          2: "MUSIC",
+          3: "FASHION",
+          4: "ART",
+          5: "FOOD",
+          6: "FITNESS",
+        };
+        return interestMap[id] || "";
+      })
+    : ["FASHION", "ART", "TECH"]
+);
+
+const goToEditInterests = () => {
+  router.push("/register/interests?from=settings");
+};
 
 const goToSwipe = () => {
   router.push("/swipe");
@@ -179,21 +268,15 @@ const goToSettings = () => {
   font-size: 4rem;
 }
 
-.edit-picture-button {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
+.edit-input {
   border: 2px solid #2d0000;
+  border-radius: 8px;
+  padding: 0.5rem;
+  font-size: 1rem;
+  font-family: inherit;
   background-color: #f5f0e1;
-  font-size: 0.9rem;
-  font-weight: 600;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  color: #2d0000;
+  width: 200px;
 }
 
 .user-details {
@@ -328,9 +411,48 @@ const goToSettings = () => {
   background-color: #f5f0e1;
 }
 
+.logout-section {
+  border-top: 2px solid #2d0000;
+  padding-top: 2rem;
+  margin-top: 3rem;
+}
+
+.logout-button {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
 .interests-section {
   border-top: 2px solid #2d0000;
   padding-top: 2rem;
+  margin-top: 3rem;
+}
+
+.interests-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.edit-interests-button {
+  border: 2px solid #2d0000;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background-color: #f5f0e1;
+  color: #2d0000;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.edit-interests-button:hover {
+  background-color: #2d0000;
+  color: #f5f0e1;
 }
 
 .section-title {

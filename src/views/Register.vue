@@ -35,14 +35,20 @@
 <script setup>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import { useAuth } from "../composables/useAuth";
 
 const router = useRouter();
+const { register } = useAuth();
 const name = ref("");
 const email = ref("");
 const password = ref("");
 
 const handleRegister = () => {
-  // Navigate to interests selection
+  // Store registration data and navigate to interests selection
+  register({
+    name: name.value,
+    email: email.value,
+  });
   router.push("/register/interests");
 };
 

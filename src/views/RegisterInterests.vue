@@ -21,18 +21,22 @@
         class="continue-button"
         :disabled="selectedInterests.length === 0"
       >
-        CONTINUE
+        {{ isEditing ? "SAVE" : "CONTINUE" }}
       </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { ref, onMounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import { useAuth } from "../composables/useAuth";
 
 const router = useRouter();
+const route = useRoute();
+const { login, currentUser, isAuthenticated } = useAuth();
 const selectedInterests = ref([]);
+const isEditing = ref(false);
 
 const interests = ref([
   { id: 1, name: "TECH", icon: "💻" },
@@ -42,6 +46,16 @@ const interests = ref([
   { id: 5, name: "FOOD", icon: "🍔" },
   { id: 6, name: "FITNESS", icon: "🏋️" },
 ]);
+
+onMounted(() => {
+  // Check if coming from settings (editing)
+  isEditing.value = route.query.from === "settings" || isAuthenticated.value;
+
+  // If editing, pre-select current interests
+  if (isEditing.value && currentUser.value?.interests) {
+    selectedInterests.value = [...currentUser.value.interests];
+  }
+});
 
 const toggleInterest = (id) => {
   const index = selectedInterests.value.indexOf(id);
@@ -53,8 +67,25 @@ const toggleInterest = (id) => {
 };
 
 const handleContinue = () => {
-  // Navigate to main swipe screen
-  router.push("/swipe");
+  if (isEditing.value) {
+    // Update existing user's interests
+    if (currentUser.value) {
+      login({
+        ...currentUser.value,
+        interests: selectedInterests.value,
+      });
+    }
+    router.push("/settings");
+  } else {
+    // Complete registration by logging in with interests
+    if (currentUser.value) {
+      login({
+        ...currentUser.value,
+        interests: selectedInterests.value,
+      });
+    }
+    router.push("/swipe");
+  }
 };
 </script>
 

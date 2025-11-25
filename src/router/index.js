@@ -12,44 +12,64 @@ const router = createRouter({
   routes: [
     {
       path: "/",
-      redirect: "/swipe",
+      redirect: "/login",
     },
     {
       path: "/login",
       name: "Login",
       component: Login,
+      meta: { requiresGuest: true },
     },
     {
       path: "/register",
       name: "Register",
       component: Register,
+      meta: { requiresGuest: true },
     },
     {
       path: "/register/interests",
       name: "RegisterInterests",
       component: RegisterInterests,
+      meta: { requiresGuest: true },
     },
     {
       path: "/swipe",
       name: "MainSwipe",
       component: MainSwipe,
+      meta: { requiresAuth: true },
     },
     {
       path: "/wishlist",
       name: "Wishlist",
       component: Wishlist,
+      meta: { requiresAuth: true },
     },
     {
       path: "/stats",
       name: "Stats",
       component: Stats,
+      meta: { requiresAuth: true },
     },
     {
       path: "/settings",
       name: "Settings",
       component: Settings,
+      meta: { requiresAuth: true },
     },
   ],
+});
+
+// Route guards
+router.beforeEach((to, from, next) => {
+  const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
+
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    next("/login");
+  } else if (to.meta.requiresGuest && isAuthenticated) {
+    next("/swipe");
+  } else {
+    next();
+  }
 });
 
 export default router;
