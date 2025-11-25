@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "ByeBuy Wishlist",
+  "version": "1.0",
+  "description": "Add Amazon products to your ByeBuy wishlist with a single click",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": [
+    "*://*.amazon.com/*",
+    "*://*.amazon.ca/*",
+    "*://*.amazon.co.uk/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.amazon.com/*",
+        "*://*.amazon.ca/*",
+        "*://*.amazon.co.uk/*"
+      ],
+      "js": ["dist/content.js"],
+      "css": ["dist/content.css"]
+    }
+  ]
+}
