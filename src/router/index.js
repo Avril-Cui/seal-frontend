@@ -30,7 +30,6 @@ const router = createRouter({
       path: "/register/interests",
       name: "RegisterInterests",
       component: RegisterInterests,
-      meta: { requiresGuest: true },
     },
     {
       path: "/swipe",

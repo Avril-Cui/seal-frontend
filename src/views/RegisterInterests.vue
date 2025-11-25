@@ -48,8 +48,8 @@ const interests = ref([
 ]);
 
 onMounted(() => {
-  // Check if coming from settings (editing)
-  isEditing.value = route.query.from === "settings" || isAuthenticated.value;
+  // Check if coming from settings (editing) - only check query parameter
+  isEditing.value = route.query.from === "settings";
 
   // If editing, pre-select current interests
   if (isEditing.value && currentUser.value?.interests) {

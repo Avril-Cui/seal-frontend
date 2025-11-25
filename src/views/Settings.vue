@@ -95,12 +95,7 @@
       </div>
 
       <div class="interests-section">
-        <div class="interests-header">
-          <h2 class="section-title">FIELDS OF INTEREST</h2>
-          <button @click="goToEditInterests" class="edit-interests-button">
-            ✎ EDIT
-          </button>
-        </div>
+        <h2 class="section-title">FIELDS OF INTEREST</h2>
         <div class="interests-tags">
           <span
             v-for="interest in fieldsOfInterest"
@@ -110,6 +105,9 @@
             {{ interest }}
           </span>
           <span class="interest-tag etc">etc</span>
+          <button @click="goToEditInterests" class="interest-tag edit-button">
+            ✎ EDIT
+          </button>
         </div>
       </div>
     </div>
@@ -414,7 +412,9 @@ const goToSettings = () => {
 .logout-section {
   border-top: 2px solid #2d0000;
   padding-top: 2rem;
+  padding-bottom: 2rem;
   margin-top: 3rem;
+  margin-bottom: 0;
 }
 
 .logout-button {
@@ -430,29 +430,8 @@ const goToSettings = () => {
   margin-top: 3rem;
 }
 
-.interests-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.edit-interests-button {
-  border: 2px solid #2d0000;
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  background-color: #f5f0e1;
-  color: #2d0000;
-  cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.edit-interests-button:hover {
-  background-color: #2d0000;
-  color: #f5f0e1;
+.interests-section .section-title {
+  margin-bottom: 1rem;
 }
 
 .section-title {
@@ -483,6 +462,20 @@ const goToSettings = () => {
 .interest-tag.etc {
   font-style: italic;
   font-weight: 400;
+}
+
+.interest-tag.edit-button {
+  background-color: #2d0000;
+  color: #f5f0e1;
+  border: 2px solid #2d0000;
+  cursor: pointer;
+  font-weight: 600;
+  font-style: normal;
+}
+
+.interest-tag.edit-button:hover {
+  background-color: #f5f0e1;
+  color: #2d0000;
 }
 
 .nav-link {
