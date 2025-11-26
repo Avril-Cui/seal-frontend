@@ -2,4 +2,4 @@
 https://seal-frontend.onrender.com
 
 # Extension
-- Go to /extension, and follow the instruction there to run our extension
+- Go to /extension, and follow the instruction there to run our extension and follow the README
