@@ -13,6 +13,11 @@
     </nav>
 
     <div class="wishlist-content">
+      <div v-if="!hasCompletedQueue && !isCheckingQueue" class="queue-reminder">
+        <div class="reminder-icon">📊</div>
+        <p>Complete your daily SwipeSense queue to see what the community thinks about your items!</p>
+      </div>
+
       <div class="add-item-section">
         <div v-if="addItemError" class="error-message">{{ addItemError }}</div>
         <button @click="openAddModal" class="add-item-button">ADD ITEM</button>
@@ -52,12 +57,22 @@
             <p class="item-price">${{ item.price.toFixed(2) }}</p>
 
             <div class="community-stats">
-              <div class="stat-badge" :class="getCommunityApprovalClass(item)">
-                {{ getCommunityApproval(item) }}% community approval
+              <div v-if="!hasCompletedQueue" class="locked-stats">
+                <div class="lock-icon">🔒</div>
+                <p class="lock-message">
+                  Complete your daily SwipeSense queue to unlock community feedback!
+                </p>
               </div>
-              <div class="stat-info">
-                {{ getCommunityCount(item) }} people paused this •
-                {{ getCommunityPurchased(item) }}% eventually bought it
+              <div v-else-if="item.communityStats && item.communityStats.total > 0">
+                <div class="stat-badge" :class="getApprovalClass(item.communityStats)">
+                  {{ getApprovalPercentage(item.communityStats) }}% community approval
+                </div>
+                <div class="stat-info">
+                  {{ item.communityStats.total }} community member{{ item.communityStats.total !== 1 ? 's' : '' }} reviewed this
+                </div>
+              </div>
+              <div v-else class="no-stats">
+                <p class="stat-info">No community feedback yet</p>
               </div>
             </div>
           </div>
@@ -204,6 +219,42 @@ const isLoading = ref(false);
 const error = ref("");
 const isAddingItem = ref(false);
 const addItemError = ref("");
+const hasCompletedQueue = ref(false);
+const isCheckingQueue = ref(false);
+
+// Check if user has completed their daily queue
+const checkQueueCompletion = async () => {
+  if (!currentUser.value?.uid) {
+    return;
+  }
+
+  isCheckingQueue.value = true;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/QueueSystem/_getTodayQueue`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ owner: currentUser.value.uid }),
+    });
+
+    const data = await response.json();
+
+    if (!data.error) {
+      // User has a queue, check if completed
+      hasCompletedQueue.value = data.completedQueue >= 10;
+    } else {
+      // No queue exists, consider as not completed
+      hasCompletedQueue.value = false;
+    }
+  } catch (err) {
+    console.error("Error checking queue completion:", err);
+    hasCompletedQueue.value = false;
+  } finally {
+    isCheckingQueue.value = false;
+  }
+};
 
 // Fetch user's wishlist items
 const fetchWishlist = async () => {
@@ -240,7 +291,50 @@ const fetchWishlist = async () => {
       wishlistItems.value = [];
     } else if (Array.isArray(data)) {
       console.log("Got array of items:", data.length);
-      wishlistItems.value = data.map((obj) => obj.item);
+      const items = data.map((obj) => obj.item);
+
+      // Fetch community stats for each item if queue is completed
+      if (hasCompletedQueue.value) {
+        const itemsWithStats = await Promise.all(
+          items.map(async (item) => {
+            try {
+              const statsResponse = await fetch(
+                `${API_BASE_URL}/SwipeSystem/_getCommunitySwipeStats`,
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    itemId: item._id,
+                    excludeUserId: currentUser.value.uid,
+                  }),
+                }
+              );
+
+              const statsData = await statsResponse.json();
+
+              if (!statsData.error) {
+                return {
+                  ...item,
+                  communityStats: {
+                    total: statsData.total,
+                    approval: statsData.approval,
+                  },
+                };
+              }
+              return item;
+            } catch (err) {
+              console.error("Error fetching stats for item:", item._id, err);
+              return item;
+            }
+          })
+        );
+
+        wishlistItems.value = itemsWithStats;
+      } else {
+        wishlistItems.value = items;
+      }
     } else {
       console.log("Unexpected response format");
       wishlistItems.value = [];
@@ -476,8 +570,9 @@ const removeItem = async (itemId) => {
   }
 };
 
-onMounted(() => {
-  fetchWishlist();
+onMounted(async () => {
+  await checkQueueCompletion();
+  await fetchWishlist();
 });
 
 const closeModal = () => {
@@ -501,32 +596,18 @@ const goToSettings = () => {
   router.push("/settings");
 };
 
-// Generate mock community stats based on item price
-const getCommunityApproval = (item) => {
-  // Higher priced items tend to have lower approval in our mock
-  const baseApproval = item.price > 100 ? 45 : item.price > 50 ? 60 : 75;
-  const variance = Math.floor(Math.random() * 20) - 10;
-  return Math.max(30, Math.min(95, baseApproval + variance));
+// Calculate approval percentage from community stats
+const getApprovalPercentage = (stats) => {
+  if (!stats || stats.total === 0) return 0;
+  return Math.round((stats.approval / stats.total) * 100);
 };
 
-const getCommunityApprovalClass = (item) => {
-  const approval = getCommunityApproval(item);
-  if (approval >= 70) return "high-approval";
-  if (approval >= 50) return "medium-approval";
+// Get approval class based on percentage
+const getApprovalClass = (stats) => {
+  const percentage = getApprovalPercentage(stats);
+  if (percentage >= 70) return "high-approval";
+  if (percentage >= 50) return "medium-approval";
   return "low-approval";
-};
-
-const getCommunityCount = (item) => {
-  // Generate a consistent count based on item name length (pseudo-random but consistent)
-  const base = item.itemName.length * 3;
-  return base + Math.floor(Math.random() * 20);
-};
-
-const getCommunityPurchased = (item) => {
-  // Lower approval items have lower purchase rates
-  const approval = getCommunityApproval(item);
-  const basePurchase = Math.floor(approval * 0.6);
-  return Math.max(20, Math.min(85, basePurchase));
 };
 </script>
 
@@ -566,6 +647,30 @@ const getCommunityPurchased = (item) => {
   max-width: 800px;
   margin: 0 auto;
   width: 100%;
+}
+
+.queue-reminder {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  margin-bottom: 2rem;
+  background-color: #fff3cd;
+  border: 2px solid #856404;
+  border-radius: 12px;
+  color: #2d0000;
+}
+
+.reminder-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.queue-reminder p {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.4;
 }
 
 .add-item-section {
@@ -898,6 +1003,34 @@ const getCommunityPurchased = (item) => {
   margin-top: 1rem;
   padding-top: 0.75rem;
   border-top: 1px solid #d0d0d0;
+}
+
+.locked-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1rem;
+  background-color: rgba(135, 135, 90, 0.1);
+  border-radius: 8px;
+  border: 2px dashed #87875a;
+}
+
+.lock-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.lock-message {
+  font-size: 0.85rem;
+  color: #2d0000;
+  margin: 0;
+  font-weight: 500;
+}
+
+.no-stats {
+  text-align: center;
+  padding: 0.5rem;
 }
 
 .stat-badge {
