@@ -15,6 +15,9 @@ const currentUser = ref(
 
 const login = async (email, password) => {
   try {
+    console.log("API_BASE_URL:", API_BASE_URL);
+    console.log("Attempting login to:", `${API_BASE_URL}/UserAuth/login`);
+
     const response = await fetch(`${API_BASE_URL}/UserAuth/login`, {
       method: "POST",
       headers: {
@@ -22,6 +25,13 @@ const login = async (email, password) => {
       },
       body: JSON.stringify({ email, password }),
     });
+
+    console.log("Response status:", response.status);
+    console.log("Response ok:", response.ok);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
     const data = await response.json();
 
@@ -55,6 +65,9 @@ const logout = () => {
 
 const register = async (email, password) => {
   try {
+    console.log("API_BASE_URL:", API_BASE_URL);
+    console.log("Attempting signup to:", `${API_BASE_URL}/UserAuth/signup`);
+
     const response = await fetch(`${API_BASE_URL}/UserAuth/signup`, {
       method: "POST",
       headers: {
@@ -62,6 +75,13 @@ const register = async (email, password) => {
       },
       body: JSON.stringify({ email, password }),
     });
+
+    console.log("Response status:", response.status);
+    console.log("Response ok:", response.ok);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
     const data = await response.json();
 

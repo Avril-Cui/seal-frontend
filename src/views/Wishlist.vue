@@ -110,7 +110,6 @@
               step="0.01"
               placeholder="Price"
               class="modal-input"
-              disabled
             />
           </div>
 
