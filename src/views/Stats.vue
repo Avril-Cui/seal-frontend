@@ -5,7 +5,7 @@
         <h1 class="nav-title">BYEBUY</h1>
       </div>
       <div class="nav-right">
-        <button @click="goToSwipe" class="nav-link">SWIPE</button>
+        <button @click="goToSwipe" class="nav-link">SWIPESENSE</button>
         <button @click="goToWishlist" class="nav-link">PAUSE CART</button>
         <button @click="goToStats" class="nav-link active">STATS</button>
         <button @click="goToSettings" class="nav-link settings-icon">⚙</button>

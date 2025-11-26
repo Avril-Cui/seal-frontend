@@ -19,7 +19,7 @@
         <h1 class="nav-title">BYEBUY</h1>
       </div>
       <div class="nav-right">
-        <button @click="goToSwipe" class="nav-link active">SWIPE</button>
+        <button @click="goToSwipe" class="nav-link active">SWIPESENSE</button>
         <button @click="goToWishlist" class="nav-link">PAUSE CART</button>
         <button @click="goToStats" class="nav-link">STATS</button>
         <button @click="goToSettings" class="nav-link settings-icon">⚙</button>
@@ -56,17 +56,33 @@
         @mouseleave="handleMouseEnd"
       >
         <div class="card-image">
-          <div class="image-placeholder">PIC</div>
+          <img
+            v-if="currentItem.photo"
+            :src="currentItem.photo"
+            :alt="currentItem.itemName"
+            class="item-photo"
+          />
+          <div v-else class="image-placeholder">PIC</div>
         </div>
         <div class="card-content">
-          <h2 class="item-name">{{ currentItem.name }}</h2>
-          <p class="item-desc">{{ currentItem.desc }}</p>
-          <div class="user-info">
-            <div class="user-avatar">👤</div>
-            <span class="user-name">{{ currentItem.userName }}</span>
-          </div>
-          <div class="quote-box">
-            <p>{{ currentItem.quote }}</p>
+          <h2 class="item-name">{{ currentItem.itemName }}</h2>
+          <p class="item-desc">{{ currentItem.description }}</p>
+          <p class="item-price">${{ currentItem.price.toFixed(2) }}</p>
+
+          <div class="reflection-section">
+            <h3 class="reflection-title">Reflection</h3>
+            <div class="reflection-item">
+              <strong>Why do they want this?</strong>
+              <p>{{ currentItem.reason }}</p>
+            </div>
+            <div class="reflection-item">
+              <strong>Is this a need or a want?</strong>
+              <p>{{ currentItem.isNeed }}</p>
+            </div>
+            <div class="reflection-item">
+              <strong>Would Future-Them approve?</strong>
+              <p>{{ currentItem.isFutureApprove }}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -93,12 +109,16 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useColors } from "../composables/useColors";
+import { useAuth } from "../composables/useAuth";
 
 const router = useRouter();
 const { palette } = useColors();
+const { currentUser } = useAuth();
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const totalSwipes = ref(10);
 const completedSwipes = ref(0);
@@ -107,6 +127,7 @@ const swipeDirection = ref(null);
 const isAnimating = ref(false);
 const isSwipingLeft = ref(false);
 const isSwipingRight = ref(false);
+const isLoading = ref(false);
 
 // Drag/swipe state
 const isDragging = ref(false);
@@ -114,36 +135,11 @@ const dragStartX = ref(0);
 const dragCurrentX = ref(0);
 const dragOffset = ref(0);
 
-const sampleItems = ref([
-  {
-    name: "Item Name",
-    desc: "Description of the item goes here",
-    userName: "user's name",
-    quote: "This is a quote or review about the item",
-  },
-  {
-    name: "Another Item",
-    desc: "Another description",
-    userName: "Another User",
-    quote: "Another quote about this item",
-  },
-  {
-    name: "Third Item",
-    desc: "More items for swiping",
-    userName: "User Three",
-    quote: "Another interesting quote",
-  },
-  {
-    name: "Fourth Item",
-    desc: "Keep swiping!",
-    userName: "User Four",
-    quote: "More content here",
-  },
-]);
+const queueItems = ref([]);
 
 const currentItem = computed(() => {
-  if (currentItemIndex.value < sampleItems.value.length) {
-    return sampleItems.value[currentItemIndex.value];
+  if (currentItemIndex.value < queueItems.value.length) {
+    return queueItems.value[currentItemIndex.value];
   }
   return null;
 });
@@ -151,6 +147,109 @@ const currentItem = computed(() => {
 const progressPercentage = computed(() => {
   return (completedSwipes.value / totalSwipes.value) * 100;
 });
+
+// Load or generate today's queue
+const loadQueue = async () => {
+  if (!currentUser.value?.uid) {
+    console.log("No user logged in");
+    return;
+  }
+
+  isLoading.value = true;
+
+  try {
+    // First, try to get today's queue
+    const queueResponse = await fetch(`${API_BASE_URL}/QueueSystem/_getTodayQueue`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ owner: currentUser.value.uid }),
+    });
+
+    const queueData = await queueResponse.json();
+
+    let itemIds = [];
+    let completed = 0;
+
+    if (queueData.error) {
+      // No queue exists for today, generate one
+      console.log("No queue found, generating new queue...");
+
+      // Get 10 random items
+      const randomItemsResponse = await fetch(
+        `${API_BASE_URL}/ItemCollection/_getTenRandomItems`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ owner: currentUser.value.uid }),
+        }
+      );
+
+      const randomItemsData = await randomItemsResponse.json();
+
+      if (randomItemsData.error || !Array.isArray(randomItemsData) || randomItemsData.length === 0) {
+        console.error("Failed to get random items:", randomItemsData.error);
+        return;
+      }
+
+      itemIds = randomItemsData[0].itemIdSet;
+
+      // Generate daily queue
+      const generateResponse = await fetch(
+        `${API_BASE_URL}/QueueSystem/generateDailyQueue`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ owner: currentUser.value.uid, itemIds }),
+        }
+      );
+
+      const generateData = await generateResponse.json();
+
+      if (generateData.error) {
+        console.error("Failed to generate queue:", generateData.error);
+        return;
+      }
+
+      completed = 0;
+    } else {
+      // Queue exists, load unrated items
+      itemIds = queueData.itemIdSet;
+      completed = queueData.completedQueue;
+    }
+
+    completedSwipes.value = completed;
+
+    // Fetch full item details for each itemId
+    const itemDetailsPromises = itemIds.map((itemId) =>
+      fetch(`${API_BASE_URL}/ItemCollection/_getItemDetails`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ itemId }),
+      }).then((res) => res.json())
+    );
+
+    const itemDetailsResponses = await Promise.all(itemDetailsPromises);
+
+    // Extract items from responses
+    const items = itemDetailsResponses
+      .filter((response) => !response.error && Array.isArray(response) && response.length > 0)
+      .map((response) => response[0].item);
+
+    queueItems.value = items;
+  } catch (error) {
+    console.error("Error loading queue:", error);
+  } finally {
+    isLoading.value = false;
+  }
+};
 
 const cardStyle = computed(() => {
   if (isDragging.value) {
@@ -199,11 +298,43 @@ const overlayStyle = computed(() => {
   };
 });
 
-const performSwipe = (direction) => {
+const performSwipe = async (direction) => {
   if (isAnimating.value || !currentItem.value) return;
 
   isAnimating.value = true;
   swipeDirection.value = direction;
+
+  const item = currentItem.value;
+  const decision = direction === "right" ? "Buy" : "Don't Buy";
+
+  // Record the swipe
+  try {
+    await fetch(`${API_BASE_URL}/SwipeSystem/recordSwipe`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ownerUserId: currentUser.value.uid,
+        itemId: item._id,
+        decision: decision,
+      }),
+    });
+
+    // Increment completed queue
+    await fetch(`${API_BASE_URL}/QueueSystem/incrementCompletedQueue`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        owner: currentUser.value.uid,
+        itemId: item._id,
+      }),
+    });
+  } catch (error) {
+    console.error("Error recording swipe:", error);
+  }
 
   // Cap animation speed - minimum 600ms to allow color expansion to animate smoothly
   setTimeout(() => {
@@ -340,6 +471,10 @@ const goToStats = () => {
 const goToSettings = () => {
   router.push("/settings");
 };
+
+onMounted(() => {
+  loadQueue();
+});
 </script>
 
 <style scoped>
@@ -530,8 +665,16 @@ const goToSettings = () => {
   color: #87875a;
 }
 
+.item-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .card-content {
   padding: 1.5rem;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .item-name {
@@ -543,35 +686,56 @@ const goToSettings = () => {
 
 .item-desc {
   font-size: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   line-height: 1.5;
   color: #2d0000;
 }
 
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.item-price {
+  font-size: 1.2rem;
+  font-weight: 700;
   margin-bottom: 1rem;
-}
-
-.user-avatar {
-  font-size: 1.5rem;
-}
-
-.user-name {
-  font-size: 0.9rem;
-  font-weight: 600;
   color: #2d0000;
 }
 
-.quote-box {
-  border: 1px solid #2d0000;
+.reflection-section {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 2px solid #2d0000;
+}
+
+.reflection-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #2d0000;
+}
+
+.reflection-item {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: rgba(135, 135, 90, 0.1);
   border-radius: 8px;
-  padding: 1rem;
-  background-color: #f5f0e1;
-  font-style: italic;
+}
+
+.reflection-item strong {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.25rem;
   color: #2d0000;
+}
+
+.reflection-item p {
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: #2d0000;
+  margin: 0;
+  font-style: italic;
 }
 
 .finished-message {
