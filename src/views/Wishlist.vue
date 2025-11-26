@@ -15,22 +15,28 @@
     <div class="wishlist-content">
       <div class="add-item-section">
         <div v-if="addItemError" class="error-message">{{ addItemError }}</div>
-        <input
-          type="text"
-          v-model="newItemLink"
-          placeholder="Paste Amazon URL here"
-          class="link-input"
-        />
-        <button @click="fetchItemFromUrl" class="add-button">ADD</button>
+        <button @click="openAddModal" class="add-item-button">ADD ITEM</button>
       </div>
 
       <div v-if="isLoading" class="loading-message">Loading your items...</div>
       <div v-else-if="error" class="error-message">{{ error }}</div>
       <div v-else-if="wishlistItems.length === 0" class="empty-message">
-        Your pause cart is empty. Add items using the URL box above!
+        Your pause cart is empty. Click the "ADD ITEM" button above to get started!
       </div>
       <div v-else class="items-list">
-        <div v-for="item in wishlistItems" :key="item._id" class="wishlist-item">
+        <div
+          v-for="item in wishlistItems"
+          :key="item._id"
+          class="wishlist-item"
+          @click="openEditModal(item)"
+        >
+          <button
+            @click.stop="removeItem(item._id)"
+            class="remove-button"
+            title="Remove item"
+          >
+            ×
+          </button>
           <div class="item-image">
             <img
               v-if="item.photo"
@@ -67,27 +73,36 @@
     >
       <div class="modal-content" @click.stop>
         <div class="modal-header">
-          <h2>Confirm Item</h2>
+          <h2>{{ isEditMode ? 'Edit Item' : 'Add Item' }}</h2>
           <button @click="closeModal" class="close-button">×</button>
         </div>
         <div class="modal-body">
           <div v-if="addItemError" class="error-message">{{ addItemError }}</div>
 
-          <div class="modal-image">
-            <img
-              v-if="newItemPhoto"
-              :src="newItemPhoto"
-              :alt="newItemName"
-              class="modal-photo"
+          <div class="form-group">
+            <label class="form-label">Upload Image</label>
+            <div class="modal-image">
+              <img
+                v-if="newItemPhoto"
+                :src="newItemPhoto"
+                :alt="newItemName"
+                class="modal-photo"
+              />
+              <div v-else class="image-placeholder">PIC</div>
+            </div>
+            <input
+              type="file"
+              accept="image/*"
+              @change="handleImageUpload"
+              class="file-input"
             />
-            <div v-else class="image-placeholder">PIC</div>
           </div>
 
           <div class="form-group">
             <label class="form-label">Item Name</label>
             <input
               v-model="newItemName"
-              placeholder="Edit item name"
+              placeholder="Enter item name"
               class="modal-input"
             />
           </div>
@@ -96,7 +111,7 @@
             <label class="form-label">Description</label>
             <textarea
               v-model="newItemDesc"
-              placeholder="Edit description"
+              placeholder="Enter description"
               class="modal-textarea"
               rows="3"
             ></textarea>
@@ -148,14 +163,14 @@
           </div>
 
           <button
-            @click="addItem"
+            @click="isEditMode ? updateItem() : addItem()"
             class="modal-submit"
-            :disabled="!reasonAnswer || !isNeedAnswer || !futureApproveAnswer || isAddingItem"
+            :disabled="!newItemName || !newItemDesc || !newItemPrice || !reasonAnswer || !isNeedAnswer || !futureApproveAnswer || isAddingItem"
           >
-            {{ isAddingItem ? "SAVING..." : "SAVE TO PAUSE CART" }}
+            {{ isAddingItem ? "SAVING..." : (isEditMode ? "UPDATE ITEM" : "SAVE TO PAUSE CART") }}
           </button>
-          <p v-if="!reasonAnswer || !isNeedAnswer || !futureApproveAnswer" class="validation-hint">
-            Please answer all reflection questions before saving.
+          <p v-if="!newItemName || !newItemDesc || !newItemPrice || !reasonAnswer || !isNeedAnswer || !futureApproveAnswer" class="validation-hint">
+            Please fill in all fields and answer all reflection questions before saving.
           </p>
         </div>
       </div>
@@ -174,7 +189,8 @@ const { currentUser } = useAuth();
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const showAddModal = ref(false);
-const newItemLink = ref("");
+const isEditMode = ref(false);
+const editingItemId = ref(null);
 const newItemName = ref("");
 const newItemDesc = ref("");
 const newItemPhoto = ref("");
@@ -188,7 +204,6 @@ const isLoading = ref(false);
 const error = ref("");
 const isAddingItem = ref(false);
 const addItemError = ref("");
-const fetchedItem = ref(null);
 
 // Fetch user's wishlist items
 const fetchWishlist = async () => {
@@ -238,68 +253,52 @@ const fetchWishlist = async () => {
   }
 };
 
-// Mock Amazon data (for now, until real Amazon API is integrated)
-const fetchItemFromUrl = () => {
-  if (!newItemLink.value) {
-    addItemError.value = "Please enter a URL";
-    return;
-  }
-
+// Open the add item modal with empty fields
+const openAddModal = () => {
+  // Reset all fields
+  isEditMode.value = false;
+  editingItemId.value = null;
+  newItemName.value = "";
+  newItemDesc.value = "";
+  newItemPhoto.value = "";
+  newItemPrice.value = 0;
+  reasonAnswer.value = "";
+  isNeedAnswer.value = "";
+  futureApproveAnswer.value = "";
   addItemError.value = "";
-
-  // Mock Amazon product data based on URL keywords
-  let itemName = "Amazon Product";
-  let description = "This is a product from Amazon.";
-  let price = 29.99;
-  let photo = "https://via.placeholder.com/400x400.png?text=Product";
-
-  const url = newItemLink.value.toLowerCase();
-
-  if (url.includes("book")) {
-    itemName = "The Great Gatsby";
-    description = "A classic American novel by F. Scott Fitzgerald.";
-    price = 12.99;
-    photo = "https://via.placeholder.com/400x400.png?text=Book";
-  } else if (url.includes("electronics") || url.includes("headphone")) {
-    itemName = "Wireless Headphones";
-    description = "Noise-cancelling headphones with long battery life.";
-    price = 199.99;
-    photo = "https://via.placeholder.com/400x400.png?text=Headphones";
-  } else if (url.includes("tablet") || url.includes("fire")) {
-    itemName = "Amazon Fire Kids Tablet";
-    description = "Kids tablet with parental controls and educational content. Includes a protective case.";
-    price = 119.99;
-    photo = "https://via.placeholder.com/400x400.png?text=Tablet";
-  } else if (url.includes("kindle")) {
-    itemName = "Kindle E-Reader";
-    description = "E-reader with built-in front light and long battery life.";
-    price = 89.99;
-    photo = "https://via.placeholder.com/400x400.png?text=Kindle";
-  } else if (url.includes("echo") || url.includes("alexa")) {
-    itemName = "Echo Dot Smart Speaker";
-    description = "Smart speaker with Alexa voice assistant.";
-    price = 49.99;
-    photo = "https://via.placeholder.com/400x400.png?text=Echo";
-  }
-
-  // Store the mocked details
-  fetchedItem.value = { itemName, description, photo, price };
-  newItemName.value = itemName;
-  newItemDesc.value = description;
-  newItemPhoto.value = photo;
-  newItemPrice.value = price;
   showAddModal.value = true;
+};
+
+// Open the edit modal with item's existing data
+const openEditModal = (item) => {
+  isEditMode.value = true;
+  editingItemId.value = item._id;
+  newItemName.value = item.itemName;
+  newItemDesc.value = item.description;
+  newItemPhoto.value = item.photo;
+  newItemPrice.value = item.price;
+  reasonAnswer.value = item.reason || "";
+  isNeedAnswer.value = item.isNeed || "";
+  futureApproveAnswer.value = item.isFutureApprove || "";
+  addItemError.value = "";
+  showAddModal.value = true;
+};
+
+// Handle image upload
+const handleImageUpload = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      newItemPhoto.value = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
 };
 
 const addItem = async () => {
   console.log("addItem called!");
   console.log("currentUser:", currentUser.value);
-
-  // Save the item to the database with all the details and reflection answers
-  if (!fetchedItem.value) {
-    console.log("No fetched item, returning");
-    return;
-  }
 
   if (!currentUser.value?.uid) {
     console.error("No user logged in! currentUser:", currentUser.value);
@@ -359,14 +358,121 @@ const addItem = async () => {
     reasonAnswer.value = "";
     isNeedAnswer.value = "";
     futureApproveAnswer.value = "";
-    newItemLink.value = "";
-    fetchedItem.value = null;
     addItemError.value = "";
   } catch (err) {
     addItemError.value = "Failed to save item. Please try again.";
     console.error("Error saving item:", err);
   } finally {
     isAddingItem.value = false;
+  }
+};
+
+// Update an existing item
+const updateItem = async () => {
+  console.log("updateItem called!");
+
+  if (!currentUser.value?.uid) {
+    addItemError.value = "You must be logged in to update items.";
+    return;
+  }
+
+  if (!editingItemId.value) {
+    addItemError.value = "No item selected for editing.";
+    return;
+  }
+
+  isAddingItem.value = true;
+  addItemError.value = "";
+
+  const payload = {
+    owner: currentUser.value.uid,
+    itemId: editingItemId.value,
+    itemName: newItemName.value,
+    description: newItemDesc.value,
+    photo: newItemPhoto.value,
+    price: newItemPrice.value,
+    reason: reasonAnswer.value,
+    isNeed: isNeedAnswer.value,
+    isFutureApprove: futureApproveAnswer.value,
+  };
+
+  console.log("Update payload:", payload);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/ItemCollection/updateItem`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+    console.log("Update response:", data);
+
+    if (data.error) {
+      addItemError.value = data.error || "Failed to update item. Please try again.";
+      return;
+    }
+
+    // Success! Refresh the wishlist
+    console.log("Item updated successfully, refreshing wishlist...");
+    await fetchWishlist();
+
+    // Close modal and reset form
+    showAddModal.value = false;
+    newItemName.value = "";
+    newItemDesc.value = "";
+    newItemPhoto.value = "";
+    newItemPrice.value = 0;
+    reasonAnswer.value = "";
+    isNeedAnswer.value = "";
+    futureApproveAnswer.value = "";
+    addItemError.value = "";
+    isEditMode.value = false;
+    editingItemId.value = null;
+  } catch (err) {
+    addItemError.value = "Failed to update item. Please try again.";
+    console.error("Error updating item:", err);
+  } finally {
+    isAddingItem.value = false;
+  }
+};
+
+// Remove an item
+const removeItem = async (itemId) => {
+  if (!currentUser.value?.uid) {
+    error.value = "You must be logged in to remove items.";
+    return;
+  }
+
+  if (!confirm("Are you sure you want to remove this item from your pause cart?")) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/ItemCollection/removeItem`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ owner: currentUser.value.uid, itemId }),
+    });
+
+    const data = await response.json();
+    console.log("Remove response:", data);
+
+    if (data.error) {
+      error.value = data.error || "Failed to remove item. Please try again.";
+      return;
+    }
+
+    // Success! Refresh the wishlist
+    console.log("Item removed successfully, refreshing wishlist...");
+    await fetchWishlist();
+  } catch (err) {
+    error.value = "Failed to remove item. Please try again.";
+    console.error("Error removing item:", err);
   }
 };
 
@@ -464,17 +570,29 @@ const getCommunityPurchased = (item) => {
 
 .add-item-section {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 1rem;
   margin-bottom: 2rem;
 }
 
-.link-input {
-  flex: 1;
+.add-item-button {
+  padding: 1rem 3rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border: 2px solid #2d0000;
+  border-radius: 8px;
+  background-color: #2d0000;
+  color: #f5f0e1;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.2s ease;
 }
 
-.add-button {
-  padding: 0.75rem 2rem;
-  white-space: nowrap;
+.add-item-button:hover {
+  background-color: #f5f0e1;
+  color: #2d0000;
 }
 
 .items-list {
@@ -484,12 +602,53 @@ const getCommunityPurchased = (item) => {
 }
 
 .wishlist-item {
+  position: relative;
   display: flex;
   gap: 1.5rem;
   border: 2px solid #2d0000;
   border-radius: 12px;
   padding: 1.5rem;
   background-color: #f5f0e1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.wishlist-item:hover {
+  box-shadow: 0 4px 8px rgba(45, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.remove-button {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 32px;
+  height: 32px;
+  border: 2px solid #2d0000;
+  border-radius: 50%;
+  background-color: #f5f0e1;
+  color: #2d0000;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.wishlist-item:hover .remove-button {
+  opacity: 1;
+}
+
+.remove-button:hover {
+  background-color: #ef5350;
+  color: #f5f0e1;
+  border-color: #ef5350;
+  transform: scale(1.1);
 }
 
 .item-image {
@@ -641,6 +800,17 @@ const getCommunityPurchased = (item) => {
   resize: vertical;
 }
 
+.file-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #2d0000;
+  border-radius: 8px;
+  font-size: 1rem;
+  background-color: #f5f0e1;
+  font-family: inherit;
+  cursor: pointer;
+}
+
 .modal-photo {
   width: 100%;
   height: 100%;
@@ -713,11 +883,6 @@ const getCommunityPurchased = (item) => {
 
 .modal-submit:disabled {
   opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.add-button:disabled {
-  opacity: 0.6;
   cursor: not-allowed;
 }
 
