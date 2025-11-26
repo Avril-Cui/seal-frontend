@@ -172,7 +172,7 @@ import { useAuth } from "../composables/useAuth";
 const router = useRouter();
 const { currentUser } = useAuth();
 
-const API_BASE_URL = "http://localhost:8000/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const showAddModal = ref(false);
 const newItemLink = ref("");
