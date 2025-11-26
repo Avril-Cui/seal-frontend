@@ -34,7 +34,7 @@ import { useAuth } from "../composables/useAuth";
 
 const router = useRouter();
 const route = useRoute();
-const { login, currentUser, isAuthenticated } = useAuth();
+const { login, currentUser, isAuthenticated, completeRegistration } = useAuth();
 const selectedInterests = ref([]);
 const isEditing = ref(false);
 
@@ -70,19 +70,16 @@ const handleContinue = () => {
   if (isEditing.value) {
     // Update existing user's interests
     if (currentUser.value) {
-      login({
-        ...currentUser.value,
-        interests: selectedInterests.value,
-      });
+      currentUser.value.interests = selectedInterests.value;
+      localStorage.setItem("currentUser", JSON.stringify(currentUser.value));
     }
     router.push("/settings");
   } else {
-    // Complete registration by logging in with interests
+    // Complete registration by marking user as authenticated
     if (currentUser.value) {
-      login({
-        ...currentUser.value,
-        interests: selectedInterests.value,
-      });
+      currentUser.value.interests = selectedInterests.value;
+      localStorage.setItem("currentUser", JSON.stringify(currentUser.value));
+      completeRegistration();
     }
     router.push("/swipe");
   }

@@ -4,6 +4,8 @@
       <h1 class="app-title">BYEBUY</h1>
 
       <form @submit.prevent="handleRegister" class="register-form">
+        <div v-if="error" class="error-message">{{ error }}</div>
+
         <div class="form-group">
           <input type="text" v-model="name" placeholder="name" required />
         </div>
@@ -16,7 +18,9 @@
           <input type="password" v-model="password" placeholder="PW" required />
         </div>
 
-        <button type="submit" class="register-button">REGISTER</button>
+        <button type="submit" class="register-button" :disabled="isLoading">
+          {{ isLoading ? "REGISTERING..." : "REGISTER" }}
+        </button>
       </form>
 
       <div class="login-link">
@@ -42,14 +46,33 @@ const { register } = useAuth();
 const name = ref("");
 const email = ref("");
 const password = ref("");
+const error = ref("");
+const isLoading = ref(false);
 
-const handleRegister = () => {
-  // Store registration data and navigate to interests selection
-  register({
-    name: name.value,
-    email: email.value,
-  });
-  router.push("/register/interests");
+const handleRegister = async () => {
+  error.value = "";
+  isLoading.value = true;
+
+  try {
+    const result = await register(email.value, password.value);
+
+    if (result.success) {
+      router.push("/register/interests");
+    } else {
+      // Provide more helpful error messages
+      if (result.error === "Email already registered.") {
+        error.value =
+          "This email is already registered. Please log in or use a different email.";
+      } else {
+        error.value = result.error || "Registration failed. Please try again.";
+      }
+    }
+  } catch (err) {
+    error.value =
+      "Unable to connect to the server. Please check your connection and try again.";
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 const goToLogin = () => {
@@ -106,6 +129,21 @@ const goToLogin = () => {
   margin-top: 1rem;
   font-size: 1.1rem;
   font-weight: 600;
+}
+
+.register-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-message {
+  padding: 0.75rem;
+  background-color: #ffebee;
+  border: 2px solid #ef5350;
+  color: #c62828;
+  text-align: center;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
 }
 
 .login-link {

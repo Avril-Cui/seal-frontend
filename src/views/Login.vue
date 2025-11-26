@@ -4,6 +4,8 @@
       <h1 class="app-title">BYEBUY</h1>
 
       <form @submit.prevent="handleLogin" class="login-form">
+        <div v-if="error" class="error-message">{{ error }}</div>
+
         <div class="form-group">
           <input type="email" v-model="email" placeholder="email" required />
         </div>
@@ -12,7 +14,9 @@
           <input type="password" v-model="password" placeholder="PW" required />
         </div>
 
-        <button type="submit" class="login-button">LOGIN</button>
+        <button type="submit" class="login-button" :disabled="isLoading">
+          {{ isLoading ? "LOGGING IN..." : "LOGIN" }}
+        </button>
       </form>
 
       <div class="register-link">
@@ -37,14 +41,33 @@ const router = useRouter();
 const { login } = useAuth();
 const email = ref("");
 const password = ref("");
+const error = ref("");
+const isLoading = ref(false);
 
-const handleLogin = () => {
-  // Login with user data (no backend implementation)
-  login({
-    email: email.value,
-    name: email.value.split("@")[0], // Simple name extraction
-  });
-  router.push("/swipe");
+const handleLogin = async () => {
+  error.value = "";
+  isLoading.value = true;
+
+  try {
+    const result = await login(email.value, password.value);
+
+    if (result.success) {
+      router.push("/swipe");
+    } else {
+      // Provide more helpful error messages
+      if (result.error === "Invalid credentials.") {
+        error.value =
+          "The email or password you entered is incorrect. Please try again.";
+      } else {
+        error.value = result.error || "Login failed. Please try again.";
+      }
+    }
+  } catch (err) {
+    error.value =
+      "Unable to connect to the server. Please check your connection and try again.";
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 const goToRegister = () => {
@@ -101,6 +124,21 @@ const goToRegister = () => {
   margin-top: 1rem;
   font-size: 1.1rem;
   font-weight: 600;
+}
+
+.login-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-message {
+  padding: 0.75rem;
+  background-color: #ffebee;
+  border: 2px solid #ef5350;
+  color: #c62828;
+  text-align: center;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
 }
 
 .register-link {

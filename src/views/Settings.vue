@@ -6,7 +6,7 @@
       </div>
       <div class="nav-right">
         <button @click="goToSwipe" class="nav-link">SWIPE</button>
-        <button @click="goToWishlist" class="nav-link">WISHLIST</button>
+        <button @click="goToWishlist" class="nav-link">PAUSE CART</button>
         <button @click="goToStats" class="nav-link">STATS</button>
         <button @click="goToSettings" class="nav-link settings-icon active">
           ⚙

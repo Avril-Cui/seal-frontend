@@ -6,7 +6,7 @@
       </div>
       <div class="nav-right">
         <button @click="goToSwipe" class="nav-link">SWIPE</button>
-        <button @click="goToWishlist" class="nav-link active">WISHLIST</button>
+        <button @click="goToWishlist" class="nav-link active">PAUSE CART</button>
         <button @click="goToStats" class="nav-link">STATS</button>
         <button @click="goToSettings" class="nav-link settings-icon">⚙</button>
       </div>
@@ -14,25 +14,45 @@
 
     <div class="wishlist-content">
       <div class="add-item-section">
+        <div v-if="addItemError" class="error-message">{{ addItemError }}</div>
         <input
           type="text"
           v-model="newItemLink"
-          placeholder="Click"
+          placeholder="Paste Amazon URL here"
           class="link-input"
         />
-        <button @click="showAddModal = true" class="add-button">ADD</button>
+        <button @click="fetchItemFromUrl" class="add-button">ADD</button>
       </div>
 
-      <div class="items-list">
-        <div v-for="item in wishlistItems" :key="item.id" class="wishlist-item">
+      <div v-if="isLoading" class="loading-message">Loading your items...</div>
+      <div v-else-if="error" class="error-message">{{ error }}</div>
+      <div v-else-if="wishlistItems.length === 0" class="empty-message">
+        Your pause cart is empty. Add items using the URL box above!
+      </div>
+      <div v-else class="items-list">
+        <div v-for="item in wishlistItems" :key="item._id" class="wishlist-item">
           <div class="item-image">
-            <div class="image-placeholder">PIC</div>
+            <img
+              v-if="item.photo"
+              :src="item.photo"
+              :alt="item.itemName"
+              class="item-photo"
+            />
+            <div v-else class="image-placeholder">PIC</div>
           </div>
           <div class="item-details">
-            <h3 class="item-name">{{ item.name }}</h3>
-            <p class="item-desc">{{ item.desc }}</p>
-            <div class="approval-badge" :class="item.approvalClass">
-              {{ item.approval }}% approve!
+            <h3 class="item-name">{{ item.itemName }}</h3>
+            <p class="item-desc">{{ item.description }}</p>
+            <p class="item-price">${{ item.price.toFixed(2) }}</p>
+
+            <div class="community-stats">
+              <div class="stat-badge" :class="getCommunityApprovalClass(item)">
+                {{ getCommunityApproval(item) }}% community approval
+              </div>
+              <div class="stat-info">
+                {{ getCommunityCount(item) }} people paused this •
+                {{ getCommunityPurchased(item) }}% eventually bought it
+              </div>
             </div>
           </div>
         </div>
@@ -43,26 +63,101 @@
     <div
       v-if="showAddModal"
       class="modal-overlay"
-      @click="showAddModal = false"
+      @click="closeModal"
     >
       <div class="modal-content" @click.stop>
         <div class="modal-header">
-          <h2>Add Item</h2>
-          <button @click="showAddModal = false" class="close-button">×</button>
+          <h2>Confirm Item</h2>
+          <button @click="closeModal" class="close-button">×</button>
         </div>
         <div class="modal-body">
+          <div v-if="addItemError" class="error-message">{{ addItemError }}</div>
+
           <div class="modal-image">
-            <div class="image-placeholder">PIC</div>
+            <img
+              v-if="newItemPhoto"
+              :src="newItemPhoto"
+              :alt="newItemName"
+              class="modal-photo"
+            />
+            <div v-else class="image-placeholder">PIC</div>
           </div>
-          <input
-            v-model="newItemName"
-            placeholder="item name"
-            class="modal-input"
-          />
-          <input v-model="newItemDesc" placeholder="desc" class="modal-input" />
-          <input v-model="newItemQ1" placeholder="Q1" class="modal-input" />
-          <input v-model="newItemQ2" placeholder="Q2" class="modal-input" />
-          <button @click="addItem" class="modal-submit">ADD ITEM</button>
+
+          <div class="form-group">
+            <label class="form-label">Item Name</label>
+            <input
+              v-model="newItemName"
+              placeholder="Edit item name"
+              class="modal-input"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea
+              v-model="newItemDesc"
+              placeholder="Edit description"
+              class="modal-textarea"
+              rows="3"
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Price</label>
+            <input
+              v-model="newItemPrice"
+              type="number"
+              step="0.01"
+              placeholder="Price"
+              class="modal-input"
+              disabled
+            />
+          </div>
+
+          <div class="reflection-section">
+            <h3 class="reflection-title">Reflection Questions</h3>
+
+            <div class="form-group">
+              <label class="form-label">Why do you want this item?</label>
+              <textarea
+                v-model="reasonAnswer"
+                placeholder="Enter your reason..."
+                class="modal-textarea"
+                rows="2"
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Is this a need or a want?</label>
+              <textarea
+                v-model="isNeedAnswer"
+                placeholder="Enter your answer..."
+                class="modal-textarea"
+                rows="2"
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Would Future-You approve?</label>
+              <textarea
+                v-model="futureApproveAnswer"
+                placeholder="Enter your answer..."
+                class="modal-textarea"
+                rows="2"
+              ></textarea>
+            </div>
+          </div>
+
+          <button
+            @click="addItem"
+            class="modal-submit"
+            :disabled="!reasonAnswer || !isNeedAnswer || !futureApproveAnswer || isAddingItem"
+          >
+            {{ isAddingItem ? "SAVING..." : "SAVE TO PAUSE CART" }}
+          </button>
+          <p v-if="!reasonAnswer || !isNeedAnswer || !futureApproveAnswer" class="validation-hint">
+            Please answer all reflection questions before saving.
+          </p>
         </div>
       </div>
     </div>
@@ -70,55 +165,227 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { useAuth } from "../composables/useAuth";
 
 const router = useRouter();
+const { currentUser } = useAuth();
+
+const API_BASE_URL = "http://localhost:8000/api";
 
 const showAddModal = ref(false);
 const newItemLink = ref("");
 const newItemName = ref("");
 const newItemDesc = ref("");
-const newItemQ1 = ref("");
-const newItemQ2 = ref("");
+const newItemPhoto = ref("");
+const newItemPrice = ref(0);
+const reasonAnswer = ref("");
+const isNeedAnswer = ref("");
+const futureApproveAnswer = ref("");
 
-const wishlistItems = ref([
-  {
-    id: 1,
-    name: "Item name",
-    desc: "desc",
-    approval: 75,
-    approvalClass: "high-approval",
-  },
-  {
-    id: 2,
-    name: "Another item",
-    desc: "Another description",
-    approval: 25,
-    approvalClass: "low-approval",
-  },
-]);
+const wishlistItems = ref([]);
+const isLoading = ref(false);
+const error = ref("");
+const isAddingItem = ref(false);
+const addItemError = ref("");
+const fetchedItem = ref(null);
 
-const addItem = () => {
-  if (newItemName.value) {
-    wishlistItems.value.push({
-      id: wishlistItems.value.length + 1,
-      name: newItemName.value,
-      desc: newItemDesc.value,
-      approval: Math.floor(Math.random() * 100),
-      approvalClass: Math.random() > 0.5 ? "high-approval" : "low-approval",
+// Fetch user's wishlist items
+const fetchWishlist = async () => {
+  console.log("fetchWishlist called, currentUser:", currentUser.value);
+
+  if (!currentUser.value?.uid) {
+    console.log("No uid, not fetching wishlist");
+    return;
+  }
+
+  isLoading.value = true;
+  error.value = "";
+
+  console.log("Fetching wishlist for owner:", currentUser.value.uid);
+
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/ItemCollection/_getUserWishList`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ owner: currentUser.value.uid }),
+      }
+    );
+
+    const data = await response.json();
+    console.log("Wishlist response:", data);
+
+    if (data.error) {
+      console.log("Error in response:", data.error);
+      // If no wishlist exists yet, just show empty list
+      wishlistItems.value = [];
+    } else if (Array.isArray(data)) {
+      console.log("Got array of items:", data.length);
+      wishlistItems.value = data.map((obj) => obj.item);
+    } else {
+      console.log("Unexpected response format");
+      wishlistItems.value = [];
+    }
+  } catch (err) {
+    error.value = "Failed to load your items. Please try again.";
+    console.error("Error fetching wishlist:", err);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Mock Amazon data (for now, until real Amazon API is integrated)
+const fetchItemFromUrl = () => {
+  if (!newItemLink.value) {
+    addItemError.value = "Please enter a URL";
+    return;
+  }
+
+  addItemError.value = "";
+
+  // Mock Amazon product data based on URL keywords
+  let itemName = "Amazon Product";
+  let description = "This is a product from Amazon.";
+  let price = 29.99;
+  let photo = "https://via.placeholder.com/400x400.png?text=Product";
+
+  const url = newItemLink.value.toLowerCase();
+
+  if (url.includes("book")) {
+    itemName = "The Great Gatsby";
+    description = "A classic American novel by F. Scott Fitzgerald.";
+    price = 12.99;
+    photo = "https://via.placeholder.com/400x400.png?text=Book";
+  } else if (url.includes("electronics") || url.includes("headphone")) {
+    itemName = "Wireless Headphones";
+    description = "Noise-cancelling headphones with long battery life.";
+    price = 199.99;
+    photo = "https://via.placeholder.com/400x400.png?text=Headphones";
+  } else if (url.includes("tablet") || url.includes("fire")) {
+    itemName = "Amazon Fire Kids Tablet";
+    description = "Kids tablet with parental controls and educational content. Includes a protective case.";
+    price = 119.99;
+    photo = "https://via.placeholder.com/400x400.png?text=Tablet";
+  } else if (url.includes("kindle")) {
+    itemName = "Kindle E-Reader";
+    description = "E-reader with built-in front light and long battery life.";
+    price = 89.99;
+    photo = "https://via.placeholder.com/400x400.png?text=Kindle";
+  } else if (url.includes("echo") || url.includes("alexa")) {
+    itemName = "Echo Dot Smart Speaker";
+    description = "Smart speaker with Alexa voice assistant.";
+    price = 49.99;
+    photo = "https://via.placeholder.com/400x400.png?text=Echo";
+  }
+
+  // Store the mocked details
+  fetchedItem.value = { itemName, description, photo, price };
+  newItemName.value = itemName;
+  newItemDesc.value = description;
+  newItemPhoto.value = photo;
+  newItemPrice.value = price;
+  showAddModal.value = true;
+};
+
+const addItem = async () => {
+  console.log("addItem called!");
+  console.log("currentUser:", currentUser.value);
+
+  // Save the item to the database with all the details and reflection answers
+  if (!fetchedItem.value) {
+    console.log("No fetched item, returning");
+    return;
+  }
+
+  if (!currentUser.value?.uid) {
+    console.error("No user logged in! currentUser:", currentUser.value);
+    addItemError.value = "You must be logged in to add items.";
+    return;
+  }
+
+  console.log("Starting to save item...");
+  isAddingItem.value = true;
+  addItemError.value = "";
+
+  const payload = {
+    owner: currentUser.value.uid,
+    itemName: newItemName.value,
+    description: newItemDesc.value,
+    photo: newItemPhoto.value,
+    price: newItemPrice.value,
+    reason: reasonAnswer.value,
+    isNeed: isNeedAnswer.value,
+    isFutureApprove: futureApproveAnswer.value,
+  };
+
+  console.log("Payload:", payload);
+  console.log("Owner UID:", currentUser.value.uid);
+
+  try {
+    // Call the new addItem endpoint with all item details
+    const response = await fetch(`${API_BASE_URL}/ItemCollection/addItem`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     });
+
+    console.log("Response status:", response.status);
+    const data = await response.json();
+    console.log("Response data:", data);
+
+    if (data.error) {
+      addItemError.value = data.error || "Failed to save item. Please try again.";
+      return;
+    }
+
+    // Success! Refresh the wishlist to show the new item
+    console.log("Item saved successfully, refreshing wishlist...");
+    await fetchWishlist();
+
+    // Close modal and reset form
+    showAddModal.value = false;
+
+    // Reset form values
     newItemName.value = "";
     newItemDesc.value = "";
-    newItemQ1.value = "";
-    newItemQ2.value = "";
+    newItemPhoto.value = "";
+    newItemPrice.value = 0;
+    reasonAnswer.value = "";
+    isNeedAnswer.value = "";
+    futureApproveAnswer.value = "";
     newItemLink.value = "";
-    showAddModal.value = false;
+    fetchedItem.value = null;
+    addItemError.value = "";
+  } catch (err) {
+    addItemError.value = "Failed to save item. Please try again.";
+    console.error("Error saving item:", err);
+  } finally {
+    isAddingItem.value = false;
   }
+};
+
+onMounted(() => {
+  fetchWishlist();
+});
+
+const closeModal = () => {
+  showAddModal.value = false;
+  addItemError.value = "";
 };
 
 const goToSwipe = () => {
   router.push("/swipe");
+};
+
+const goToWishlist = () => {
+  router.push("/wishlist");
 };
 
 const goToStats = () => {
@@ -127,6 +394,34 @@ const goToStats = () => {
 
 const goToSettings = () => {
   router.push("/settings");
+};
+
+// Generate mock community stats based on item price
+const getCommunityApproval = (item) => {
+  // Higher priced items tend to have lower approval in our mock
+  const baseApproval = item.price > 100 ? 45 : item.price > 50 ? 60 : 75;
+  const variance = Math.floor(Math.random() * 20) - 10;
+  return Math.max(30, Math.min(95, baseApproval + variance));
+};
+
+const getCommunityApprovalClass = (item) => {
+  const approval = getCommunityApproval(item);
+  if (approval >= 70) return "high-approval";
+  if (approval >= 50) return "medium-approval";
+  return "low-approval";
+};
+
+const getCommunityCount = (item) => {
+  // Generate a consistent count based on item name length (pseudo-random but consistent)
+  const base = item.itemName.length * 3;
+  return base + Math.floor(Math.random() * 20);
+};
+
+const getCommunityPurchased = (item) => {
+  // Lower approval items have lower purchase rates
+  const approval = getCommunityApproval(item);
+  const basePurchase = Math.floor(approval * 0.6);
+  return Math.max(20, Math.min(85, basePurchase));
 };
 </script>
 
@@ -328,11 +623,151 @@ const goToSettings = () => {
 
 .modal-input {
   width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #2d0000;
+  border-radius: 8px;
+  font-size: 1rem;
+  background-color: #f5f0e1;
+  font-family: inherit;
+}
+
+.modal-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #2d0000;
+  border-radius: 8px;
+  font-size: 1rem;
+  background-color: #f5f0e1;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.modal-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.reflection-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #2d0000;
+}
+
+.reflection-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.item-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.item-price {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0.5rem 0 0 0;
+  color: #2d0000;
+}
+
+.loading-message,
+.empty-message {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.1rem;
+  color: #2d0000;
+}
+
+.error-message {
+  padding: 0.75rem;
+  background-color: #ffebee;
+  border: 2px solid #ef5350;
+  color: #c62828;
+  text-align: center;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  border-radius: 8px;
 }
 
 .modal-submit {
   width: 100%;
   margin-top: 1rem;
+}
+
+.modal-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.add-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.validation-hint {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #87875a;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+.community-stats {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #d0d0d0;
+}
+
+.stat-badge {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  border: 2px solid #2d0000;
+}
+
+.stat-badge.high-approval {
+  background-color: #d4edda;
+  color: #155724;
+  border-color: #155724;
+}
+
+.stat-badge.medium-approval {
+  background-color: #fff3cd;
+  color: #856404;
+  border-color: #856404;
+}
+
+.stat-badge.low-approval {
+  background-color: #f8d7da;
+  color: #721c24;
+  border-color: #721c24;
+}
+
+.stat-info {
+  font-size: 0.8rem;
+  color: #666;
+  line-height: 1.4;
 }
 
 .nav-link {
