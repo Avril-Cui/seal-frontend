@@ -95,7 +95,12 @@
           <div v-if="addItemError" class="error-message">{{ addItemError }}</div>
 
           <div class="form-group">
-            <label class="form-label">Upload Image</label>
+            <label class="form-label">Image URL</label>
+            <input
+              v-model="newItemPhoto"
+              placeholder="Enter image URL"
+              class="modal-input"
+            />
             <div class="modal-image">
               <img
                 v-if="newItemPhoto"
@@ -105,12 +110,6 @@
               />
               <div v-else class="image-placeholder">PIC</div>
             </div>
-            <input
-              type="file"
-              accept="image/*"
-              @change="handleImageUpload"
-              class="file-input"
-            />
           </div>
 
           <div class="form-group">
@@ -378,17 +377,6 @@ const openEditModal = (item) => {
   showAddModal.value = true;
 };
 
-// Handle image upload
-const handleImageUpload = (event) => {
-  const file = event.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      newItemPhoto.value = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-};
 
 const addItem = async () => {
   console.log("addItem called!");
@@ -903,17 +891,6 @@ const getApprovalClass = (stats) => {
   background-color: #f5f0e1;
   font-family: inherit;
   resize: vertical;
-}
-
-.file-input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 2px solid #2d0000;
-  border-radius: 8px;
-  font-size: 1rem;
-  background-color: #f5f0e1;
-  font-family: inherit;
-  cursor: pointer;
 }
 
 .modal-photo {
