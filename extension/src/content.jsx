@@ -125,13 +125,62 @@ function fetchAmazonProduct() {
     metadata.asin = urlMatch ? urlMatch[1] : null;
   }
 
-  // Product description
-  const descriptionElement = document.querySelector(
-    "#feature-bullets, #productDescription"
-  );
-  metadata.description = descriptionElement
-    ? descriptionElement.textContent.trim()
-    : null;
+  // Product description - try multiple selectors
+  let description = null;
+
+  // First try to get feature bullets (most common format)
+  // Be very specific to avoid cart/other page elements - only look within product details
+  const bulletSelectors = [
+    "#centerCol #feature-bullets ul",
+    "#centerCol #feature-bullets-btf ul",
+    "#centerCol [data-feature-name='featurebullets'] ul",
+    "#centerCol #productFactsDesktopExpander ul.a-unordered-list.a-vertical.a-spacing-small",
+    "#dp-container #feature-bullets ul",
+    "#dp-container [data-feature-name='featurebullets'] ul",
+  ];
+
+  let featureBullets = null;
+  for (const selector of bulletSelectors) {
+    featureBullets = document.querySelector(selector);
+    if (featureBullets) break;
+  }
+
+  if (featureBullets) {
+    const bullets = Array.from(featureBullets.querySelectorAll("li"))
+      .map((li) => li.textContent.trim())
+      .filter((text) => text.length > 0);
+
+    if (bullets.length > 0) {
+      description = bullets.join("\n");
+    }
+  }
+
+  // If no bullets found, try other selectors
+  if (!description) {
+    const descriptionSelectors = [
+      "#feature-bullets",
+      "#productDescription",
+      "#feature-bullets-btf",
+      ".a-section.a-spacing-medium.a-spacing-top-small",
+      "[data-feature-name='featurebullets']",
+      "#aplus",
+    ];
+
+    for (const selector of descriptionSelectors) {
+      const element = document.querySelector(selector);
+      if (element && element.textContent.trim()) {
+        description = element.textContent.trim();
+        break;
+      }
+    }
+  }
+
+  // Fallback to title if no description found
+  if (!description && metadata.title) {
+    description = metadata.title;
+  }
+
+  metadata.description = description;
 
   // Brand
   const brandElement = document.querySelector(
