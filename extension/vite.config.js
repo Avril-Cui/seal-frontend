@@ -9,9 +9,12 @@ export default defineConfig({
     rollupOptions: {
       input: {
         content: resolve(__dirname, 'src/content.jsx'),
+        background: resolve(__dirname, 'src/background.js'),
       },
       output: {
-        entryFileNames: '[name].js',
+        entryFileNames: (chunkInfo) => {
+          return chunkInfo.name === 'background' ? 'background.js' : '[name].js';
+        },
         assetFileNames: '[name].[ext]',
       },
     },

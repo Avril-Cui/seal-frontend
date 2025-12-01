@@ -1,42 +1,81 @@
 import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
+import { config } from "./config.js";
 import "./styles.css";
 
 function AddToWishlistButton() {
   const [isAdded, setIsAdded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isDisabled, setIsDisabled] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleClick = () => {
-    const productData = fetchAmazonProduct();
-    console.log("=== AMAZON PRODUCT METADATA ===\n", productData);
-
+  const handleClick = async () => {
     setIsDisabled(true);
-    setIsAdded(true);
-    setTimeout(() => {
-      setIsAdded(false);
+    setError(null);
+
+    try {
+      const productData = fetchAmazonProduct();
+
+      const payload = {
+        owner: config.userId,
+        itemName: productData.title,
+        photo: productData.mainImage,
+        price: productData.price,
+        description: productData.description,
+        reason: "Added from browser extension",
+        isNeed: "not specified",
+        isFutureApprove: "not specified",
+      };
+
+      // Send message to background script to bypass CORS
+      chrome.runtime.sendMessage(
+        { action: "addToWishlist", payload },
+        (response) => {
+          if (response.success && response.data.item) {
+            setIsAdded(true);
+            setTimeout(() => {
+              setIsAdded(false);
+              setIsDisabled(false);
+            }, 2000);
+          } else if (response.data?.error || !response.success) {
+            const errorMsg =
+              response.data?.error || response.error || "Failed to add item";
+            setError(errorMsg);
+            setIsDisabled(false);
+          }
+        }
+      );
+    } catch (err) {
+      setError("Failed to connect to server");
       setIsDisabled(false);
-    }, 2000);
+    }
   };
 
   return (
-    <button
-      onClick={handleClick}
-      onMouseEnter={() => !isDisabled && setIsHovered(true)}
-      onMouseLeave={() => !isDisabled && setIsHovered(false)}
-      className={`
-        fixed bottom-2 right-2 z-[10000]
-        px-5 py-3 rounded-lg
-        text-white text-sm
-        transition-all duration-300
-        disabled:cursor-not-allowed
-        ${isAdded ? "bg-green-600" : "bg-orange-600"}
-      `}
-      style={{ opacity: isHovered || isAdded ? 1 : 0.5 }}
-      disabled={isDisabled}
-    >
-      {isAdded ? "Added!" : "Add to ByeBuy Wishlist"}
-    </button>
+    <div className="fixed bottom-2 right-2 z-[10000] flex flex-col items-end gap-2">
+      <button
+        onClick={handleClick}
+        onMouseEnter={() => !isDisabled && setIsHovered(true)}
+        onMouseLeave={() => !isDisabled && setIsHovered(false)}
+        className={`
+          px-5 py-3 rounded-lg
+          text-white text-sm
+          transition-all duration-300
+          disabled:cursor-not-allowed
+          ${error ? "bg-red-600" : isAdded ? "bg-green-600" : "bg-orange-600"}
+        `}
+        style={{ opacity: isHovered || isAdded || error ? 1 : 0.5 }}
+        disabled={isDisabled}
+      >
+        {error ? "Error!" : isAdded ? "Added!" : "Add to ByeBuy Wishlist"}
+      </button>
+
+      {error && (
+        <div className="px-3 py-2 bg-red-100 text-red-800 text-xs rounded-lg shadow-lg">
+          {error}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -113,13 +152,38 @@ function fetchAmazonProduct() {
   });
   metadata.images = images;
 
-  // Main image
-  const mainImageElement = document.querySelector(
-    "#landingImage, #imgBlkFront"
-  );
-  metadata.mainImage = mainImageElement
-    ? mainImageElement.src || mainImageElement.dataset.src
-    : null;
+  // Main image - try multiple selectors for better compatibility
+  let mainImage = null;
+  const mainImageSelectors = [
+    "#landingImage",
+    "#imgBlkFront",
+    "#main-image",
+    ".a-dynamic-image",
+    "#imageBlock img[data-a-dynamic-image]",
+  ];
+
+  for (const selector of mainImageSelectors) {
+    const imgElement = document.querySelector(selector);
+    if (imgElement) {
+      // Get the highest quality image URL
+      const src = imgElement.src || imgElement.dataset.src;
+      if (src && src.startsWith("http")) {
+        // Remove size restrictions to get full-size image
+        mainImage = src.split("._")[0] + ".jpg";
+        break;
+      }
+    }
+  }
+
+  // Fallback to data-old-hires attribute which has high-res images
+  if (!mainImage) {
+    const hiresImg = document.querySelector("[data-old-hires]");
+    if (hiresImg) {
+      mainImage = hiresImg.dataset.oldHires;
+    }
+  }
+
+  metadata.mainImage = mainImage;
 
   // Availability
   const availabilityElement = document.querySelector(
