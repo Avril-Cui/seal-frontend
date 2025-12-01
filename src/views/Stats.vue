@@ -15,12 +15,20 @@
     <div class="stats-content">
       <!-- Page Header -->
       <div class="page-header">
-        <h1 class="page-title">Your Shopping Insights</h1>
+        <h1 class="page-title">{{ userName }}'s Shopping Insights</h1>
         <p class="page-subtitle">Track your spending habits and savings progress</p>
       </div>
 
-      <!-- Stats Summary -->
-      <div class="stats-summary">
+      <!-- Exportable Stats Section -->
+      <div ref="exportSection" class="export-section">
+        <!-- Export Header (only visible in export) -->
+        <div class="export-header">
+          <h1 class="export-title">BYEBUY Shopping Insights</h1>
+          <p class="export-date">{{ currentDate }}</p>
+        </div>
+
+        <!-- Stats Summary -->
+        <div class="stats-summary">
         <div class="stat-box">
           <div class="stat-value positive">$847</div>
           <div class="stat-label">Total Saved</div>
@@ -71,7 +79,7 @@
               <text class="graph-label" x="385" y="195">Sep</text>
             </svg>
           </div>
-          <button class="export-button">
+          <button class="export-button" @click="exportStats">
             <span class="export-icon">☁</span>
             EXPORT DATA
           </button>
@@ -120,9 +128,12 @@
             </div>
           </div>
         </div>
+      </div>
+      </div>
+      <!-- End Exportable Section -->
 
-        <!-- Recent Purchases -->
-        <div class="card purchases-section">
+      <!-- Recent Purchases -->
+      <div class="card purchases-section">
           <h2 class="card-title">Recent Purchases</h2>
           <div class="purchases-list">
             <div
@@ -139,6 +150,88 @@
               </div>
             </div>
           </div>
+      </div>
+    </div>
+
+    <!-- Hidden Poster Template for Export -->
+    <div ref="posterTemplate" class="poster-template">
+      <div class="poster-container">
+        <!-- Poster Header -->
+        <div class="poster-header">
+          <div class="poster-logo">BYEBUY</div>
+          <div class="poster-date">{{ currentDate }}</div>
+        </div>
+
+        <!-- Poster Main Content -->
+        <div class="poster-main">
+          <h1 class="poster-title">{{ userName }}'s Shopping Insights</h1>
+
+          <!-- Key Metrics Grid -->
+          <div class="poster-metrics">
+            <div class="poster-metric-card highlight">
+              <div class="poster-metric-value">$847</div>
+              <div class="poster-metric-label">Total Saved</div>
+            </div>
+            <div class="poster-metric-card">
+              <div class="poster-metric-value">68%</div>
+              <div class="poster-metric-label">Rejection Rate</div>
+            </div>
+          </div>
+
+          <!-- Savings Progress -->
+          <div class="poster-graph-section">
+            <div class="poster-section-title">Savings Progress</div>
+            <div class="poster-graph-container">
+              <div class="poster-graph-metric">24%</div>
+              <div class="poster-graph-label">average saved</div>
+              <svg class="poster-graph-svg" viewBox="0 0 400 120" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="posterGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:#8BA888;stop-opacity:0.3" />
+                    <stop offset="100%" style="stop-color:#8BA888;stop-opacity:0.05" />
+                  </linearGradient>
+                </defs>
+                <path class="poster-graph-area" d="M 0 110 L 0 90 Q 50 80, 100 70 T 200 50 T 300 35 L 400 20 L 400 120 L 0 120 Z" fill="url(#posterGradient)" />
+                <path class="poster-graph-line" d="M 0 90 Q 50 80, 100 70 T 200 50 T 300 35 L 400 20" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- Behavioral Insight -->
+          <div class="poster-insight-section">
+            <div class="poster-section-title">Key Insight</div>
+            <div class="poster-insight-content">
+              <div class="poster-mascot">🐷</div>
+              <div class="poster-insight-text">
+                You tend to make most impulsive purchases on weekends. Consider setting a 24-hour waiting period before weekend purchases.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Poster Footer -->
+        <div class="poster-footer">
+          <div class="poster-footer-text">Track your spending habits with BYEBUY</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div v-if="showPreviewModal" class="modal-overlay" @click="closePreview">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h2 class="modal-title">Preview Your Stats</h2>
+          <button class="modal-close" @click="closePreview">✕</button>
+        </div>
+        <div class="modal-body">
+          <img v-if="previewImage" :src="previewImage" alt="Stats Preview" class="preview-image" />
+        </div>
+        <div class="modal-footer">
+          <button class="modal-button secondary" @click="closePreview">Cancel</button>
+          <button class="modal-button primary" @click="downloadImage">
+            <span class="download-icon">⬇</span>
+            Download
+          </button>
         </div>
       </div>
     </div>
@@ -148,8 +241,16 @@
 <script setup>
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
+import html2canvas from "html2canvas";
 
 const router = useRouter();
+const exportSection = ref(null);
+const posterTemplate = ref(null);
+const showPreviewModal = ref(false);
+const previewImage = ref(null);
+
+// TODO: Replace with actual user data from auth/store
+const userName = ref("Alex"); // Placeholder - will be replaced with actual user name
 
 const recentPurchases = ref([
   { id: 1, name: "Wireless Headphones", date: "2 weeks ago" },
@@ -160,10 +261,75 @@ const recentPurchases = ref([
   { id: 6, name: "Phone Case", date: "4 months ago" },
 ]);
 
+const currentDate = computed(() => {
+  const date = new Date();
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+});
+
 const graphPoints = computed(() => {
   // Simple upward trending line
   return "0,180 50,160 100,140 150,120 200,100 250,80 300,60";
 });
+
+const exportStats = async () => {
+  if (!posterTemplate.value) return;
+
+  try {
+    // Temporarily show the poster template
+    posterTemplate.value.style.display = 'block';
+
+    // Small delay to ensure rendering
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Capture the poster as canvas
+    const canvas = await html2canvas(posterTemplate.value, {
+      backgroundColor: '#FEFEFE',
+      scale: 3, // High quality for poster
+      logging: false,
+      useCORS: true,
+      width: 1080,
+      height: 1920,
+    });
+
+    // Hide the poster template again
+    posterTemplate.value.style.display = 'none';
+
+    // Convert canvas to data URL for preview
+    const imageDataUrl = canvas.toDataURL('image/png');
+    previewImage.value = imageDataUrl;
+    showPreviewModal.value = true;
+
+  } catch (error) {
+    console.error('Error generating stats poster:', error);
+    alert('Failed to generate stats poster. Please try again.');
+    if (posterTemplate.value) {
+      posterTemplate.value.style.display = 'none';
+    }
+  }
+};
+
+const closePreview = () => {
+  showPreviewModal.value = false;
+  previewImage.value = null;
+};
+
+const downloadImage = () => {
+  if (!previewImage.value) return;
+
+  // Create download link
+  const link = document.createElement('a');
+  const fileName = `BYEBUY-Stats-${new Date().toISOString().split('T')[0]}.png`;
+  link.download = fileName;
+  link.href = previewImage.value;
+  link.click();
+
+  // Close modal after download
+  closePreview();
+};
 
 const goToSwipe = () => {
   router.push("/swipe");
@@ -291,6 +457,34 @@ const goToSettings = () => {
 }
 
 .page-subtitle {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+/* Export Section */
+.export-section {
+  position: relative;
+}
+
+.export-header {
+  display: none; /* Hidden by default, shown only during export */
+  text-align: center;
+  padding: 2rem 0 1.5rem 0;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.export-title {
+  font-family: var(--font-primary);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--color-text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.export-date {
   font-size: 0.875rem;
   color: var(--color-text-secondary);
   font-weight: 400;
@@ -657,6 +851,364 @@ const goToSettings = () => {
 
   .stat-value {
     font-size: 1.75rem;
+  }
+}
+
+/* Poster Template Styles */
+.poster-template {
+  position: fixed;
+  left: -9999px;
+  top: -9999px;
+  display: none;
+  width: 1080px;
+  height: 1920px;
+}
+
+.poster-container {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #FEFEFE 0%, #F8F8F6 100%);
+  padding: 80px 60px;
+  font-family: var(--font-secondary);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.poster-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 60px;
+  padding-bottom: 30px;
+  border-bottom: 3px solid var(--color-border-dark);
+}
+
+.poster-logo {
+  font-family: var(--font-primary);
+  font-size: 48px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--color-text-primary);
+}
+
+.poster-date {
+  font-size: 24px;
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+.poster-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 50px;
+}
+
+.poster-title {
+  font-family: var(--font-primary);
+  font-size: 72px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+  margin: 0;
+  line-height: 1.1;
+}
+
+.poster-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+}
+
+.poster-metric-card {
+  background: var(--color-bg);
+  border: 2px solid var(--color-border);
+  border-radius: 24px;
+  padding: 50px 40px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.poster-metric-card.highlight {
+  background: linear-gradient(135deg, var(--color-accent-green) 0%, #7A9877 100%);
+  border-color: var(--color-accent-green);
+}
+
+.poster-metric-value {
+  font-family: var(--font-primary);
+  font-size: 96px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+  margin-bottom: 15px;
+}
+
+.poster-metric-card.highlight .poster-metric-value {
+  color: var(--color-bg);
+}
+
+.poster-metric-label {
+  font-size: 28px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.poster-metric-card.highlight .poster-metric-label {
+  color: var(--color-bg);
+}
+
+.poster-graph-section {
+  background: var(--color-bg);
+  border: 2px solid var(--color-border);
+  border-radius: 24px;
+  padding: 40px;
+}
+
+.poster-section-title {
+  font-family: var(--font-primary);
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  margin-bottom: 30px;
+}
+
+.poster-graph-container {
+  position: relative;
+}
+
+.poster-graph-metric {
+  font-family: var(--font-primary);
+  font-size: 80px;
+  font-weight: 700;
+  color: var(--color-accent-green);
+  letter-spacing: -0.02em;
+  margin-bottom: 10px;
+}
+
+.poster-graph-label {
+  font-size: 24px;
+  color: var(--color-text-secondary);
+  margin-bottom: 30px;
+}
+
+.poster-graph-svg {
+  width: 100%;
+  height: 200px;
+}
+
+.poster-graph-line {
+  fill: none;
+  stroke: var(--color-accent-green);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.poster-insight-section {
+  background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg) 100%);
+  border: 2px solid var(--color-border);
+  border-radius: 24px;
+  padding: 40px;
+}
+
+.poster-insight-content {
+  display: flex;
+  gap: 30px;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.poster-mascot {
+  font-size: 96px;
+  flex-shrink: 0;
+}
+
+.poster-insight-text {
+  font-size: 28px;
+  line-height: 1.6;
+  color: var(--color-text-primary);
+  font-weight: 400;
+}
+
+.poster-footer {
+  margin-top: auto;
+  padding-top: 40px;
+  border-top: 2px solid var(--color-border);
+  text-align: center;
+}
+
+.poster-footer-text {
+  font-family: var(--font-primary);
+  font-size: 24px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: var(--color-bg);
+  border-radius: 16px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modal-title {
+  font-family: var(--font-primary);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+.modal-body {
+  padding: 2rem;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-bg-secondary);
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 60vh;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.modal-footer {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+  border-top: 1px solid var(--color-border);
+  justify-content: flex-end;
+}
+
+.modal-button {
+  font-family: var(--font-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  letter-spacing: 0.02em;
+}
+
+.modal-button.secondary {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+.modal-button.secondary:hover {
+  background-color: var(--color-bg-secondary);
+}
+
+.modal-button.primary {
+  background-color: var(--color-text-primary);
+  color: var(--color-bg);
+}
+
+.modal-button.primary:hover {
+  background-color: #000000;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.download-icon {
+  font-size: 1rem;
+}
+
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 1rem;
+  }
+
+  .modal-content {
+    max-width: 100%;
+  }
+
+  .preview-image {
+    max-height: 50vh;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+  }
+
+  .modal-button {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>
