@@ -1,22 +1,14 @@
 <template>
   <div class="stats-container">
-    <nav class="navbar">
-      <div class="nav-left">
-        <h1 class="nav-title">BYEBUY</h1>
-      </div>
-      <div class="nav-right">
-        <button @click="goToSwipe" class="nav-link">SWIPESENSE</button>
-        <button @click="goToWishlist" class="nav-link">PAUSE CART</button>
-        <button @click="goToStats" class="nav-link active">STATS</button>
-        <button @click="goToSettings" class="nav-link settings-icon">⚙</button>
-      </div>
-    </nav>
+    <Navbar />
 
     <div class="stats-content">
       <!-- Page Header -->
       <div class="page-header">
         <h1 class="page-title">{{ userName }}'s Shopping Insights</h1>
-        <p class="page-subtitle">Track your spending habits and savings progress</p>
+        <p class="page-subtitle">
+          Track your spending habits and savings progress
+        </p>
       </div>
 
       <!-- Exportable Stats Section -->
@@ -141,6 +133,65 @@
                 </p>
               </div>
             </div>
+            <div class="graph-container">
+              <svg
+                class="graph-svg"
+                viewBox="0 0 400 200"
+                preserveAspectRatio="none"
+              >
+                <!-- Grid lines -->
+                <line class="graph-grid" x1="0" y1="50" x2="400" y2="50" />
+                <line class="graph-grid" x1="0" y1="100" x2="400" y2="100" />
+                <line class="graph-grid" x1="0" y1="150" x2="400" y2="150" />
+
+                <!-- Area under curve -->
+                <path
+                  class="graph-area"
+                  d="M 0 180 L 0 160 Q 50 140, 100 130 T 200 110 T 300 90 L 400 70 L 400 200 L 0 200 Z"
+                />
+
+                <!-- Line graph -->
+                <path
+                  class="graph-line"
+                  d="M 0 160 Q 50 140, 100 130 T 200 110 T 300 90 L 400 70"
+                />
+
+                <!-- Labels -->
+                <text class="graph-label" x="0" y="195">Jan</text>
+                <text class="graph-label" x="100" y="195">Mar</text>
+                <text class="graph-label" x="200" y="195">May</text>
+                <text class="graph-label" x="300" y="195">Jul</text>
+                <text class="graph-label" x="385" y="195">Sep</text>
+              </svg>
+            </div>
+            <button class="export-button" @click="exportStats">
+              <span class="export-icon">☁</span>
+              EXPORT DATA
+            </button>
+          </div>
+
+          <!-- AI Insights -->
+          <div class="card insights-card">
+            <h2 class="card-title">Behavioral Insights</h2>
+            <div class="insights-wrapper">
+              <!-- Trend Alert Section -->
+              <div class="insight-section">
+                <div class="mascot">
+                  <img
+                    src="../assets/pig_sprite.png"
+                    alt="Pig mascot"
+                    class="pig-icon"
+                  />
+                </div>
+                <div class="insight-content">
+                  <span class="insight-tag">Trend Alert</span>
+                  <p class="insight-text">
+                    Oink oink! Our analysis shows that you tend to make most
+                    impulsive purchases on weekends, particularly Saturday
+                    afternoons.
+                  </p>
+                </div>
+              </div>
 
             <!-- Improvement Suggestions Section -->
             <div class="insight-section">
@@ -163,7 +214,6 @@
             </div>
           </div>
         </div>
-      </div>
       </div>
       <!-- End Exportable Section -->
 
@@ -194,6 +244,7 @@
               </div>
             </div>
           </div>
+        </div>
       </div>
     </div>
 
@@ -230,9 +281,21 @@
               <div class="poster-graph-label">{{ dateRangeLabel }}</div>
               <svg class="poster-graph-svg" viewBox="0 0 400 120" preserveAspectRatio="none">
                 <defs>
-                  <linearGradient id="posterGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" style="stop-color:#8BA888;stop-opacity:0.3" />
-                    <stop offset="100%" style="stop-color:#8BA888;stop-opacity:0.05" />
+                  <linearGradient
+                    id="posterGradient"
+                    x1="0%"
+                    y1="0%"
+                    x2="0%"
+                    y2="100%"
+                  >
+                    <stop
+                      offset="0%"
+                      style="stop-color: #8ba888; stop-opacity: 0.3"
+                    />
+                    <stop
+                      offset="100%"
+                      style="stop-color: #8ba888; stop-opacity: 0.05"
+                    />
                   </linearGradient>
                 </defs>
                 <path class="poster-graph-area" :d="posterGraphAreaPath" fill="url(#posterGradient)" />
@@ -245,7 +308,13 @@
           <div class="poster-insight-section">
             <div class="poster-section-title">Key Insight</div>
             <div class="poster-insight-content">
-              <div class="poster-mascot">🐷</div>
+              <div class="poster-mascot">
+                <img
+                  src="../assets/pig_sprite.png"
+                  alt="Pig mascot"
+                  class="pig-icon"
+                />
+              </div>
               <div class="poster-insight-text">
                 {{ aiTrendAlert }}
               </div>
@@ -255,7 +324,9 @@
 
         <!-- Poster Footer -->
         <div class="poster-footer">
-          <div class="poster-footer-text">Track your spending habits with BYEBUY</div>
+          <div class="poster-footer-text">
+            Track your spending habits with BYEBUY
+          </div>
         </div>
       </div>
     </div>
@@ -268,10 +339,17 @@
           <button class="modal-close" @click="closePreview">✕</button>
         </div>
         <div class="modal-body">
-          <img v-if="previewImage" :src="previewImage" alt="Stats Preview" class="preview-image" />
+          <img
+            v-if="previewImage"
+            :src="previewImage"
+            alt="Stats Preview"
+            class="preview-image"
+          />
         </div>
         <div class="modal-footer">
-          <button class="modal-button secondary" @click="closePreview">Cancel</button>
+          <button class="modal-button secondary" @click="closePreview">
+            Cancel
+          </button>
           <button class="modal-button primary" @click="downloadImage">
             <span class="download-icon">⬇</span>
             Download
@@ -339,10 +417,10 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const currentDate = computed(() => {
   const date = new Date();
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 });
 
@@ -793,14 +871,14 @@ const exportStats = async () => {
 
   try {
     // Temporarily show the poster template
-    posterTemplate.value.style.display = 'block';
+    posterTemplate.value.style.display = "block";
 
     // Small delay to ensure rendering
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Capture the poster as canvas
     const canvas = await html2canvas(posterTemplate.value, {
-      backgroundColor: '#FEFEFE',
+      backgroundColor: "#FEFEFE",
       scale: 3, // High quality for poster
       logging: false,
       useCORS: true,
@@ -809,18 +887,17 @@ const exportStats = async () => {
     });
 
     // Hide the poster template again
-    posterTemplate.value.style.display = 'none';
+    posterTemplate.value.style.display = "none";
 
     // Convert canvas to data URL for preview
-    const imageDataUrl = canvas.toDataURL('image/png');
+    const imageDataUrl = canvas.toDataURL("image/png");
     previewImage.value = imageDataUrl;
     showPreviewModal.value = true;
-
   } catch (error) {
-    console.error('Error generating stats poster:', error);
-    alert('Failed to generate stats poster. Please try again.');
+    console.error("Error generating stats poster:", error);
+    alert("Failed to generate stats poster. Please try again.");
     if (posterTemplate.value) {
-      posterTemplate.value.style.display = 'none';
+      posterTemplate.value.style.display = "none";
     }
   }
 };
@@ -834,8 +911,8 @@ const downloadImage = () => {
   if (!previewImage.value) return;
 
   // Create download link
-  const link = document.createElement('a');
-  const fileName = `BYEBUY-Stats-${new Date().toISOString().split('T')[0]}.png`;
+  const link = document.createElement("a");
+  const fileName = `BYEBUY-Stats-${new Date().toISOString().split("T")[0]}.png`;
   link.download = fileName;
   link.href = previewImage.value;
   link.click();
@@ -843,38 +920,26 @@ const downloadImage = () => {
   // Close modal after download
   closePreview();
 };
-
-const goToSwipe = () => {
-  router.push("/swipe");
-};
-
-const goToWishlist = () => {
-  router.push("/wishlist");
-};
-
-const goToSettings = () => {
-  router.push("/settings");
-};
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap");
 
 .stats-container {
   /* Color Variables */
-  --color-bg: #FEFEFE;
-  --color-bg-secondary: #F8F8F6;
-  --color-bg-tertiary: #F0F0EE;
-  --color-text-primary: #1A1A1A;
+  --color-bg: #fefefe;
+  --color-bg-secondary: #f8f8f6;
+  --color-bg-tertiary: #f0f0ee;
+  --color-text-primary: #1a1a1a;
   --color-text-secondary: #666666;
   --color-text-tertiary: #999999;
-  --color-border: #E0E0DE;
+  --color-border: #e0e0de;
   --color-border-dark: #333333;
-  --color-accent-green: #8BA888;
-  --color-accent-red: #D47B7B;
-  --color-accent-pink: #E8B4B4;
-  --font-primary: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-secondary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --color-accent-green: #8ba888;
+  --color-accent-red: #d47b7b;
+  --color-accent-pink: #e8b4b4;
+  --font-primary: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-secondary: "Nunito", -apple-system, BlinkMacSystemFont, sans-serif;
 
   /* Container Styles */
   min-height: 100vh;
@@ -884,70 +949,6 @@ const goToSettings = () => {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-/* Navigation */
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.25rem 2.5rem;
-  border-bottom: 1px solid var(--color-border);
-  background-color: var(--color-bg);
-}
-
-.nav-title {
-  font-family: var(--font-primary);
-  font-size: 1.75rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: var(--color-text-primary);
-}
-
-.nav-right {
-  display: flex;
-  align-items: center;
-  gap: 2.5rem;
-}
-
-.nav-link {
-  font-family: var(--font-primary);
-  font-size: 0.875rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  color: var(--color-text-secondary);
-  text-decoration: none;
-  transition: color 0.2s ease;
-  cursor: pointer;
-  background: none;
-  border: none;
-  padding: 0;
-}
-
-.nav-link:hover {
-  color: var(--color-text-primary);
-}
-
-.nav-link.active {
-  color: var(--color-text-primary);
-  position: relative;
-}
-
-.nav-link.active::after {
-  content: '';
-  position: absolute;
-  bottom: -0.5rem;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background-color: var(--color-text-primary);
-}
-
-.settings-icon {
-  font-size: 1.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 /* Main Content */
@@ -967,6 +968,7 @@ const goToSettings = () => {
   font-weight: 700;
   letter-spacing: -0.02em;
   margin-bottom: 0.25rem;
+  text-transform: uppercase;
 }
 
 .page-subtitle {
@@ -1064,7 +1066,11 @@ const goToSettings = () => {
 .purchase-image {
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, var(--color-bg-tertiary) 0%, var(--color-bg-secondary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-bg-tertiary) 0%,
+    var(--color-bg-secondary) 100%
+  );
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -1330,7 +1336,11 @@ const goToSettings = () => {
 
 /* Insights Section */
 .insights-card {
-  background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-bg-secondary) 0%,
+    var(--color-bg) 100%
+  );
 }
 
 .insights-wrapper {
@@ -1353,9 +1363,16 @@ const goToSettings = () => {
 }
 
 .mascot {
-  font-size: 2.5rem;
   flex-shrink: 0;
-  filter: grayscale(20%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pig-icon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
 }
 
 .insight-content {
@@ -1460,27 +1477,12 @@ const goToSettings = () => {
     grid-template-columns: 1fr;
   }
 
-  .navbar {
-    padding: 1.5rem 2rem;
-  }
-
   .stats-content {
     padding: 3rem 2rem;
   }
 }
 
 @media (max-width: 768px) {
-  .navbar {
-    flex-direction: column;
-    gap: 1.5rem;
-    align-items: flex-start;
-  }
-
-  .nav-right {
-    gap: 1.5rem;
-    flex-wrap: wrap;
-  }
-
   .page-title {
     font-size: 2rem;
   }
@@ -1513,7 +1515,7 @@ const goToSettings = () => {
 .poster-container {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #FEFEFE 0%, #F8F8F6 100%);
+  background: linear-gradient(135deg, #fefefe 0%, #f8f8f6 100%);
   padding: 80px 60px;
   font-family: var(--font-secondary);
   display: flex;
@@ -1577,7 +1579,11 @@ const goToSettings = () => {
 }
 
 .poster-metric-card.highlight {
-  background: linear-gradient(135deg, var(--color-accent-green) 0%, #7A9877 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-accent-green) 0%,
+    #7a9877 100%
+  );
   border-color: var(--color-accent-green);
 }
 
@@ -1656,7 +1662,11 @@ const goToSettings = () => {
 }
 
 .poster-insight-section {
-  background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-bg-secondary) 0%,
+    var(--color-bg) 100%
+  );
   border: 2px solid var(--color-border);
   border-radius: 24px;
   padding: 40px;
@@ -1670,8 +1680,16 @@ const goToSettings = () => {
 }
 
 .poster-mascot {
-  font-size: 96px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.poster-mascot .pig-icon {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
 }
 
 .poster-insight-text {

@@ -7,10 +7,10 @@ const colorBlindPalette = {
   green: "#d69e2e", // Orange-amber (replaces green)
 };
 
-// Default palette
+// Default palette - matches style.css
 const defaultPalette = {
-  red: "#963232",
-  green: "#87875a",
+  red: "#D47B7B",
+  green: "#8BA888",
 };
 
 // Load from localStorage or default to false

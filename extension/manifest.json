@@ -3,12 +3,17 @@
   "name": "ByeBuy Wishlist",
   "version": "1.0",
   "description": "Add Amazon products to your ByeBuy wishlist with a single click",
-  "permissions": ["activeTab", "scripting"],
+  "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": [
     "*://*.amazon.com/*",
     "*://*.amazon.ca/*",
-    "*://*.amazon.co.uk/*"
+    "*://*.amazon.co.uk/*",
+    "http://localhost:8000/*",
+    "https://*/*"
   ],
+  "background": {
+    "service_worker": "dist/background.js"
+  },
   "content_scripts": [
     {
       "matches": [
