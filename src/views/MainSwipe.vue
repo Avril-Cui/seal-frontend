@@ -51,12 +51,14 @@
             :src="currentItem.photo"
             :alt="currentItem.itemName"
             class="item-photo"
+            draggable="false"
           />
           <img
             v-else
             src="../assets/pig_sprite.png"
             alt="Item placeholder"
             class="item-photo placeholder"
+            draggable="false"
           />
         </div>
         <div class="card-content">
@@ -669,6 +671,13 @@ onMounted(() => {
   height: 100%;
   object-fit: cover;
   min-height: 100%;
+  /* Prevent image from being dragged */
+  user-select: none;
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  pointer-events: none;
 }
 
 .item-photo.placeholder {
