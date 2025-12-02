@@ -1,11 +1,9 @@
 import { ref } from "vue";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
 // Simple auth state management
-const isAuthenticated = ref(
-  localStorage.getItem("isAuthenticated") === "true"
-);
+const isAuthenticated = ref(localStorage.getItem("isAuthenticated") === "true");
 
 const currentUser = ref(
   localStorage.getItem("currentUser")
@@ -50,7 +48,7 @@ const login = async (email, password) => {
 
     // Store user data with uid (backend uses _id)
     const userData = {
-      uid: data.user._id,  // Backend stores ID as _id
+      uid: data.user._id, // Backend stores ID as _id
       email: email,
     };
 
@@ -90,7 +88,7 @@ const logout = async () => {
   }
 };
 
-const register = async (email, password) => {
+const register = async (email, password, name = "") => {
   try {
     console.log("API_BASE_URL:", API_BASE_URL);
     console.log("Attempting signup to:", `${API_BASE_URL}/UserAuth/signup`);
@@ -124,12 +122,26 @@ const register = async (email, password) => {
 
     // Store user data temporarily (will be authenticated after interests selection)
     const userData = {
-      uid: data.user._id,  // Backend stores ID as _id
+      uid: data.user._id, // Backend stores ID as _id
       email: email,
+      name: name, // Store the name
     };
 
     currentUser.value = userData;
     localStorage.setItem("currentUser", JSON.stringify(userData));
+
+    // Save name to backend profile
+    if (name && data.session) {
+      try {
+        await fetch(`${API_BASE_URL}/UserProfile/updateProfileName`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session: data.session, name: name }),
+        });
+      } catch (e) {
+        console.error("Error saving name to profile:", e);
+      }
+    }
 
     return { success: true, user: userData, session: data.session };
   } catch (error) {

@@ -58,7 +58,7 @@ const handleRegister = async () => {
   isLoading.value = true;
 
   try {
-    const result = await register(email.value, password.value);
+    const result = await register(email.value, password.value, name.value);
 
     if (result.success) {
       router.push("/register/interests");

@@ -9,7 +9,11 @@
           <div class="profile-section">
             <div class="profile-picture-container">
               <div class="profile-picture">
-                <img src="../assets/pig_pfp.png" alt="Profile picture" class="avatar-image" />
+                <img
+                  src="../assets/pig_pfp.png"
+                  alt="Profile picture"
+                  class="avatar-image"
+                />
               </div>
             </div>
 
@@ -93,7 +97,10 @@
               >
                 {{ interest }}
               </span>
-              <button @click="goToEditInterests" class="interest-tag edit-button">
+              <button
+                @click="goToEditInterests"
+                class="interest-tag edit-button"
+              >
                 ✎ EDIT
               </button>
             </div>
@@ -105,7 +112,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useColors } from "../composables/useColors";
 import { useAuth } from "../composables/useAuth";
@@ -127,9 +134,62 @@ const isColorBlindMode = computed({
   },
 });
 
-// User data
-const userName = ref(currentUser.value?.name || "Name Name");
-const userEmail = ref(currentUser.value?.email || "email@example.com");
+// User data - use stored name from registration/login
+const userName = ref(currentUser.value?.name || "");
+const userEmail = ref(currentUser.value?.email || "");
+
+// Fetch user profile from backend on mount
+const fetchUserProfile = async () => {
+  const session = getSession();
+  if (!session) return;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/UserProfile/_getProfile`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session }),
+    });
+
+    const data = await response.json();
+
+    // Handle both array format [{ profile }] and object format { profile }
+    let profile = null;
+    if (Array.isArray(data) && data.length > 0) {
+      profile = data[0].profile || data[0];
+    } else if (data.profile) {
+      profile = data.profile;
+    } else if (data.name !== undefined) {
+      profile = data;
+    }
+
+    if (profile) {
+      // Update name if we got one from backend
+      if (profile.name) {
+        userName.value = profile.name;
+      }
+      if (profile.email) {
+        userEmail.value = profile.email;
+      }
+
+      // Update interests
+      if (profile.fieldOfInterests || profile.interests) {
+        updateInterests(profile.fieldOfInterests || profile.interests);
+      }
+
+      // Update localStorage with fetched data
+      if (currentUser.value) {
+        if (profile.name) currentUser.value.name = profile.name;
+        localStorage.setItem("currentUser", JSON.stringify(currentUser.value));
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+  }
+};
+
+onMounted(() => {
+  fetchUserProfile();
+});
 const isEditingName = ref(false);
 const isEditingEmail = ref(false);
 
@@ -168,34 +228,46 @@ const handleLogout = async () => {
   router.push("/login");
 };
 
-const fieldsOfInterest = ref(
-  currentUser.value?.interests
-    ? currentUser.value.interests.map((id) => {
-        const interestMap = {
-          1: "TECH",
-          2: "MUSIC",
-          3: "FASHION",
-          4: "ART",
-          5: "FOOD",
-          6: "FITNESS",
-        };
-        return interestMap[id] || "";
-      })
-    : ["FASHION", "ART", "TECH"]
-);
+const fieldsOfInterest = ref([]);
+
+// Update interests from profile data
+const updateInterests = (interests) => {
+  if (!interests || interests.length === 0) {
+    fieldsOfInterest.value = [];
+    return;
+  }
+
+  // If interests are already strings (like "TECH"), use them directly
+  if (typeof interests[0] === "string") {
+    fieldsOfInterest.value = interests.map((i) => i.toUpperCase());
+    return;
+  }
+
+  // If interests are IDs, map them
+  const interestMap = {
+    1: "TECH",
+    2: "MUSIC",
+    3: "FASHION",
+    4: "ART",
+    5: "FOOD",
+    6: "FITNESS",
+  };
+  fieldsOfInterest.value = interests
+    .map((id) => interestMap[id] || "")
+    .filter(Boolean);
+};
 
 const goToEditInterests = () => {
   router.push("/register/interests?from=settings");
 };
-
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap");
 
 .settings-container {
-  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-secondary: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-primary: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-secondary: "Nunito", -apple-system, BlinkMacSystemFont, sans-serif;
 
   min-height: 100vh;
   background-color: var(--color-bg);
