@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BYEBUY - Stats</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Color palette - monochromatic with accents */
+            --color-bg: #FEFEFE;
+            --color-bg-secondary: #F8F8F6;
+            --color-bg-tertiary: #F0F0EE;
+            --color-text-primary: #1A1A1A;
+            --color-text-secondary: #666666;
+            --color-text-tertiary: #999999;
+            --color-border: #E0E0DE;
+            --color-border-dark: #333333;
+
+            /* Accent colors */
+            --color-accent-green: #8BA888;
+            --color-accent-red: #D47B7B;
+            --color-accent-pink: #E8B4B4;
+
+            /* Typography */
+            --font-primary: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-secondary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-secondary);
+            background-color: var(--color-bg);
+            color: var(--color-text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Navigation */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.25rem 2.5rem;
+            border-bottom: 1px solid var(--color-border);
+            background-color: var(--color-bg);
+        }
+
+        .nav-title {
+            font-family: var(--font-primary);
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            color: var(--color-text-primary);
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 2.5rem;
+        }
+
+        .nav-link {
+            font-family: var(--font-primary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            transition: color 0.2s ease;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+
+        .nav-link:hover {
+            color: var(--color-text-primary);
+        }
+
+        .nav-link.active {
+            color: var(--color-text-primary);
+            position: relative;
+        }
+
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -0.5rem;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: var(--color-text-primary);
+        }
+
+        .settings-icon {
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Main Content */
+        .stats-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem 2.5rem;
+        }
+
+        .page-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .page-title {
+            font-family: var(--font-primary);
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.25rem;
+        }
+
+        .page-subtitle {
+            font-size: 0.875rem;
+            color: var(--color-text-secondary);
+            font-weight: 400;
+        }
+
+        /* Grid Layout */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .purchases-section {
+            grid-column: 1 / -1;
+        }
+
+        /* Card Styles */
+        .card {
+            background-color: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            transition: box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: var(--color-border-dark);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+        }
+
+        .card-title {
+            font-family: var(--font-primary);
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            color: var(--color-text-secondary);
+        }
+
+        /* Purchases Section */
+        .purchases-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .purchase-item {
+            display: flex;
+            gap: 0.875rem;
+            padding: 0.875rem;
+            background-color: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .purchase-item:hover {
+            background-color: var(--color-bg-tertiary);
+            transform: translateY(-1px);
+        }
+
+        .purchase-image {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--color-bg-tertiary) 0%, var(--color-bg-secondary) 100%);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            border: 1px solid var(--color-border);
+        }
+
+        .image-placeholder {
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            color: var(--color-text-tertiary);
+        }
+
+        .purchase-details {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 0.125rem;
+        }
+
+        .purchase-name {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--color-text-primary);
+        }
+
+        .purchase-date {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+        }
+
+        /* Graph Section */
+        .graph-card {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .graph-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .graph-metric {
+            font-family: var(--font-primary);
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--color-accent-green);
+            letter-spacing: -0.02em;
+        }
+
+        .graph-metric-label {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            margin-top: 0.125rem;
+        }
+
+        .graph-container {
+            flex: 1;
+            position: relative;
+            min-height: 180px;
+            background-color: var(--color-bg-secondary);
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .graph-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .graph-line {
+            fill: none;
+            stroke: var(--color-accent-green);
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .graph-area {
+            fill: var(--color-accent-green);
+            opacity: 0.1;
+        }
+
+        .graph-grid {
+            stroke: var(--color-border);
+            stroke-width: 1;
+            opacity: 0.5;
+        }
+
+        .graph-label {
+            font-size: 0.75rem;
+            fill: var(--color-text-tertiary);
+            font-family: var(--font-secondary);
+        }
+
+        .export-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background-color: var(--color-text-primary);
+            color: var(--color-bg);
+            border: none;
+            border-radius: 8px;
+            font-family: var(--font-primary);
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .export-button:hover {
+            background-color: #000000;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .export-icon {
+            font-size: 1rem;
+        }
+
+        /* Insights Section */
+        .insights-card {
+            background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg) 100%);
+        }
+
+        .insights-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .insight-section {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            padding-bottom: 1.25rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .insight-section:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .mascot {
+            font-size: 2.5rem;
+            flex-shrink: 0;
+            filter: grayscale(20%);
+        }
+
+        .insight-content {
+            flex: 1;
+        }
+
+        .insight-tag {
+            display: inline-block;
+            padding: 0.25rem 0.625rem;
+            background-color: var(--color-accent-pink);
+            color: var(--color-text-primary);
+            border-radius: 12px;
+            font-size: 0.625rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            margin-bottom: 0.625rem;
+            text-transform: uppercase;
+        }
+
+        .insight-tag.green {
+            background-color: var(--color-accent-green);
+        }
+
+        .insight-text {
+            font-size: 0.875rem;
+            line-height: 1.6;
+            color: var(--color-text-primary);
+        }
+
+        .suggestions-list {
+            list-style: none;
+            padding: 0;
+            margin: 0.5rem 0 0 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .suggestion-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            color: var(--color-text-primary);
+        }
+
+        .suggestion-bullet {
+            color: var(--color-accent-green);
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        /* Stats Summary */
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-box {
+            padding: 1rem;
+            background-color: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .stat-box:hover {
+            border-color: var(--color-border-dark);
+            transform: translateY(-2px);
+        }
+
+        .stat-value {
+            font-family: var(--font-primary);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-text-primary);
+            margin-bottom: 0.25rem;
+            letter-spacing: -0.02em;
+        }
+
+        .stat-value.positive {
+            color: var(--color-accent-green);
+        }
+
+        .stat-value.negative {
+            color: var(--color-accent-red);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            font-weight: 500;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .navbar {
+                padding: 1.5rem 2rem;
+            }
+
+            .stats-container {
+                padding: 3rem 2rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 1.5rem;
+                align-items: flex-start;
+            }
+
+            .nav-right {
+                gap: 1.5rem;
+                flex-wrap: wrap;
+            }
+
+            .page-title {
+                font-size: 2rem;
+            }
+
+            .stats-summary {
+                grid-template-columns: 1fr;
+            }
+
+            .insight-section {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            .stat-value {
+                font-size: 1.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-left">
+            <h1 class="nav-title">BYEBUY</h1>
+        </div>
+        <div class="nav-right">
+            <button class="nav-link" onclick="navigateTo('swipe')">SWIPESENSE</button>
+            <button class="nav-link" onclick="navigateTo('wishlist')">PAUSE CART</button>
+            <button class="nav-link active" onclick="navigateTo('stats')">STATS</button>
+            <button class="nav-link settings-icon" onclick="navigateTo('settings')">⚙</button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="stats-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">Your Shopping Insights</h1>
+            <p class="page-subtitle">Track your spending habits and savings progress</p>
+        </div>
+
+        <!-- Stats Summary -->
+        <div class="stats-summary">
+            <div class="stat-box">
+                <div class="stat-value positive">$847</div>
+                <div class="stat-label">Total Saved</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">32</div>
+                <div class="stat-label">Items Reviewed</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value positive">68%</div>
+                <div class="stat-label">Rejection Rate</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">$2.4k</div>
+                <div class="stat-label">Impulse Avoided</div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="stats-grid">
+            <!-- Savings Graph -->
+            <div class="card graph-card">
+                <div class="graph-header">
+                    <div>
+                        <h2 class="card-title">Savings Progress</h2>
+                        <div class="graph-metric">24%</div>
+                        <div class="graph-metric-label">average saved</div>
+                    </div>
+                </div>
+                <div class="graph-container">
+                    <svg class="graph-svg" viewBox="0 0 400 200" preserveAspectRatio="none">
+                        <!-- Grid lines -->
+                        <line class="graph-grid" x1="0" y1="50" x2="400" y2="50" />
+                        <line class="graph-grid" x1="0" y1="100" x2="400" y2="100" />
+                        <line class="graph-grid" x1="0" y1="150" x2="400" y2="150" />
+
+                        <!-- Area under curve -->
+                        <path class="graph-area" d="M 0 180 L 0 160 Q 50 140, 100 130 T 200 110 T 300 90 L 400 70 L 400 200 L 0 200 Z" />
+
+                        <!-- Line graph -->
+                        <path class="graph-line" d="M 0 160 Q 50 140, 100 130 T 200 110 T 300 90 L 400 70" />
+
+                        <!-- Labels -->
+                        <text class="graph-label" x="0" y="195">Jan</text>
+                        <text class="graph-label" x="100" y="195">Mar</text>
+                        <text class="graph-label" x="200" y="195">May</text>
+                        <text class="graph-label" x="300" y="195">Jul</text>
+                        <text class="graph-label" x="385" y="195">Sep</text>
+                    </svg>
+                </div>
+                <button class="export-button">
+                    <span class="export-icon">☁</span>
+                    EXPORT DATA
+                </button>
+            </div>
+
+            <!-- AI Insights -->
+            <div class="card insights-card">
+                <h2 class="card-title">Behavioral Insights</h2>
+                <div class="insights-wrapper">
+                    <!-- Trend Alert Section -->
+                    <div class="insight-section">
+                        <div class="mascot">🐷</div>
+                        <div class="insight-content">
+                            <span class="insight-tag">Trend Alert</span>
+                            <p class="insight-text">
+                                Oink oink! Our analysis shows that you tend to make most impulsive purchases on weekends,
+                                particularly Saturday afternoons.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Improvement Suggestions Section -->
+                    <div class="insight-section">
+                        <div class="mascot">🐷</div>
+                        <div class="insight-content">
+                            <span class="insight-tag green">Improvement Suggestions</span>
+                            <ul class="suggestions-list">
+                                <li class="suggestion-item">
+                                    <span class="suggestion-bullet">→</span>
+                                    <span>Set a 24-hour waiting period before making weekend purchases</span>
+                                </li>
+                                <li class="suggestion-item">
+                                    <span class="suggestion-bullet">→</span>
+                                    <span>Create a wishlist and review items after 7 days before buying</span>
+                                </li>
+                                <li class="suggestion-item">
+                                    <span class="suggestion-bullet">→</span>
+                                    <span>Set a monthly spending limit and track progress weekly</span>
+                                </li>
+                                <li class="suggestion-item">
+                                    <span class="suggestion-bullet">→</span>
+                                    <span>Avoid shopping apps during high-risk hours (Sat 2-6pm)</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Purchases -->
+            <div class="card purchases-section">
+                <h2 class="card-title">Recent Purchases</h2>
+                <div class="purchases-list">
+                    <div class="purchase-item">
+                        <div class="purchase-image">
+                            <div class="image-placeholder">IMG</div>
+                        </div>
+                        <div class="purchase-details">
+                            <p class="purchase-name">Wireless Headphones</p>
+                            <p class="purchase-date">2 weeks ago</p>
+                        </div>
+                    </div>
+                    <div class="purchase-item">
+                        <div class="purchase-image">
+                            <div class="image-placeholder">IMG</div>
+                        </div>
+                        <div class="purchase-details">
+                            <p class="purchase-name">Running Shoes</p>
+                            <p class="purchase-date">1 month ago</p>
+                        </div>
+                    </div>
+                    <div class="purchase-item">
+                        <div class="purchase-image">
+                            <div class="image-placeholder">IMG</div>
+                        </div>
+                        <div class="purchase-details">
+                            <p class="purchase-name">Coffee Maker</p>
+                            <p class="purchase-date">2 months ago</p>
+                        </div>
+                    </div>
+                    <div class="purchase-item">
+                        <div class="purchase-image">
+                            <div class="image-placeholder">IMG</div>
+                        </div>
+                        <div class="purchase-details">
+                            <p class="purchase-name">Yoga Mat</p>
+                            <p class="purchase-date">3 months ago</p>
+                        </div>
+                    </div>
+                    <div class="purchase-item">
+                        <div class="purchase-image">
+                            <div class="image-placeholder">IMG</div>
+                        </div>
+                        <div class="purchase-details">
+                            <p class="purchase-name">Desk Lamp</p>
+                            <p class="purchase-date">3 months ago</p>
+                        </div>
+                    </div>
+                    <div class="purchase-item">
+                        <div class="purchase-image">
+                            <div class="image-placeholder">IMG</div>
+                        </div>
+                        <div class="purchase-details">
+                            <p class="purchase-name">Phone Case</p>
+                            <p class="purchase-date">4 months ago</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function navigateTo(page) {
+            console.log('Navigating to:', page);
+            // In a real app, this would use router
+        }
+
+        // Add subtle animations on load
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.card, .stat-box');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>
