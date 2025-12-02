@@ -45,19 +45,21 @@
         @mouseup="handleMouseEnd"
         @mouseleave="handleMouseEnd"
       >
-        <div class="card-image">
+        <div class="card-image" v-if="currentItem.photo">
           <img
-            v-if="currentItem.photo"
             :src="currentItem.photo"
             :alt="currentItem.itemName"
             class="item-photo"
           />
-          <div v-else class="image-placeholder">PIC</div>
         </div>
         <div class="card-content">
           <div class="user-info">
-            <img src="../assets/pig_pfp.png" alt="User profile" class="user-pfp" />
-            <span class="user-name">{{ currentItem.ownerName || 'User' }}</span>
+            <img
+              src="../assets/pig_pfp.png"
+              alt="User profile"
+              class="user-pfp"
+            />
+            <span class="user-name">{{ currentItem.ownerName || "User" }}</span>
           </div>
           <h2 class="item-name">{{ currentItem.itemName }}</h2>
           <p class="item-desc">{{ currentItem.description }}</p>
@@ -113,7 +115,7 @@ const router = useRouter();
 const { palette } = useColors();
 const { currentUser } = useAuth();
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
 const totalSwipes = ref(10);
 const completedSwipes = ref(0);
@@ -154,13 +156,16 @@ const loadQueue = async () => {
 
   try {
     // First, try to get today's queue
-    const queueResponse = await fetch(`${API_BASE_URL}/QueueSystem/_getTodayQueue`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ owner: currentUser.value.uid }),
-    });
+    const queueResponse = await fetch(
+      `${API_BASE_URL}/QueueSystem/_getTodayQueue`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ owner: currentUser.value.uid }),
+      }
+    );
 
     const queueData = await queueResponse.json();
 
@@ -185,7 +190,11 @@ const loadQueue = async () => {
 
       const randomItemsData = await randomItemsResponse.json();
 
-      if (randomItemsData.error || !Array.isArray(randomItemsData) || randomItemsData.length === 0) {
+      if (
+        randomItemsData.error ||
+        !Array.isArray(randomItemsData) ||
+        randomItemsData.length === 0
+      ) {
         console.error("Failed to get random items:", randomItemsData.error);
         return;
       }
@@ -235,7 +244,10 @@ const loadQueue = async () => {
 
     // Extract items from responses
     const items = itemDetailsResponses
-      .filter((response) => !response.error && Array.isArray(response) && response.length > 0)
+      .filter(
+        (response) =>
+          !response.error && Array.isArray(response) && response.length > 0
+      )
       .map((response) => response[0].item);
 
     queueItems.value = items;
@@ -451,25 +463,24 @@ const handleMouseEnd = () => {
   isDragging.value = false;
 };
 
-
 onMounted(() => {
   loadQueue();
 });
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap");
 
 .swipe-container {
-  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-secondary: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-primary: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-secondary: "Nunito", -apple-system, BlinkMacSystemFont, sans-serif;
 
   min-height: 100vh;
   background-color: var(--color-bg);
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow-x: hidden;
+  overflow-x: visible;
   overflow-y: auto;
   color: var(--color-text-primary);
   font-family: var(--font-secondary);
@@ -486,7 +497,7 @@ onMounted(() => {
   height: 0;
   border-radius: 50%;
   pointer-events: none;
-  z-index: 1;
+  z-index: 20;
   transform: translate(-50%, -50%);
   opacity: 0;
   transition: width 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
@@ -554,26 +565,33 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem 2.5rem;
+  padding: 2.5rem;
   position: relative;
-  z-index: 5;
+  z-index: 50;
   overflow: visible;
   min-height: 0;
+  box-sizing: border-box;
 }
 
 .swipe-card {
-  max-width: 400px;
+  max-width: 1000px;
   width: 100%;
   border: 1px solid var(--color-border);
   border-radius: 12px;
   background-color: var(--color-bg);
   display: flex;
-  flex-direction: column;
-  transition: transform 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  flex-direction: row;
+  transition: transform 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease,
+    border-color 0.3s ease;
   cursor: grab;
   user-select: none;
   touch-action: none;
   box-shadow: 0 2px 8px rgba(26, 26, 26, 0.04);
+  max-height: 80vh;
+  position: relative;
+  z-index: 100;
+  box-sizing: border-box;
+  margin: 1px;
 }
 
 .swipe-card:hover {
@@ -620,15 +638,18 @@ onMounted(() => {
 }
 
 .card-image {
-  width: 100%;
-  aspect-ratio: 1;
-  border-bottom: 1px solid var(--color-border);
-  border-radius: 12px 12px 0 0;
+  width: 45%;
+  min-width: 300px;
+  border-right: 1px solid var(--color-border);
+  border-radius: 12px 0 0 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   background-color: var(--color-bg-secondary);
   overflow: hidden;
+  flex-shrink: 0;
+  height: 100%;
+  align-self: stretch;
 }
 
 .image-placeholder {
@@ -643,12 +664,16 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  min-height: 100%;
 }
 
 .card-content {
   padding: 1.25rem;
-  max-height: 400px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
+  max-height: 80vh;
 }
 
 .user-info {
@@ -656,8 +681,6 @@ onMounted(() => {
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--color-border);
 }
 
 .user-pfp {
@@ -703,8 +726,6 @@ onMounted(() => {
 
 .reflection-section {
   margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--color-border);
 }
 
 .reflection-title {
@@ -763,7 +784,7 @@ onMounted(() => {
   justify-content: center;
   position: relative;
   z-index: 10;
-  max-width: 400px;
+  max-width: 1000px;
   margin: 0 auto;
   width: 100%;
 }
@@ -786,7 +807,7 @@ onMounted(() => {
 }
 
 .skip-button:hover:not(:disabled) {
-  background-color: var(--color-text-primary);
+  background-color: var(--color-accent-red);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(26, 26, 26, 0.15);
 }
