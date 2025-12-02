@@ -251,12 +251,21 @@ const loadQueue = async () => {
     const itemDetailsResponses = await Promise.all(itemDetailsPromises);
 
     // Extract items from responses
+    // Handle both array format [{ item }] and object format { item }
     const items = itemDetailsResponses
-      .filter(
-        (response) =>
-          !response.error && Array.isArray(response) && response.length > 0
-      )
-      .map((response) => response[0].item);
+      .filter((response) => !response.error)
+      .map((response) => {
+        // If response is array (from concept directly), get first element
+        if (Array.isArray(response) && response.length > 0) {
+          return response[0].item;
+        }
+        // If response is object with item property (from sync)
+        if (response.item) {
+          return response.item;
+        }
+        return null;
+      })
+      .filter((item) => item !== null);
 
     queueItems.value = items;
   } catch (error) {
@@ -323,34 +332,20 @@ const performSwipe = async (direction) => {
   const decision = direction === "right" ? "Buy" : "Don't Buy";
   const session = getSession();
 
-  // Record the swipe
-  try {
-    await fetch(`${API_BASE_URL}/SwipeSystem/recordSwipe`, {
+  // Fire-and-forget: Don't wait for API calls - animate immediately for smooth UX
+  // Both calls happen in parallel in the background
+  Promise.all([
+    fetch(`${API_BASE_URL}/SwipeSystem/recordSwipe`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        session,
-        itemId: item._id,
-        decision: decision,
-      }),
-    });
-
-    // Increment completed queue
-    await fetch(`${API_BASE_URL}/QueueSystem/incrementCompletedQueue`, {
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session, itemId: item._id, decision }),
+    }),
+    fetch(`${API_BASE_URL}/QueueSystem/incrementCompletedQueue`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        session,
-        itemId: item._id,
-      }),
-    });
-  } catch (error) {
-    console.error("Error recording swipe:", error);
-  }
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session, itemId: item._id }),
+    }),
+  ]).catch((error) => console.error("Error recording swipe:", error));
 
   // Cap animation speed - minimum 600ms to allow color expansion to animate smoothly
   setTimeout(() => {
