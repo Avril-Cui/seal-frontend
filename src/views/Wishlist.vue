@@ -445,7 +445,7 @@ import { useAuth } from "../composables/useAuth";
 import Navbar from "../components/Navbar.vue";
 
 const router = useRouter();
-const { currentUser } = useAuth();
+const { currentUser, getSession } = useAuth();
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
@@ -584,7 +584,8 @@ const isCheckingQueue = ref(false);
 
 // Check if user has completed their daily queue
 const checkQueueCompletion = async () => {
-  if (!currentUser.value?.uid) {
+  const session = getSession();
+  if (!session) {
     return;
   }
 
@@ -596,7 +597,7 @@ const checkQueueCompletion = async () => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ owner: currentUser.value.uid }),
+      body: JSON.stringify({ session }),
     });
 
     const data = await response.json();
@@ -620,15 +621,16 @@ const checkQueueCompletion = async () => {
 const fetchWishlist = async () => {
   console.log("fetchWishlist called, currentUser:", currentUser.value);
 
-  if (!currentUser.value?.uid) {
-    console.log("No uid, not fetching wishlist");
+  const session = getSession();
+  if (!session) {
+    console.log("No session, not fetching wishlist");
     return;
   }
 
   isLoading.value = true;
   error.value = "";
 
-  console.log("Fetching wishlist for owner:", currentUser.value.uid);
+  console.log("Fetching wishlist with session");
 
   try {
     const response = await fetch(
@@ -638,67 +640,92 @@ const fetchWishlist = async () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ owner: currentUser.value.uid }),
+        body: JSON.stringify({ session }),
       }
     );
 
     const data = await response.json();
     console.log("Wishlist response:", data);
+    console.log("data.items:", data.items);
+    console.log("typeof data.items:", typeof data.items);
+    console.log("Array.isArray(data.items):", Array.isArray(data.items));
 
     if (data.error) {
       console.log("Error in response:", data.error);
-      // If no wishlist exists yet, just show empty list
       wishlistItems.value = [];
-    } else if (Array.isArray(data)) {
-      console.log("Got array of items:", data.length);
-      const items = data.map((obj) => obj.item);
-
-      // Fetch community stats for each item if queue is completed
-      if (hasCompletedQueue.value) {
-        const itemsWithStats = await Promise.all(
-          items.map(async (item) => {
-            try {
-              const statsResponse = await fetch(
-                `${API_BASE_URL}/SwipeSystem/_getCommunitySwipeStats`,
-                {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    itemId: item._id,
-                    excludeUserId: currentUser.value.uid,
-                  }),
-                }
-              );
-
-              const statsData = await statsResponse.json();
-
-              if (!statsData.error) {
-                return {
-                  ...item,
-                  communityStats: {
-                    total: statsData.total,
-                    approval: statsData.approval,
-                  },
-                };
-              }
-              return item;
-            } catch (err) {
-              console.error("Error fetching stats for item:", item._id, err);
-              return item;
-            }
-          })
-        );
-
-        wishlistItems.value = itemsWithStats;
-      } else {
-        wishlistItems.value = items;
-      }
-    } else {
-      console.log("Unexpected response format");
-      wishlistItems.value = [];
+      return;
     }
+
+    // Extract items from various possible response formats
+    let items = [];
+    
+    if (data.items && Array.isArray(data.items)) {
+      // Format: { items: [{item: {...}}, ...] } or { items: [{...}, ...] }
+      console.log("Found data.items array with length:", data.items.length);
+      console.log("First raw item from data.items:", data.items[0]);
+      items = data.items.map(obj => {
+        const extracted = obj.item ? obj.item : obj;
+        console.log("Extracted item from obj:", extracted);
+        console.log("Extracted item._id:", extracted._id);
+        return extracted;
+      });
+    } else if (Array.isArray(data)) {
+      // Format: [{item: {...}}, ...] or [{...}, ...]
+      console.log("Found direct array with length:", data.length);
+      items = data.map(obj => obj.item ? obj.item : obj);
+    } else {
+      console.log("Unexpected format, keys:", Object.keys(data));
+      wishlistItems.value = [];
+      return;
+    }
+
+    console.log("Extracted items:", items);
+    console.log("First extracted item _id:", items[0]?._id);
+
+    // Fetch community stats for each item if queue is completed
+    if (hasCompletedQueue.value && items.length > 0) {
+      const itemsWithStats = await Promise.all(
+        items.map(async (item) => {
+          try {
+            const statsResponse = await fetch(
+              `${API_BASE_URL}/SwipeSystem/_getCommunitySwipeStats`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  itemId: item._id,
+                  excludeUserId: currentUser.value.uid,
+                }),
+              }
+            );
+
+            const statsData = await statsResponse.json();
+
+            if (!statsData.error) {
+              return {
+                ...item,
+                communityStats: {
+                  total: statsData.total,
+                  approval: statsData.approval,
+                },
+              };
+            }
+            return item;
+          } catch (err) {
+            console.error("Error fetching stats for item:", item._id, err);
+            return item;
+          }
+        })
+      );
+
+      wishlistItems.value = itemsWithStats;
+    } else {
+      wishlistItems.value = items;
+    }
+    
+    console.log("Final wishlistItems:", wishlistItems.value);
   } catch (err) {
     error.value = "Failed to load your items. Please try again.";
     console.error("Error fetching wishlist:", err);
@@ -789,10 +816,10 @@ const openEditModal = (item) => {
 
 const addItem = async () => {
   console.log("addItem called!");
-  console.log("currentUser:", currentUser.value);
 
-  if (!currentUser.value?.uid) {
-    console.error("No user logged in! currentUser:", currentUser.value);
+  const session = getSession();
+  if (!session) {
+    console.error("No session! User not logged in.");
     addItemError.value = "You must be logged in to add items.";
     return;
   }
@@ -818,7 +845,7 @@ const addItem = async () => {
   addItemError.value = "";
 
   const payload = {
-    owner: currentUser.value.uid,
+    session,
     itemName: newItemName.value,
     description: newItemDesc.value,
     photo: newItemPhoto.value,
@@ -830,7 +857,6 @@ const addItem = async () => {
   };
 
   console.log("Payload:", payload);
-  console.log("Owner UID:", currentUser.value.uid);
 
   try {
     // Call the new addItem endpoint with all item details
@@ -882,7 +908,8 @@ const addItem = async () => {
 const updateItem = async () => {
   console.log("updateItem called!");
 
-  if (!currentUser.value?.uid) {
+  const session = getSession();
+  if (!session) {
     addItemError.value = "You must be logged in to update items.";
     return;
   }
@@ -906,14 +933,13 @@ const updateItem = async () => {
     !futureApproveAnswer.value?.trim()
   ) {
     return; // Individual field warnings are shown
-    return;
   }
 
   isAddingItem.value = true;
   addItemError.value = "";
 
   const payload = {
-    owner: currentUser.value.uid,
+    session,
     itemId: editingItemId.value,
     itemName: newItemName.value,
     description: newItemDesc.value,
@@ -971,7 +997,8 @@ const updateItem = async () => {
 
 // Remove an item
 const removeItem = async (itemId) => {
-  if (!currentUser.value?.uid) {
+  const session = getSession();
+  if (!session) {
     error.value = "You must be logged in to remove items.";
     return;
   }
@@ -988,7 +1015,7 @@ const removeItem = async (itemId) => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ owner: currentUser.value.uid, itemId }),
+      body: JSON.stringify({ session, itemId }),
     });
 
     const data = await response.json();
@@ -1021,8 +1048,23 @@ const closeModal = () => {
 
 // Get AI insight for an item
 const getAIInsight = async (item) => {
-  if (!currentUser.value?.uid) {
-    console.error("No user logged in");
+  console.log("getAIInsight called with item:", item);
+  console.log("item._id:", item._id);
+  console.log("item keys:", Object.keys(item));
+  
+  const session = getSession();
+  if (!session) {
+    console.error("No session - user not logged in");
+    return;
+  }
+
+  // Get the item ID - it might be _id or id depending on the response format
+  const itemId = item._id || item.id;
+  console.log("Using itemId:", itemId);
+  
+  if (!itemId) {
+    console.error("No item ID found! Item structure:", JSON.stringify(item, null, 2));
+    item.aiInsight = "Error: Could not find item ID";
     return;
   }
 
@@ -1038,8 +1080,8 @@ const getAIInsight = async (item) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          owner: currentUser.value.uid,
-          item: item._id,
+          session,
+          itemId: itemId,
         }),
       }
     );

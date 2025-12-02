@@ -13,6 +13,9 @@ const currentUser = ref(
     : null
 );
 
+// Session token storage (used for authenticated API calls)
+const sessionToken = ref(localStorage.getItem("sessionToken") || null);
+
 const login = async (email, password) => {
   try {
     console.log("API_BASE_URL:", API_BASE_URL);
@@ -39,6 +42,12 @@ const login = async (email, password) => {
       throw new Error(data.error);
     }
 
+    // Store session token from backend
+    if (data.session) {
+      sessionToken.value = data.session;
+      localStorage.setItem("sessionToken", data.session);
+    }
+
     // Store user data with uid (backend uses _id)
     const userData = {
       uid: data.user._id,  // Backend stores ID as _id
@@ -50,17 +59,35 @@ const login = async (email, password) => {
     localStorage.setItem("isAuthenticated", "true");
     localStorage.setItem("currentUser", JSON.stringify(userData));
 
-    return { success: true, user: userData };
+    return { success: true, user: userData, session: data.session };
   } catch (error) {
     return { success: false, error: error.message };
   }
 };
 
-const logout = () => {
-  isAuthenticated.value = false;
-  currentUser.value = null;
-  localStorage.removeItem("isAuthenticated");
-  localStorage.removeItem("currentUser");
+const logout = async () => {
+  try {
+    // Call backend logout if we have a session
+    if (sessionToken.value) {
+      await fetch(`${API_BASE_URL}/Sessioning/delete`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ session: sessionToken.value }),
+      });
+    }
+  } catch (error) {
+    console.error("Error during logout:", error);
+  } finally {
+    // Clear local state regardless of backend response
+    isAuthenticated.value = false;
+    currentUser.value = null;
+    sessionToken.value = null;
+    localStorage.removeItem("isAuthenticated");
+    localStorage.removeItem("currentUser");
+    localStorage.removeItem("sessionToken");
+  }
 };
 
 const register = async (email, password) => {
@@ -89,6 +116,12 @@ const register = async (email, password) => {
       throw new Error(data.error);
     }
 
+    // Store session token from backend
+    if (data.session) {
+      sessionToken.value = data.session;
+      localStorage.setItem("sessionToken", data.session);
+    }
+
     // Store user data temporarily (will be authenticated after interests selection)
     const userData = {
       uid: data.user._id,  // Backend stores ID as _id
@@ -98,7 +131,7 @@ const register = async (email, password) => {
     currentUser.value = userData;
     localStorage.setItem("currentUser", JSON.stringify(userData));
 
-    return { success: true, user: userData };
+    return { success: true, user: userData, session: data.session };
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -110,13 +143,18 @@ const completeRegistration = () => {
   localStorage.setItem("isAuthenticated", "true");
 };
 
+// Helper function to get current session for API calls
+const getSession = () => sessionToken.value;
+
 export function useAuth() {
   return {
     isAuthenticated,
     currentUser,
+    sessionToken,
     login,
     logout,
     register,
     completeRegistration,
+    getSession,
   };
 }
