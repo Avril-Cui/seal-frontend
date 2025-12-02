@@ -94,9 +94,11 @@
               <div class="mascot">🐷</div>
               <div class="insight-content">
                 <span class="insight-tag">Trend Alert</span>
-                <p class="insight-text">
-                  Oink oink! Our analysis shows that you tend to make most impulsive purchases on weekends,
-                  particularly Saturday afternoons.
+                <p v-if="isLoadingInsights" class="insight-text">
+                  Loading insights...
+                </p>
+                <p v-else class="insight-text">
+                  {{ aiTrendAlert }}
                 </p>
               </div>
             </div>
@@ -106,22 +108,16 @@
               <div class="mascot">🐷</div>
               <div class="insight-content">
                 <span class="insight-tag green">Improvement Suggestions</span>
-                <ul class="suggestions-list">
+                <ul v-if="isLoadingInsights" class="suggestions-list">
                   <li class="suggestion-item">
                     <span class="suggestion-bullet">→</span>
-                    <span>Set a 24-hour waiting period before making weekend purchases</span>
+                    <span>Loading suggestions...</span>
                   </li>
-                  <li class="suggestion-item">
+                </ul>
+                <ul v-else class="suggestions-list">
+                  <li v-for="(suggestion, index) in aiSuggestions" :key="index" class="suggestion-item">
                     <span class="suggestion-bullet">→</span>
-                    <span>Create a wishlist and review items after 7 days before buying</span>
-                  </li>
-                  <li class="suggestion-item">
-                    <span class="suggestion-bullet">→</span>
-                    <span>Set a monthly spending limit and track progress weekly</span>
-                  </li>
-                  <li class="suggestion-item">
-                    <span class="suggestion-bullet">→</span>
-                    <span>Avoid shopping apps during high-risk hours (Sat 2-6pm)</span>
+                    <span>{{ suggestion }}</span>
                   </li>
                 </ul>
               </div>
@@ -203,7 +199,7 @@
             <div class="poster-insight-content">
               <div class="poster-mascot">🐷</div>
               <div class="poster-insight-text">
-                You tend to make most impulsive purchases on weekends. Consider setting a 24-hour waiting period before weekend purchases.
+                {{ aiTrendAlert }}
               </div>
             </div>
           </div>
@@ -239,18 +235,39 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { useAuth } from "../composables/useAuth";
+import { useStatsAPI } from "../composables/useStatsAPI";
 import html2canvas from "html2canvas";
 
 const router = useRouter();
+const { currentUser } = useAuth();
+const { fetchWishlist, getSwipeStats, getSwipeComments, getAIWishListInsight, buildInsightPrompt } = useStatsAPI();
+
 const exportSection = ref(null);
 const posterTemplate = ref(null);
 const showPreviewModal = ref(false);
 const previewImage = ref(null);
 
-// TODO: Replace with actual user data from auth/store
-const userName = ref("Alex"); // Placeholder - will be replaced with actual user name
+// AI Insights
+const aiTrendAlert = ref("Oink oink! Our analysis shows that you tend to make most impulsive purchases on weekends, particularly Saturday afternoons.");
+const aiSuggestions = ref([
+  "Set a 24-hour waiting period before making weekend purchases",
+  "Create a wishlist and review items after 7 days before buying",
+  "Set a monthly spending limit and track progress weekly",
+  "Avoid shopping apps during high-risk hours (Sat 2-6pm)"
+]);
+const isLoadingInsights = ref(false);
+
+// User name
+const userName = computed(() => {
+  if (currentUser?.value?.email) {
+    const emailName = currentUser.value.email.split('@')[0];
+    return emailName.charAt(0).toUpperCase() + emailName.slice(1);
+  }
+  return "Alex"; // Fallback
+});
 
 const recentPurchases = ref([
   { id: 1, name: "Wireless Headphones", date: "2 weeks ago" },
@@ -273,6 +290,68 @@ const currentDate = computed(() => {
 const graphPoints = computed(() => {
   // Simple upward trending line
   return "0,180 50,160 100,140 150,120 200,100 250,80 300,60";
+});
+
+// Fetch AI insights based on wishlist and swipe data
+const fetchAIInsights = async () => {
+  if (!currentUser?.value?.uid) {
+    console.log('No current user, skipping AI insights');
+    return;
+  }
+
+  isLoadingInsights.value = true;
+  try {
+    // 1. Fetch user's wishlist
+    const wishlistItems = await fetchWishlist(currentUser.value.uid);
+
+    if (wishlistItems.length === 0) {
+      console.log('No wishlist items found');
+      isLoadingInsights.value = false;
+      return;
+    }
+
+    // 2. For each item, get swipe stats and comments
+    const swipeDataMap = {};
+    for (const item of wishlistItems) {
+      const stats = await getSwipeStats(currentUser.value.uid, item._id);
+      const comments = await getSwipeComments(currentUser.value.uid, item._id);
+      swipeDataMap[item._id] = { stats, comments };
+    }
+
+    // 3. Build prompt with all data
+    const prompt = buildInsightPrompt(wishlistItems, swipeDataMap);
+
+    // 4. Get AI response
+    const response = await getAIWishListInsight(currentUser.value.uid, prompt);
+
+    if (!response) {
+      console.error('No AI response received');
+      return;
+    }
+
+    // 5. Parse JSON response and display
+    try {
+      const parsed = JSON.parse(response);
+      if (parsed.trendAlert && parsed.improvementSuggestions) {
+        aiTrendAlert.value = parsed.trendAlert;
+        aiSuggestions.value = parsed.improvementSuggestions;
+      } else {
+        console.error('Invalid AI response format:', parsed);
+      }
+    } catch (parseError) {
+      console.error('Error parsing AI response:', parseError);
+      console.log('Raw response:', response);
+    }
+  } catch (error) {
+    console.error('Error fetching AI insights:', error);
+  } finally {
+    isLoadingInsights.value = false;
+  }
+};
+
+// Fetch AI insights on component mount
+onMounted(() => {
+  fetchAIInsights();
 });
 
 const exportStats = async () => {
