@@ -16,7 +16,9 @@
       <!-- Page Header -->
       <div class="page-header">
         <h1 class="page-title">{{ userName }}'s Shopping Insights</h1>
-        <p class="page-subtitle">Track your spending habits and savings progress</p>
+        <p class="page-subtitle">
+          Track your spending habits and savings progress
+        </p>
       </div>
 
       <!-- Exportable Stats Section -->
@@ -29,127 +31,162 @@
 
         <!-- Stats Summary -->
         <div class="stats-summary">
-        <div class="stat-box">
-          <div class="stat-value positive">$847</div>
-          <div class="stat-label">Total Saved</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-value">32</div>
-          <div class="stat-label">Items Reviewed</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-value positive">68%</div>
-          <div class="stat-label">Rejection Rate</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-value">$2.4k</div>
-          <div class="stat-label">Impulse Avoided</div>
-        </div>
-      </div>
-
-      <!-- Main Grid -->
-      <div class="stats-grid">
-        <!-- Savings Graph -->
-        <div class="card graph-card">
-          <div class="graph-header">
-            <div>
-              <h2 class="card-title">Savings Progress</h2>
-              <div class="graph-metric">24%</div>
-              <div class="graph-metric-label">average saved</div>
-            </div>
+          <div class="stat-box">
+            <div class="stat-value positive">$847</div>
+            <div class="stat-label">Total Saved</div>
           </div>
-          <div class="graph-container">
-            <svg class="graph-svg" viewBox="0 0 400 200" preserveAspectRatio="none">
-              <!-- Grid lines -->
-              <line class="graph-grid" x1="0" y1="50" x2="400" y2="50" />
-              <line class="graph-grid" x1="0" y1="100" x2="400" y2="100" />
-              <line class="graph-grid" x1="0" y1="150" x2="400" y2="150" />
-
-              <!-- Area under curve -->
-              <path class="graph-area" d="M 0 180 L 0 160 Q 50 140, 100 130 T 200 110 T 300 90 L 400 70 L 400 200 L 0 200 Z" />
-
-              <!-- Line graph -->
-              <path class="graph-line" d="M 0 160 Q 50 140, 100 130 T 200 110 T 300 90 L 400 70" />
-
-              <!-- Labels -->
-              <text class="graph-label" x="0" y="195">Jan</text>
-              <text class="graph-label" x="100" y="195">Mar</text>
-              <text class="graph-label" x="200" y="195">May</text>
-              <text class="graph-label" x="300" y="195">Jul</text>
-              <text class="graph-label" x="385" y="195">Sep</text>
-            </svg>
+          <div class="stat-box">
+            <div class="stat-value">32</div>
+            <div class="stat-label">Items Reviewed</div>
           </div>
-          <button class="export-button" @click="exportStats">
-            <span class="export-icon">☁</span>
-            EXPORT DATA
-          </button>
+          <div class="stat-box">
+            <div class="stat-value positive">68%</div>
+            <div class="stat-label">Rejection Rate</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">$2.4k</div>
+            <div class="stat-label">Impulse Avoided</div>
+          </div>
         </div>
 
-        <!-- AI Insights -->
-        <div class="card insights-card">
-          <h2 class="card-title">Behavioral Insights</h2>
-          <div class="insights-wrapper">
-            <!-- Trend Alert Section -->
-            <div class="insight-section">
-              <div class="mascot">🐷</div>
-              <div class="insight-content">
-                <span class="insight-tag">Trend Alert</span>
-                <p class="insight-text">
-                  Oink oink! Our analysis shows that you tend to make most impulsive purchases on weekends,
-                  particularly Saturday afternoons.
-                </p>
+        <!-- Main Grid -->
+        <div class="stats-grid">
+          <!-- Savings Graph -->
+          <div class="card graph-card">
+            <div class="graph-header">
+              <div>
+                <h2 class="card-title">Savings Progress</h2>
+                <div class="graph-metric">24%</div>
+                <div class="graph-metric-label">average saved</div>
               </div>
             </div>
+            <div class="graph-container">
+              <svg
+                class="graph-svg"
+                viewBox="0 0 400 200"
+                preserveAspectRatio="none"
+              >
+                <!-- Grid lines -->
+                <line class="graph-grid" x1="0" y1="50" x2="400" y2="50" />
+                <line class="graph-grid" x1="0" y1="100" x2="400" y2="100" />
+                <line class="graph-grid" x1="0" y1="150" x2="400" y2="150" />
 
-            <!-- Improvement Suggestions Section -->
-            <div class="insight-section">
-              <div class="mascot">🐷</div>
-              <div class="insight-content">
-                <span class="insight-tag green">Improvement Suggestions</span>
-                <ul class="suggestions-list">
-                  <li class="suggestion-item">
-                    <span class="suggestion-bullet">→</span>
-                    <span>Set a 24-hour waiting period before making weekend purchases</span>
-                  </li>
-                  <li class="suggestion-item">
-                    <span class="suggestion-bullet">→</span>
-                    <span>Create a wishlist and review items after 7 days before buying</span>
-                  </li>
-                  <li class="suggestion-item">
-                    <span class="suggestion-bullet">→</span>
-                    <span>Set a monthly spending limit and track progress weekly</span>
-                  </li>
-                  <li class="suggestion-item">
-                    <span class="suggestion-bullet">→</span>
-                    <span>Avoid shopping apps during high-risk hours (Sat 2-6pm)</span>
-                  </li>
-                </ul>
+                <!-- Area under curve -->
+                <path
+                  class="graph-area"
+                  d="M 0 180 L 0 160 Q 50 140, 100 130 T 200 110 T 300 90 L 400 70 L 400 200 L 0 200 Z"
+                />
+
+                <!-- Line graph -->
+                <path
+                  class="graph-line"
+                  d="M 0 160 Q 50 140, 100 130 T 200 110 T 300 90 L 400 70"
+                />
+
+                <!-- Labels -->
+                <text class="graph-label" x="0" y="195">Jan</text>
+                <text class="graph-label" x="100" y="195">Mar</text>
+                <text class="graph-label" x="200" y="195">May</text>
+                <text class="graph-label" x="300" y="195">Jul</text>
+                <text class="graph-label" x="385" y="195">Sep</text>
+              </svg>
+            </div>
+            <button class="export-button" @click="exportStats">
+              <span class="export-icon">☁</span>
+              EXPORT DATA
+            </button>
+          </div>
+
+          <!-- AI Insights -->
+          <div class="card insights-card">
+            <h2 class="card-title">Behavioral Insights</h2>
+            <div class="insights-wrapper">
+              <!-- Trend Alert Section -->
+              <div class="insight-section">
+                <div class="mascot">
+                  <img
+                    src="../assets/pig_sprite.png"
+                    alt="Pig mascot"
+                    class="pig-icon"
+                  />
+                </div>
+                <div class="insight-content">
+                  <span class="insight-tag">Trend Alert</span>
+                  <p class="insight-text">
+                    Oink oink! Our analysis shows that you tend to make most
+                    impulsive purchases on weekends, particularly Saturday
+                    afternoons.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Improvement Suggestions Section -->
+              <div class="insight-section">
+                <div class="mascot">
+                  <img
+                    src="../assets/pig_sprite.png"
+                    alt="Pig mascot"
+                    class="pig-icon"
+                  />
+                </div>
+                <div class="insight-content">
+                  <span class="insight-tag green">Improvement Suggestions</span>
+                  <ul class="suggestions-list">
+                    <li class="suggestion-item">
+                      <span class="suggestion-bullet">→</span>
+                      <span
+                        >Set a 24-hour waiting period before making weekend
+                        purchases</span
+                      >
+                    </li>
+                    <li class="suggestion-item">
+                      <span class="suggestion-bullet">→</span>
+                      <span
+                        >Create a wishlist and review items after 7 days before
+                        buying</span
+                      >
+                    </li>
+                    <li class="suggestion-item">
+                      <span class="suggestion-bullet">→</span>
+                      <span
+                        >Set a monthly spending limit and track progress
+                        weekly</span
+                      >
+                    </li>
+                    <li class="suggestion-item">
+                      <span class="suggestion-bullet">→</span>
+                      <span
+                        >Avoid shopping apps during high-risk hours (Sat
+                        2-6pm)</span
+                      >
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
       </div>
       <!-- End Exportable Section -->
 
       <!-- Recent Purchases -->
       <div class="card purchases-section">
-          <h2 class="card-title">Recent Purchases</h2>
-          <div class="purchases-list">
-            <div
-              v-for="purchase in recentPurchases"
-              :key="purchase.id"
-              class="purchase-item"
-            >
-              <div class="purchase-image">
-                <div class="image-placeholder">IMG</div>
-              </div>
-              <div class="purchase-details">
-                <p class="purchase-name">{{ purchase.name }}</p>
-                <p class="purchase-date">{{ purchase.date }}</p>
-              </div>
+        <h2 class="card-title">Recent Purchases</h2>
+        <div class="purchases-list">
+          <div
+            v-for="purchase in recentPurchases"
+            :key="purchase.id"
+            class="purchase-item"
+          >
+            <div class="purchase-image">
+              <div class="image-placeholder">IMG</div>
+            </div>
+            <div class="purchase-details">
+              <p class="purchase-name">{{ purchase.name }}</p>
+              <p class="purchase-date">{{ purchase.date }}</p>
             </div>
           </div>
+        </div>
       </div>
     </div>
 
@@ -184,15 +221,38 @@
             <div class="poster-graph-container">
               <div class="poster-graph-metric">24%</div>
               <div class="poster-graph-label">average saved</div>
-              <svg class="poster-graph-svg" viewBox="0 0 400 120" preserveAspectRatio="none">
+              <svg
+                class="poster-graph-svg"
+                viewBox="0 0 400 120"
+                preserveAspectRatio="none"
+              >
                 <defs>
-                  <linearGradient id="posterGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" style="stop-color:#8BA888;stop-opacity:0.3" />
-                    <stop offset="100%" style="stop-color:#8BA888;stop-opacity:0.05" />
+                  <linearGradient
+                    id="posterGradient"
+                    x1="0%"
+                    y1="0%"
+                    x2="0%"
+                    y2="100%"
+                  >
+                    <stop
+                      offset="0%"
+                      style="stop-color: #8ba888; stop-opacity: 0.3"
+                    />
+                    <stop
+                      offset="100%"
+                      style="stop-color: #8ba888; stop-opacity: 0.05"
+                    />
                   </linearGradient>
                 </defs>
-                <path class="poster-graph-area" d="M 0 110 L 0 90 Q 50 80, 100 70 T 200 50 T 300 35 L 400 20 L 400 120 L 0 120 Z" fill="url(#posterGradient)" />
-                <path class="poster-graph-line" d="M 0 90 Q 50 80, 100 70 T 200 50 T 300 35 L 400 20" />
+                <path
+                  class="poster-graph-area"
+                  d="M 0 110 L 0 90 Q 50 80, 100 70 T 200 50 T 300 35 L 400 20 L 400 120 L 0 120 Z"
+                  fill="url(#posterGradient)"
+                />
+                <path
+                  class="poster-graph-line"
+                  d="M 0 90 Q 50 80, 100 70 T 200 50 T 300 35 L 400 20"
+                />
               </svg>
             </div>
           </div>
@@ -201,9 +261,16 @@
           <div class="poster-insight-section">
             <div class="poster-section-title">Key Insight</div>
             <div class="poster-insight-content">
-              <div class="poster-mascot">🐷</div>
+              <div class="poster-mascot">
+                <img
+                  src="../assets/pig_sprite.png"
+                  alt="Pig mascot"
+                  class="pig-icon"
+                />
+              </div>
               <div class="poster-insight-text">
-                You tend to make most impulsive purchases on weekends. Consider setting a 24-hour waiting period before weekend purchases.
+                You tend to make most impulsive purchases on weekends. Consider
+                setting a 24-hour waiting period before weekend purchases.
               </div>
             </div>
           </div>
@@ -211,7 +278,9 @@
 
         <!-- Poster Footer -->
         <div class="poster-footer">
-          <div class="poster-footer-text">Track your spending habits with BYEBUY</div>
+          <div class="poster-footer-text">
+            Track your spending habits with BYEBUY
+          </div>
         </div>
       </div>
     </div>
@@ -224,10 +293,17 @@
           <button class="modal-close" @click="closePreview">✕</button>
         </div>
         <div class="modal-body">
-          <img v-if="previewImage" :src="previewImage" alt="Stats Preview" class="preview-image" />
+          <img
+            v-if="previewImage"
+            :src="previewImage"
+            alt="Stats Preview"
+            class="preview-image"
+          />
         </div>
         <div class="modal-footer">
-          <button class="modal-button secondary" @click="closePreview">Cancel</button>
+          <button class="modal-button secondary" @click="closePreview">
+            Cancel
+          </button>
           <button class="modal-button primary" @click="downloadImage">
             <span class="download-icon">⬇</span>
             Download
@@ -263,10 +339,10 @@ const recentPurchases = ref([
 
 const currentDate = computed(() => {
   const date = new Date();
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 });
 
@@ -280,14 +356,14 @@ const exportStats = async () => {
 
   try {
     // Temporarily show the poster template
-    posterTemplate.value.style.display = 'block';
+    posterTemplate.value.style.display = "block";
 
     // Small delay to ensure rendering
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Capture the poster as canvas
     const canvas = await html2canvas(posterTemplate.value, {
-      backgroundColor: '#FEFEFE',
+      backgroundColor: "#FEFEFE",
       scale: 3, // High quality for poster
       logging: false,
       useCORS: true,
@@ -296,18 +372,17 @@ const exportStats = async () => {
     });
 
     // Hide the poster template again
-    posterTemplate.value.style.display = 'none';
+    posterTemplate.value.style.display = "none";
 
     // Convert canvas to data URL for preview
-    const imageDataUrl = canvas.toDataURL('image/png');
+    const imageDataUrl = canvas.toDataURL("image/png");
     previewImage.value = imageDataUrl;
     showPreviewModal.value = true;
-
   } catch (error) {
-    console.error('Error generating stats poster:', error);
-    alert('Failed to generate stats poster. Please try again.');
+    console.error("Error generating stats poster:", error);
+    alert("Failed to generate stats poster. Please try again.");
     if (posterTemplate.value) {
-      posterTemplate.value.style.display = 'none';
+      posterTemplate.value.style.display = "none";
     }
   }
 };
@@ -321,8 +396,8 @@ const downloadImage = () => {
   if (!previewImage.value) return;
 
   // Create download link
-  const link = document.createElement('a');
-  const fileName = `BYEBUY-Stats-${new Date().toISOString().split('T')[0]}.png`;
+  const link = document.createElement("a");
+  const fileName = `BYEBUY-Stats-${new Date().toISOString().split("T")[0]}.png`;
   link.download = fileName;
   link.href = previewImage.value;
   link.click();
@@ -345,23 +420,23 @@ const goToSettings = () => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
 
 .stats-container {
   /* Color Variables */
-  --color-bg: #FEFEFE;
-  --color-bg-secondary: #F8F8F6;
-  --color-bg-tertiary: #F0F0EE;
-  --color-text-primary: #1A1A1A;
+  --color-bg: #fefefe;
+  --color-bg-secondary: #f8f8f6;
+  --color-bg-tertiary: #f0f0ee;
+  --color-text-primary: #1a1a1a;
   --color-text-secondary: #666666;
   --color-text-tertiary: #999999;
-  --color-border: #E0E0DE;
+  --color-border: #e0e0de;
   --color-border-dark: #333333;
-  --color-accent-green: #8BA888;
-  --color-accent-red: #D47B7B;
-  --color-accent-pink: #E8B4B4;
-  --font-primary: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-secondary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --color-accent-green: #8ba888;
+  --color-accent-red: #d47b7b;
+  --color-accent-pink: #e8b4b4;
+  --font-primary: "Space Grotesk", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-secondary: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
 
   /* Container Styles */
   min-height: 100vh;
@@ -421,7 +496,7 @@ const goToSettings = () => {
 }
 
 .nav-link.active::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -0.5rem;
   left: 0;
@@ -551,7 +626,11 @@ const goToSettings = () => {
 .purchase-image {
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, var(--color-bg-tertiary) 0%, var(--color-bg-secondary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-bg-tertiary) 0%,
+    var(--color-bg-secondary) 100%
+  );
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -684,7 +763,11 @@ const goToSettings = () => {
 
 /* Insights Section */
 .insights-card {
-  background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-bg-secondary) 0%,
+    var(--color-bg) 100%
+  );
 }
 
 .insights-wrapper {
@@ -707,9 +790,16 @@ const goToSettings = () => {
 }
 
 .mascot {
-  font-size: 2.5rem;
   flex-shrink: 0;
-  filter: grayscale(20%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pig-icon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
 }
 
 .insight-content {
@@ -867,7 +957,7 @@ const goToSettings = () => {
 .poster-container {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #FEFEFE 0%, #F8F8F6 100%);
+  background: linear-gradient(135deg, #fefefe 0%, #f8f8f6 100%);
   padding: 80px 60px;
   font-family: var(--font-secondary);
   display: flex;
@@ -931,7 +1021,11 @@ const goToSettings = () => {
 }
 
 .poster-metric-card.highlight {
-  background: linear-gradient(135deg, var(--color-accent-green) 0%, #7A9877 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-accent-green) 0%,
+    #7a9877 100%
+  );
   border-color: var(--color-accent-green);
 }
 
@@ -1010,7 +1104,11 @@ const goToSettings = () => {
 }
 
 .poster-insight-section {
-  background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-bg-secondary) 0%,
+    var(--color-bg) 100%
+  );
   border: 2px solid var(--color-border);
   border-radius: 24px;
   padding: 40px;
@@ -1024,8 +1122,16 @@ const goToSettings = () => {
 }
 
 .poster-mascot {
-  font-size: 96px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.poster-mascot .pig-icon {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
 }
 
 .poster-insight-text {

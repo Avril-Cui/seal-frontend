@@ -18,7 +18,7 @@
       <div class="profile-section">
         <div class="profile-picture-container">
           <div class="profile-picture">
-            <div class="avatar-placeholder">👤</div>
+            <img src="../assets/pig_pfp.png" alt="Profile picture" class="avatar-image" />
           </div>
         </div>
 
@@ -201,39 +201,54 @@ const goToSettings = () => {
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
 .settings-container {
+  --font-primary: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-secondary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
   min-height: 100vh;
-  background-color: #f5f0e1;
+  background-color: var(--color-bg);
   display: flex;
   flex-direction: column;
+  color: var(--color-text-primary);
+  font-family: var(--font-secondary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem 2rem;
-  border-bottom: 2px solid #2d0000;
+  padding: 1.25rem 2.5rem;
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-bg);
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
 }
 
 .nav-right {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 2.5rem;
 }
 
 .nav-title {
-  font-size: 1.5rem;
+  font-family: var(--font-primary);
+  font-size: 1.75rem;
   font-weight: 700;
-  letter-spacing: 1px;
-  margin: 0;
-  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-primary);
 }
 
 .settings-content {
   flex: 1;
-  padding: 2rem;
-  max-width: 600px;
+  padding: 2rem 2.5rem;
+  max-width: 1400px;
   margin: 0 auto;
   width: 100%;
 }
@@ -254,27 +269,36 @@ const goToSettings = () => {
   width: 150px;
   height: 150px;
   border-radius: 50%;
-  border: 2px solid #2d0000;
+  border: 1px solid var(--color-border);
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f5f0e1;
+  background-color: var(--color-bg);
   position: relative;
 }
 
-.avatar-placeholder {
-  font-size: 4rem;
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .edit-input {
-  border: 2px solid #2d0000;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  padding: 0.5rem;
-  font-size: 1rem;
-  font-family: inherit;
-  background-color: #f5f0e1;
-  color: #2d0000;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-family: var(--font-secondary);
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
   width: 200px;
+  transition: border-color 0.2s ease;
+}
+
+.edit-input:focus {
+  outline: none;
+  border-color: var(--color-border-dark);
 }
 
 .user-details {
@@ -288,18 +312,22 @@ const goToSettings = () => {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 0;
-  border-bottom: 1px solid #f5f0e1;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .detail-label {
-  font-size: 1rem;
+  font-family: var(--font-primary);
+  font-size: 0.625rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.03em;
+  color: var(--color-text-secondary);
 }
 
 .detail-value {
-  font-size: 1rem;
+  font-family: var(--font-secondary);
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
 }
 
 .detail-value-with-icon {
@@ -311,24 +339,31 @@ const goToSettings = () => {
 .edit-icon-button {
   border: none;
   background: none;
-  font-size: 1.2rem;
+  font-size: 1rem;
   padding: 0.25rem;
   cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: color 0.2s ease;
 }
 
 .edit-icon-button:hover {
-  background-color: transparent;
-  color: #2d0000;
-  text-decoration: underline;
+  color: var(--color-text-primary);
 }
 
 .reset-password-link {
   text-decoration: underline;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  font-family: var(--font-secondary);
+  transition: color 0.2s ease;
+}
+
+.reset-password-link:hover {
+  color: var(--color-text-primary);
 }
 
 .accessibility-section {
-  border-top: 2px solid #2d0000;
+  border-top: 1px solid var(--color-border);
   padding-top: 2rem;
   margin-bottom: 3rem;
 }
@@ -338,7 +373,7 @@ const goToSettings = () => {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 0;
-  border-bottom: 1px solid #f5f0e1;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .toggle-label {
@@ -349,16 +384,18 @@ const goToSettings = () => {
 }
 
 .toggle-title {
-  font-size: 1rem;
+  font-family: var(--font-primary);
+  font-size: 0.625rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.03em;
+  color: var(--color-text-secondary);
 }
 
 .toggle-description {
-  font-size: 0.85rem;
-  color: #2d0000;
-  opacity: 0.7;
+  font-family: var(--font-secondary);
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
 }
 
 .toggle-switch {
@@ -382,8 +419,8 @@ const goToSettings = () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #f5f0e1;
-  border: 2px solid #2d0000;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
   transition: 0.3s;
   border-radius: 34px;
 }
@@ -395,22 +432,22 @@ const goToSettings = () => {
   width: 22px;
   left: 4px;
   bottom: 4px;
-  background-color: #2d0000;
+  background-color: var(--color-text-primary);
   transition: 0.3s;
   border-radius: 50%;
 }
 
 .toggle-switch input:checked + .toggle-slider {
-  background-color: #2d0000;
+  background-color: var(--color-text-primary);
 }
 
 .toggle-switch input:checked + .toggle-slider:before {
   transform: translateX(26px);
-  background-color: #f5f0e1;
+  background-color: var(--color-bg);
 }
 
 .logout-section {
-  border-top: 2px solid #2d0000;
+  border-top: 1px solid var(--color-border);
   padding-top: 2rem;
   padding-bottom: 2rem;
   margin-top: 3rem;
@@ -419,13 +456,28 @@ const goToSettings = () => {
 
 .logout-button {
   width: 100%;
-  padding: 1rem;
-  font-size: 1rem;
+  padding: 0.75rem 1.5rem;
+  font-family: var(--font-primary);
+  font-size: 0.75rem;
   font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background-color: var(--color-text-primary);
+  color: var(--color-bg);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.logout-button:hover {
+  background-color: var(--color-text-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(26, 26, 26, 0.15);
 }
 
 .interests-section {
-  border-top: 2px solid #2d0000;
+  border-top: 1px solid var(--color-border);
   padding-top: 2rem;
   margin-top: 3rem;
 }
@@ -435,11 +487,13 @@ const goToSettings = () => {
 }
 
 .section-title {
-  font-size: 1.2rem;
-  font-weight: 700;
+  font-family: var(--font-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
   margin-bottom: 1.5rem;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
 }
 
 .interests-tags {
@@ -450,58 +504,82 @@ const goToSettings = () => {
 
 .interest-tag {
   padding: 0.5rem 1.25rem;
-  border: 2px solid #2d0000;
-  background-color: #f5f0e1;
-  font-size: 0.9rem;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg);
+  font-family: var(--font-primary);
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05em;
   border-radius: 20px;
+  color: var(--color-text-primary);
+  transition: all 0.2s ease;
+}
+
+.interest-tag:hover {
+  border-color: var(--color-border-dark);
 }
 
 .interest-tag.etc {
   font-style: italic;
   font-weight: 400;
+  color: var(--color-text-secondary);
 }
 
 .interest-tag.edit-button {
-  background-color: #2d0000;
-  color: #f5f0e1;
-  border: 2px solid #2d0000;
+  background-color: var(--color-text-primary);
+  color: var(--color-bg);
+  border: 1px solid var(--color-border);
   cursor: pointer;
   font-weight: 600;
   font-style: normal;
 }
 
 .interest-tag.edit-button:hover {
-  background-color: #f5f0e1;
-  color: #2d0000;
+  background-color: var(--color-text-primary);
+  border-color: var(--color-border-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(26, 26, 26, 0.15);
 }
 
 .nav-link {
-  border: none;
-  background: none;
+  font-family: var(--font-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--color-text-secondary);
   text-decoration: none;
-  font-weight: 600;
-  padding: 0.5rem 1rem;
-  color: #2d0000;
-  font-size: 0.9rem;
+  transition: color 0.2s ease;
   cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  background: none;
+  border: none;
+  padding: 0;
 }
 
 .nav-link:hover {
-  text-decoration: underline;
+  color: var(--color-text-primary);
 }
 
 .nav-link.active {
-  text-decoration: underline;
+  color: var(--color-text-primary);
+  position: relative;
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -0.5rem;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--color-text-primary);
 }
 
 .nav-link.settings-icon {
-  font-size: 1.2rem;
-  padding: 0.5rem;
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 @media (max-width: 768px) {

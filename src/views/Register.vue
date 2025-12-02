@@ -30,7 +30,7 @@
       </div>
 
       <div class="mascot">
-        <div class="pig">🐷</div>
+        <img src="../assets/pig_sprite.png" alt="Pig mascot" class="pig" />
       </div>
     </div>
   </div>
@@ -81,13 +81,22 @@ const goToLogin = () => {
 </script>
 
 <style scoped>
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
 .register-container {
+  --font-primary: "Space Grotesk", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-secondary: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  background-color: #f5f0e1;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-secondary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .register-content {
@@ -97,11 +106,13 @@ const goToLogin = () => {
 }
 
 .app-title {
-  font-size: 2.5rem;
+  font-family: var(--font-primary);
+  font-size: 1.75rem;
   font-weight: 700;
   text-align: center;
   margin-bottom: 3rem;
-  letter-spacing: 2px;
+  letter-spacing: 0.05em;
+  color: var(--color-text-primary);
 }
 
 .register-form {
@@ -117,18 +128,46 @@ const goToLogin = () => {
 
 .form-group input {
   width: 100%;
-  padding: 1rem;
-  border: 2px solid #2d0000;
-  font-size: 1rem;
-  background-color: #f5f0e1;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-family: var(--font-secondary);
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  transition: border-color 0.2s ease;
+}
+
+.form-group input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--color-border-dark);
 }
 
 .register-button {
   width: 100%;
-  padding: 1rem;
+  padding: 0.75rem 1.5rem;
   margin-top: 1rem;
-  font-size: 1.1rem;
+  font-family: var(--font-primary);
+  font-size: 0.75rem;
   font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background-color: var(--color-text-primary);
+  color: var(--color-bg);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.register-button:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(26, 26, 26, 0.15);
 }
 
 .register-button:disabled {
@@ -137,13 +176,15 @@ const goToLogin = () => {
 }
 
 .error-message {
-  padding: 0.75rem;
-  background-color: #ffebee;
-  border: 2px solid #ef5350;
-  color: #c62828;
+  padding: 0.75rem 1rem;
+  background-color: var(--color-accent-pink);
+  border: 1px solid var(--color-accent-red);
+  border-radius: 8px;
+  color: var(--color-text-primary);
   text-align: center;
   margin-bottom: 1rem;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
+  font-family: var(--font-secondary);
 }
 
 .login-link {
@@ -153,7 +194,14 @@ const goToLogin = () => {
 
 .login-link a {
   text-decoration: underline;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  font-family: var(--font-secondary);
+  transition: color 0.2s ease;
+}
+
+.login-link a:hover {
+  color: var(--color-text-primary);
 }
 
 .mascot {
@@ -162,10 +210,13 @@ const goToLogin = () => {
   top: 50%;
   transform: translateY(-50%);
   font-size: 2rem;
+  filter: grayscale(20%);
 }
 
 .pig {
-  font-size: 3rem;
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
 }
 
 @media (max-width: 768px) {
@@ -177,7 +228,7 @@ const goToLogin = () => {
   }
 
   .app-title {
-    font-size: 2rem;
+    font-size: 1.5rem;
   }
 }
 </style>

@@ -65,6 +65,10 @@
           <div v-else class="image-placeholder">PIC</div>
         </div>
         <div class="card-content">
+          <div class="user-info">
+            <img src="../assets/pig_pfp.png" alt="User profile" class="user-pfp" />
+            <span class="user-name">{{ currentItem.ownerName || 'User' }}</span>
+          </div>
           <h2 class="item-name">{{ currentItem.itemName }}</h2>
           <p class="item-desc">{{ currentItem.description }}</p>
           <p class="item-price">${{ currentItem.price.toFixed(2) }}</p>
@@ -478,14 +482,23 @@ onMounted(() => {
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
 .swipe-container {
+  --font-primary: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-secondary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
   min-height: 100vh;
-  background-color: #f5f0e1;
+  background-color: var(--color-bg);
   display: flex;
   flex-direction: column;
   position: relative;
   overflow-x: hidden;
   overflow-y: auto;
+  color: var(--color-text-primary);
+  font-family: var(--font-secondary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Color expansion overlay */
@@ -497,7 +510,7 @@ onMounted(() => {
   height: 0;
   border-radius: 50%;
   pointer-events: none;
-  z-index: 1; /* Behind card (z-index: 5), buttons, nav (z-index: 10), but above background */
+  z-index: 1;
   transform: translate(-50%, -50%);
   opacity: 0;
   transition: width 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
@@ -506,7 +519,6 @@ onMounted(() => {
     background-color 0.3s ease;
 }
 
-/* No transition during dragging for instant feedback */
 .color-overlay.dragging {
   transition: background-color 0.2s ease;
 }
@@ -523,64 +535,110 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem 2rem;
-  border-bottom: 2px solid #2d0000;
-  position: relative;
-  z-index: 10;
+  padding: 1.25rem 2.5rem;
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-bg);
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
 }
 
 .nav-right {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 2.5rem;
 }
 
 .nav-title {
-  font-size: 1.5rem;
+  font-family: var(--font-primary);
+  font-size: 1.75rem;
   font-weight: 700;
-  letter-spacing: 2px;
-  margin: 0;
-  color: #2d0000;
+  letter-spacing: 0.05em;
+  color: var(--color-text-primary);
+}
+
+.nav-link {
+  font-family: var(--font-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.nav-link:hover {
+  color: var(--color-text-primary);
+}
+
+.nav-link.active {
+  color: var(--color-text-primary);
+  position: relative;
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -0.5rem;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--color-text-primary);
+}
+
+.settings-icon {
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .progress-bar-container {
-  padding: 1rem 2rem;
+  padding: 1rem 2.5rem;
   display: flex;
   align-items: center;
   gap: 1rem;
   position: relative;
   z-index: 10;
+  background-color: var(--color-bg);
 }
 
 .progress-bar {
   flex: 1;
-  height: 16px;
-  border: 2px solid #2d0000;
-  border-radius: 12px;
-  background-color: #f5f0e1;
+  height: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background-color: var(--color-bg);
   position: relative;
   overflow: hidden;
 }
 
 .progress-fill {
   position: absolute;
-  top: 2px;
-  left: 2px;
-  height: calc(100% - 4px);
-  background-color: #2d0000;
-  transition: width 0.3s;
-  border-radius: 10px 0 0 10px;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-color: var(--color-text-primary);
+  transition: width 0.3s ease;
+  border-radius: 8px;
 }
 
 .progress-fill.full {
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
 .progress-text {
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-family: var(--font-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
   min-width: 60px;
-  color: #2d0000;
+  color: var(--color-text-primary);
 }
 
 .card-container {
@@ -588,7 +646,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem 2rem;
+  padding: 2rem 2.5rem;
   position: relative;
   z-index: 5;
   overflow: visible;
@@ -598,15 +656,21 @@ onMounted(() => {
 .swipe-card {
   max-width: 400px;
   width: 100%;
-  border: 2px solid #2d0000;
+  border: 1px solid var(--color-border);
   border-radius: 12px;
-  background-color: #f5f0e1;
+  background-color: var(--color-bg);
   display: flex;
   flex-direction: column;
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
   cursor: grab;
   user-select: none;
   touch-action: none;
+  box-shadow: 0 2px 8px rgba(26, 26, 26, 0.04);
+}
+
+.swipe-card:hover {
+  border-color: var(--color-border-dark);
+  box-shadow: 0 4px 20px rgba(26, 26, 26, 0.08);
 }
 
 .swipe-card:active {
@@ -650,19 +714,21 @@ onMounted(() => {
 .card-image {
   width: 100%;
   aspect-ratio: 1;
-  border-bottom: 2px solid #2d0000;
+  border-bottom: 1px solid var(--color-border);
   border-radius: 12px 12px 0 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f5f0e1;
+  background-color: var(--color-bg-secondary);
   overflow: hidden;
 }
 
 .image-placeholder {
-  font-size: 2rem;
+  font-size: 0.65rem;
   font-weight: 600;
-  color: #87875a;
+  letter-spacing: 0.05em;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-primary);
 }
 
 .item-photo {
@@ -672,76 +738,109 @@ onMounted(() => {
 }
 
 .card-content {
-  padding: 1.5rem;
+  padding: 1.25rem;
   max-height: 400px;
   overflow-y: auto;
 }
 
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.user-pfp {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+}
+
+.user-name {
+  font-family: var(--font-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
 .item-name {
-  font-size: 1.5rem;
+  font-family: var(--font-primary);
+  font-size: 1.25rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
-  color: #2d0000;
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
 }
 
 .item-desc {
-  font-size: 1rem;
+  font-family: var(--font-secondary);
+  font-size: 0.875rem;
   margin-bottom: 0.5rem;
-  line-height: 1.5;
-  color: #2d0000;
+  line-height: 1.6;
+  color: var(--color-text-primary);
 }
 
 .item-price {
-  font-size: 1.2rem;
+  font-family: var(--font-primary);
+  font-size: 1rem;
   font-weight: 700;
   margin-bottom: 1rem;
-  color: #2d0000;
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
 }
 
 .reflection-section {
-  margin-top: 1.5rem;
+  margin-top: 1.25rem;
   padding-top: 1rem;
-  border-top: 2px solid #2d0000;
+  border-top: 1px solid var(--color-border);
 }
 
 .reflection-title {
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-family: var(--font-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
   margin-bottom: 1rem;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #2d0000;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
 }
 
 .reflection-item {
   margin-bottom: 1rem;
-  padding: 0.75rem;
-  background-color: rgba(135, 135, 90, 0.1);
+  padding: 0.875rem;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
 }
 
 .reflection-item strong {
   display: block;
-  font-size: 0.85rem;
+  font-family: var(--font-primary);
+  font-size: 0.625rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 0.25rem;
-  color: #2d0000;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.5rem;
+  color: var(--color-text-secondary);
 }
 
 .reflection-item p {
-  font-size: 0.95rem;
-  line-height: 1.4;
-  color: #2d0000;
+  font-family: var(--font-secondary);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--color-text-primary);
   margin: 0;
-  font-style: italic;
 }
 
 .finished-message {
   text-align: center;
   padding: 3rem;
-  color: #2d0000;
+  color: var(--color-text-primary);
+  font-family: var(--font-secondary);
 }
 
 .anti-capitalist {
@@ -752,7 +851,7 @@ onMounted(() => {
 .swipe-actions {
   display: flex;
   gap: 1rem;
-  padding: 1rem 2rem;
+  padding: 1.5rem 2.5rem;
   justify-content: center;
   position: relative;
   z-index: 10;
@@ -764,28 +863,30 @@ onMounted(() => {
 .skip-button,
 .worth-button {
   flex: 1;
-  padding: 1.5rem;
-  font-size: 1.2rem;
-  font-weight: 700;
-  border: 2px solid #2d0000;
-  border-radius: 12px;
-  background-color: #f5f0e1;
-  color: #2d0000;
-  transition: all 0.3s ease;
+  padding: 0.75rem 1.5rem;
+  font-family: var(--font-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--color-text-primary);
+  color: var(--color-bg-secondary);
+  transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .skip-button:hover:not(:disabled) {
-  background-color: v-bind("palette.red");
-  color: #f5f0e1;
-  border-color: v-bind("palette.red");
-  transform: scale(1.05);
+  background-color: var(--color-text-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(26, 26, 26, 0.15);
 }
 
 .worth-button:hover:not(:disabled) {
-  background-color: v-bind("palette.green");
-  color: #f5f0e1;
-  border-color: v-bind("palette.green");
-  transform: scale(1.05);
+  background-color: var(--color-accent-green);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(26, 26, 26, 0.15);
 }
 
 .skip-button:disabled,
@@ -794,35 +895,17 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
-.nav-link {
-  border: none;
-  background: none;
-  text-decoration: none;
-  font-weight: 600;
-  padding: 0.5rem 1rem;
-  color: #2d0000;
-  font-size: 0.9rem;
-  cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.nav-link:hover {
-  text-decoration: underline;
-}
-
-.nav-link.active {
-  text-decoration: underline;
-}
-
-.nav-link.settings-icon {
-  font-size: 1.2rem;
-  padding: 0.5rem;
-}
-
 @media (max-width: 768px) {
   .navbar {
-    padding: 1rem;
+    padding: 1.5rem 2rem;
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: flex-start;
+  }
+
+  .nav-right {
+    gap: 1.5rem;
+    flex-wrap: wrap;
   }
 
   .swipe-card {
@@ -831,11 +914,20 @@ onMounted(() => {
 
   .swipe-actions {
     flex-direction: column;
+    padding: 1rem 2rem;
   }
 
   .skip-button,
   .worth-button {
     max-width: 100%;
+  }
+
+  .card-container {
+    padding: 1rem 2rem;
+  }
+
+  .progress-bar-container {
+    padding: 1rem 2rem;
   }
 }
 </style>

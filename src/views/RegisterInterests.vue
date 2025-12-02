@@ -87,10 +87,19 @@ const handleContinue = () => {
 </script>
 
 <style scoped>
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
 .interests-container {
+  --font-primary: "Space Grotesk", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-secondary: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+
   min-height: 100vh;
   padding: 2rem;
-  background-color: #f5f0e1;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-secondary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .interests-content {
@@ -99,12 +108,14 @@ const handleContinue = () => {
 }
 
 .page-title {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-family: var(--font-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
   text-align: center;
   margin-bottom: 3rem;
-  letter-spacing: 1px;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
+  color: var(--color-text-secondary);
 }
 
 .interests-grid {
@@ -116,44 +127,64 @@ const handleContinue = () => {
 
 .interest-card {
   aspect-ratio: 1;
-  border: 2px solid #2d0000;
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   padding: 1rem;
-  background-color: #f5f0e1;
+  background-color: var(--color-bg);
 }
 
 .interest-card:hover {
-  background-color: #f5f0e1;
+  border-color: var(--color-border-dark);
+  box-shadow: 0 4px 20px rgba(26, 26, 26, 0.04);
+  transform: translateY(-2px);
 }
 
 .interest-card.selected {
-  background-color: #2d0000;
-  color: #f5f0e1;
+  background-color: var(--color-text-primary);
+  color: var(--color-bg);
+  border-color: var(--color-text-primary);
 }
 
 .interest-icon {
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
+  filter: grayscale(20%);
 }
 
 .interest-name {
-  font-size: 0.9rem;
+  font-family: var(--font-primary);
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.05em;
 }
 
 .continue-button {
   width: 100%;
-  padding: 1rem;
-  font-size: 1.1rem;
+  padding: 0.75rem 1.5rem;
+  font-family: var(--font-primary);
+  font-size: 0.75rem;
   font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background-color: var(--color-text-primary);
+  color: var(--color-bg);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.continue-button:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(26, 26, 26, 0.15);
 }
 
 .continue-button:disabled {
@@ -162,8 +193,10 @@ const handleContinue = () => {
 }
 
 .continue-button:disabled:hover {
-  background-color: #f5f0e1;
-  color: #2d0000;
+  background-color: var(--color-text-primary);
+  color: var(--color-bg);
+  transform: none;
+  box-shadow: none;
 }
 
 @media (max-width: 768px) {
@@ -173,7 +206,7 @@ const handleContinue = () => {
   }
 
   .page-title {
-    font-size: 1.2rem;
+    font-size: 0.7rem;
   }
 }
 </style>
