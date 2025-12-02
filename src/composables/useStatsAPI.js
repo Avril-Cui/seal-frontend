@@ -12,19 +12,24 @@ export function useStatsAPI() {
   /**
    * Fetch user's wishlist items
    * @param {string} owner - User ID
+   * @param {string} session - Session token for authentication
    * @returns {Promise<Array>} Array of items or empty array
    */
-  const fetchWishlist = async (owner) => {
+  const fetchWishlist = async (owner, session) => {
     try {
       loading.value = true;
       error.value = null;
+
+      if (!session) {
+        throw new Error("Session token is required");
+      }
 
       const response = await fetch(`${API_BASE_URL}/ItemCollection/_getWishListItems`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ owner }),
+        body: JSON.stringify({ session }),
       });
 
       if (!response.ok) {
@@ -37,8 +42,8 @@ export function useStatsAPI() {
         throw new Error(data.error);
       }
 
-      // Data comes back as array of { item: ItemDoc } objects
-      return data.map(d => d.item) || [];
+      // Data comes back as { items: [...] } from the sync
+      return data.items || [];
     } catch (err) {
       error.value = err.message;
       console.error("Error fetching wishlist:", err);
@@ -50,18 +55,22 @@ export function useStatsAPI() {
 
   /**
    * Get swipe stats for an item
-   * @param {string} ownerUserId - User ID
+   * @param {string} session - Session token for authentication
    * @param {string} itemId - Item ID
    * @returns {Promise<Object|null>} { total, approval } or null
    */
-  const getSwipeStats = async (ownerUserId, itemId) => {
+  const getSwipeStats = async (session, itemId) => {
     try {
+      if (!session) {
+        throw new Error("Session token is required");
+      }
+
       const response = await fetch(`${API_BASE_URL}/SwipeSystem/_getSwipeStats`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ ownerUserId, itemId }),
+        body: JSON.stringify({ session, itemId }),
       });
 
       if (!response.ok) {
@@ -77,7 +86,7 @@ export function useStatsAPI() {
 
       return { total: data.total, approval: data.approval };
     } catch (err) {
-      console.error(`Error fetching swipe stats for item ${itemId}:`, err);
+      // If no swipe stats exist, return null (not an error)
       return null;
     }
   };
