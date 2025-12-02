@@ -5,6 +5,7 @@
     <div class="settings-content">
       <div class="settings-grid">
         <div class="settings-column-left">
+          <h2 class="column-header">PROFILE</h2>
           <div class="profile-section">
             <div class="profile-picture-container">
               <div class="profile-picture">
@@ -35,7 +36,7 @@
                 </div>
               </div>
 
-              <div class="detail-item">
+              <div class="detail-item detail-item-with-border">
                 <span class="detail-label">email</span>
                 <div class="detail-value-with-icon">
                   <input
@@ -56,10 +57,6 @@
                     ✎
                   </button>
                 </div>
-              </div>
-
-              <div class="detail-item">
-                <a href="#" class="reset-password-link">reset password</a>
               </div>
             </div>
           </div>
@@ -268,7 +265,7 @@ const goToEditInterests = () => {
 .user-details {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 0.5rem;
 }
 
 .detail-item {
@@ -276,6 +273,9 @@ const goToEditInterests = () => {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 0;
+}
+
+.detail-item-with-border {
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -311,18 +311,6 @@ const goToEditInterests = () => {
 }
 
 .edit-icon-button:hover {
-  color: var(--color-text-primary);
-}
-
-.reset-password-link {
-  text-decoration: underline;
-  font-size: 0.875rem;
-  color: var(--color-text-secondary);
-  font-family: var(--font-secondary);
-  transition: color 0.2s ease;
-}
-
-.reset-password-link:hover {
   color: var(--color-text-primary);
 }
 

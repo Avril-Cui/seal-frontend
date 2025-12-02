@@ -85,7 +85,7 @@ const goToLogin = () => {
 </script>
 
 <style scoped>
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700&family=Poppins:wght@700;800;900&display=swap");
 
 .register-container {
   --font-primary: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
@@ -110,9 +110,9 @@ const goToLogin = () => {
 }
 
 .app-title {
-  font-family: var(--font-primary);
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-family: "Poppins", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 2.5rem;
+  font-weight: 800;
   text-align: center;
   margin-bottom: 3rem;
   letter-spacing: 0.05em;

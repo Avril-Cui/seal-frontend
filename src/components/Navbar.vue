@@ -2,18 +2,39 @@
   <nav class="navbar">
     <div class="nav-left">
       <h1 class="nav-title">BYEBUY</h1>
+      <img
+        src="../assets/pig_sprite.png"
+        alt="Pig mascot"
+        class="nav-pig-sprite"
+      />
     </div>
     <div class="nav-right">
-      <button @click="goToSwipe" :class="['nav-link', { active: currentRoute === '/swipe' }]">
+      <button
+        @click="goToSwipe"
+        :class="['nav-link', { active: currentRoute === '/swipe' }]"
+      >
         SWIPESENSE
       </button>
-      <button @click="goToWishlist" :class="['nav-link', { active: currentRoute === '/wishlist' }]">
+      <button
+        @click="goToWishlist"
+        :class="['nav-link', { active: currentRoute === '/wishlist' }]"
+      >
         PAUSE CART
       </button>
-      <button @click="goToStats" :class="['nav-link', { active: currentRoute === '/stats' }]">
+      <button
+        @click="goToStats"
+        :class="['nav-link', { active: currentRoute === '/stats' }]"
+      >
         STATS
       </button>
-      <button @click="goToSettings" :class="['nav-link', 'settings-icon', { active: currentRoute === '/settings' }]">
+      <button
+        @click="goToSettings"
+        :class="[
+          'nav-link',
+          'settings-icon',
+          { active: currentRoute === '/settings' },
+        ]"
+      >
         ⚙
       </button>
     </div>
@@ -21,8 +42,8 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { computed } from "vue";
+import { useRouter, useRoute } from "vue-router";
 
 const router = useRouter();
 const route = useRoute();
@@ -30,24 +51,24 @@ const route = useRoute();
 const currentRoute = computed(() => route.path);
 
 const goToSwipe = () => {
-  router.push('/swipe');
+  router.push("/swipe");
 };
 
 const goToWishlist = () => {
-  router.push('/wishlist');
+  router.push("/wishlist");
 };
 
 const goToStats = () => {
-  router.push('/stats');
+  router.push("/stats");
 };
 
 const goToSettings = () => {
-  router.push('/settings');
+  router.push("/settings");
 };
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@700;800;900&display=swap");
 
 .navbar {
   display: flex;
@@ -63,12 +84,19 @@ const goToSettings = () => {
 .nav-left {
   display: flex;
   align-items: center;
+  gap: 0.75rem;
+}
+
+.nav-pig-sprite {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
 }
 
 .nav-title {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-family: "Poppins", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
   letter-spacing: 0.05em;
   color: var(--color-text-primary, #1a1a1a);
   margin: 0;
@@ -82,7 +110,7 @@ const goToSettings = () => {
 }
 
 .nav-link {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 0.875rem;
   font-weight: 500;
   letter-spacing: 0.02em;
@@ -105,7 +133,7 @@ const goToSettings = () => {
 }
 
 .nav-link.active::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -0.5rem;
   left: 0;

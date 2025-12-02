@@ -441,6 +441,7 @@ const downloadImage = () => {
   font-weight: 700;
   letter-spacing: -0.02em;
   margin-bottom: 0.25rem;
+  text-transform: uppercase;
 }
 
 .page-subtitle {
