@@ -195,8 +195,26 @@ ${index + 1}. ${item.itemName}
     prompt += `
 Based on this wishlist analysis, please provide TWO separate insights in a specific JSON format:
 
-IMPORTANT: You must respond with ONLY a valid JSON object in this exact format (no additional text):
+IMPORTANT: First, check if there is enough information to provide meaningful insights:
+- If there are fewer than 3 items in the wishlist, OR
+- If there is insufficient data about the user's shopping patterns
 
+Then respond with an encouraging message asking them to use the app more.
+
+You must respond with ONLY a valid JSON object in this exact format (no additional text, no markdown, no code blocks):
+
+If INSUFFICIENT DATA:
+{
+  "trendAlert": "We need more data to analyze your shopping patterns. Add more items to your wishlist and continue using ByeBuy to get personalized insights!",
+  "improvementSuggestions": [
+    "Add at least 5-10 items to your wishlist to help us understand your preferences",
+    "Complete reflection questions thoughtfully for each item",
+    "Review items from other users to build community data",
+    "Use the app for a few weeks to establish shopping patterns"
+  ]
+}
+
+If SUFFICIENT DATA:
 {
   "trendAlert": "A concise observation about their shopping patterns or trends (1-2 sentences, max 150 characters)",
   "improvementSuggestions": [
@@ -208,11 +226,12 @@ IMPORTANT: You must respond with ONLY a valid JSON object in this exact format (
 }
 
 Guidelines:
-- trendAlert: Identify a pattern (e.g., weekend purchases, price ranges, need vs want ratio, community approval patterns)
+- trendAlert: Identify a pattern (e.g., weekend purchases, price ranges, need vs want ratio, community approval patterns). IMPORTANT: Keep trendAlert to approximately 30 words.
 - improvementSuggestions: Provide exactly 4 specific, actionable tips to improve their purchasing decisions
 - Keep all text concise and friendly
 - Use "you" to address the user directly
 - Be supportive, not judgmental
+- IMPORTANT: Use a playful pig mascot tone. You can add "Oink oink!" at the beginning of the trendAlert or use pig-related phrases, but keep it subtle and don't overdo it. Stay professional while being fun.
 
 Respond with ONLY the JSON object, no markdown formatting, no code blocks, no additional explanation.`;
 

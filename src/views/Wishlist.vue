@@ -231,6 +231,18 @@
           </div>
 
           <div class="form-group">
+            <label class="form-label">Quantity</label>
+            <input
+              v-model.number="purchaseQuantity"
+              type="number"
+              step="1"
+              min="1"
+              placeholder="Enter quantity"
+              class="modal-input"
+            />
+          </div>
+
+          <div class="form-group">
             <label class="form-label">Purchase Date</label>
             <input
               v-model="purchaseDate"
@@ -249,7 +261,7 @@
             <button
               @click="confirmPurchase"
               class="modal-button confirm"
-              :disabled="isPurchasing || !purchasePrice || !purchaseDate"
+              :disabled="isPurchasing || !purchasePrice || !purchaseQuantity || !purchaseDate || purchaseQuantity < 1"
             >
               {{ isPurchasing ? "Saving..." : "Confirm Purchase" }}
             </button>
@@ -293,6 +305,7 @@ const isCheckingQueue = ref(false);
 const showPurchaseModal = ref(false);
 const purchasingItem = ref(null);
 const purchasePrice = ref(0);
+const purchaseQuantity = ref(1);
 const purchaseDate = ref("");
 const isPurchasing = ref(false);
 const purchaseError = ref("");
@@ -649,6 +662,7 @@ const removeItem = async (itemId) => {
 const openPurchaseModal = (item) => {
   purchasingItem.value = item;
   purchasePrice.value = item.price; // Default to original price
+  purchaseQuantity.value = 1; // Default quantity to 1
   // Set default to today's date in YYYY-MM-DD format
   const today = new Date();
   const year = today.getFullYear();
@@ -664,6 +678,7 @@ const closePurchaseModal = () => {
   showPurchaseModal.value = false;
   purchasingItem.value = null;
   purchasePrice.value = 0;
+  purchaseQuantity.value = 1;
   purchaseDate.value = "";
   purchaseError.value = "";
 };
@@ -675,8 +690,13 @@ const confirmPurchase = async () => {
     return;
   }
 
-  if (!purchasePrice.value || !purchaseDate.value) {
+  if (!purchasePrice.value || !purchaseQuantity.value || !purchaseDate.value) {
     purchaseError.value = "Please fill in all fields.";
+    return;
+  }
+
+  if (purchaseQuantity.value < 1 || !Number.isInteger(purchaseQuantity.value)) {
+    purchaseError.value = "Quantity must be a whole number greater than 0.";
     return;
   }
 
@@ -695,6 +715,7 @@ const confirmPurchase = async () => {
       body: JSON.stringify({
         owner: currentUser.value.uid,
         item: purchasingItem.value._id,
+        quantity: purchaseQuantity.value,
         purchaseTime: purchaseTimestamp,
         actualPrice: parseFloat(purchasePrice.value),
       }),
