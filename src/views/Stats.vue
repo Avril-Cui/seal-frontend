@@ -21,33 +21,116 @@
 
         <!-- Stats Summary -->
         <div class="stats-summary">
-          <div class="stat-box">
-            <div class="stat-value positive">$847</div>
-            <div class="stat-label">Total Saved</div>
+        <div class="stat-box">
+          <div class="stat-value positive">${{ totalSaved.toFixed(2) }}</div>
+          <div class="stat-label">Total Saved</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value positive">${{ totalBought.toFixed(2) }}</div>
+          <div class="stat-label">Total Bought</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">{{ itemsBought }}</div>
+          <div class="stat-label">Items Bought</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">{{ rejectionRate }}%</div>
+          <div class="stat-label">Rejection Rate</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">{{ itemsReviewed }}</div>
+          <div class="stat-label">Items Reviewed</div>
+        </div>
+      </div>
+
+      <!-- Main Grid -->
+      <div class="stats-grid">
+        <!-- Progress Graph -->
+        <div class="card graph-card">
+          <div class="graph-header">
+            <div>
+              <div class="graph-controls">
+                <h2 class="card-title">Purchase Progress</h2>
+                <select v-model="viewMode" class="view-select">
+                  <option value="day">Daily View</option>
+                  <option value="month">Monthly View</option>
+                </select>
+              </div>
+              <div class="graph-metric">${{ currentGraphTotal.toFixed(2) }}</div>
+              <div class="graph-metric-label">total purchased</div>
+            </div>
           </div>
-          <div class="stat-box">
-            <div class="stat-value">32</div>
-            <div class="stat-label">Items Reviewed</div>
+
+          <div class="graph-navigation">
+            <button @click="navigateGraph(-1)" class="nav-btn">←</button>
+            <span class="date-range">{{ dateRangeLabel }}</span>
+            <button @click="navigateGraph(1)" class="nav-btn" :disabled="offset === 0">→</button>
           </div>
-          <div class="stat-box">
-            <div class="stat-value positive">68%</div>
-            <div class="stat-label">Rejection Rate</div>
+
+          <div class="graph-container" @touchstart="handleTouchStart" @touchmove="handleTouchMove" @touchend="handleTouchEnd">
+            <svg class="graph-svg" viewBox="0 0 400 200" preserveAspectRatio="none">
+              <!-- Grid lines -->
+              <line class="graph-grid" x1="0" y1="50" x2="400" y2="50" />
+              <line class="graph-grid" x1="0" y1="100" x2="400" y2="100" />
+              <line class="graph-grid" x1="0" y1="150" x2="400" y2="150" />
+
+              <!-- Data points and line -->
+              <path v-if="graphPath" class="graph-area" :d="graphAreaPath" />
+              <path v-if="graphPath" class="graph-line" :d="graphPath" />
+
+              <!-- Interactive points -->
+              <g v-for="(point, index) in graphPoints" :key="index">
+                <circle
+                  :cx="point.x"
+                  :cy="point.y"
+                  r="5"
+                  class="graph-point"
+                  @mouseenter="selectPoint(index)"
+                  @mouseleave="selectedPoint = null"
+                  :class="{ active: selectedPoint === index }"
+                />
+              </g>
+
+              <!-- Labels -->
+              <text
+                v-for="(label, index) in xAxisLabels"
+                :key="index"
+                class="graph-label"
+                :x="label.x"
+                y="195"
+              >
+                {{ label.text }}
+              </text>
+            </svg>
+
+            <!-- Tooltip -->
+            <div v-if="selectedPoint !== null" class="graph-tooltip" :style="tooltipStyle">
+              <div class="tooltip-date">{{ graphData[selectedPoint].label }}</div>
+              <div class="tooltip-amount">${{ graphData[selectedPoint].value.toFixed(2) }}</div>
+            </div>
           </div>
-          <div class="stat-box">
-            <div class="stat-value">$2.4k</div>
-            <div class="stat-label">Impulse Avoided</div>
-          </div>
+
+          <button class="export-button" @click="exportStats">
+            <span class="export-icon">☁</span>
+            EXPORT DATA
+          </button>
         </div>
 
-        <!-- Main Grid -->
-        <div class="stats-grid">
-          <!-- Savings Graph -->
-          <div class="card graph-card">
-            <div class="graph-header">
-              <div>
-                <h2 class="card-title">Savings Progress</h2>
-                <div class="graph-metric">24%</div>
-                <div class="graph-metric-label">average saved</div>
+        <!-- AI Insights -->
+        <div class="card insights-card">
+          <h2 class="card-title">Behavioral Insights</h2>
+          <div class="insights-wrapper">
+            <!-- Trend Alert Section -->
+            <div class="insight-section">
+              <div class="mascot">🐷</div>
+              <div class="insight-content">
+                <span class="insight-tag">Trend Alert</span>
+                <p v-if="isLoadingInsights" class="insight-text">
+                  Loading insights...
+                </p>
+                <p v-else class="insight-text">
+                  {{ aiTrendAlert }}
+                </p>
               </div>
             </div>
             <div class="graph-container">
@@ -110,48 +193,23 @@
                 </div>
               </div>
 
-              <!-- Improvement Suggestions Section -->
-              <div class="insight-section">
-                <div class="mascot">
-                  <img
-                    src="../assets/pig_sprite.png"
-                    alt="Pig mascot"
-                    class="pig-icon"
-                  />
-                </div>
-                <div class="insight-content">
-                  <span class="insight-tag green">Improvement Suggestions</span>
-                  <ul class="suggestions-list">
-                    <li class="suggestion-item">
-                      <span class="suggestion-bullet">→</span>
-                      <span
-                        >Set a 24-hour waiting period before making weekend
-                        purchases</span
-                      >
-                    </li>
-                    <li class="suggestion-item">
-                      <span class="suggestion-bullet">→</span>
-                      <span
-                        >Create a wishlist and review items after 7 days before
-                        buying</span
-                      >
-                    </li>
-                    <li class="suggestion-item">
-                      <span class="suggestion-bullet">→</span>
-                      <span
-                        >Set a monthly spending limit and track progress
-                        weekly</span
-                      >
-                    </li>
-                    <li class="suggestion-item">
-                      <span class="suggestion-bullet">→</span>
-                      <span
-                        >Avoid shopping apps during high-risk hours (Sat
-                        2-6pm)</span
-                      >
-                    </li>
-                  </ul>
-                </div>
+            <!-- Improvement Suggestions Section -->
+            <div class="insight-section">
+              <div class="mascot">🐷</div>
+              <div class="insight-content">
+                <span class="insight-tag green">Improvement Suggestions</span>
+                <ul v-if="isLoadingInsights" class="suggestions-list">
+                  <li class="suggestion-item">
+                    <span class="suggestion-bullet">→</span>
+                    <span>Loading suggestions...</span>
+                  </li>
+                </ul>
+                <ul v-else class="suggestions-list">
+                  <li v-for="(suggestion, index) in aiSuggestions" :key="index" class="suggestion-item">
+                    <span class="suggestion-bullet">→</span>
+                    <span>{{ suggestion }}</span>
+                  </li>
+                </ul>
               </div>
             </div>
           </div>
@@ -161,19 +219,29 @@
 
       <!-- Recent Purchases -->
       <div class="card purchases-section">
-        <h2 class="card-title">Recent Purchases</h2>
-        <div class="purchases-list">
-          <div
-            v-for="purchase in recentPurchases"
-            :key="purchase.id"
-            class="purchase-item"
-          >
-            <div class="purchase-image">
-              <div class="image-placeholder">IMG</div>
-            </div>
-            <div class="purchase-details">
-              <p class="purchase-name">{{ purchase.name }}</p>
-              <p class="purchase-date">{{ purchase.date }}</p>
+          <h2 class="card-title">Recent Purchases</h2>
+          <div v-if="isLoadingPurchases" class="loading-message">Loading purchases...</div>
+          <div v-else-if="recentPurchases.length === 0" class="empty-message">No purchases yet</div>
+          <div v-else class="purchases-list">
+            <div
+              v-for="purchase in recentPurchases"
+              :key="purchase._id"
+              class="purchase-item"
+            >
+              <div class="purchase-image">
+                <img
+                  v-if="purchase.photo"
+                  :src="purchase.photo"
+                  :alt="purchase.itemName"
+                  class="purchase-photo"
+                />
+                <div v-else class="image-placeholder">IMG</div>
+              </div>
+              <div class="purchase-details">
+                <p class="purchase-name">{{ purchase.itemName }}</p>
+                <p class="purchase-price">${{ ((purchase.actualPrice || purchase.price) * (purchase.quantity || 1)).toFixed(2) }}</p>
+                <p class="purchase-date">{{ formatPurchaseDate(purchase.PurchasedTime) }}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -196,26 +264,22 @@
           <!-- Key Metrics Grid -->
           <div class="poster-metrics">
             <div class="poster-metric-card highlight">
-              <div class="poster-metric-value">$847</div>
+              <div class="poster-metric-value">${{ totalSaved.toFixed(2) }}</div>
               <div class="poster-metric-label">Total Saved</div>
             </div>
             <div class="poster-metric-card">
-              <div class="poster-metric-value">68%</div>
-              <div class="poster-metric-label">Rejection Rate</div>
+              <div class="poster-metric-value">${{ totalBought.toFixed(2) }}</div>
+              <div class="poster-metric-label">Total Bought</div>
             </div>
           </div>
 
-          <!-- Savings Progress -->
+          <!-- Purchase Progress -->
           <div class="poster-graph-section">
-            <div class="poster-section-title">Savings Progress</div>
+            <div class="poster-section-title">Purchase Progress ({{ viewMode === 'day' ? 'Daily View' : 'Monthly View' }})</div>
             <div class="poster-graph-container">
-              <div class="poster-graph-metric">24%</div>
-              <div class="poster-graph-label">average saved</div>
-              <svg
-                class="poster-graph-svg"
-                viewBox="0 0 400 120"
-                preserveAspectRatio="none"
-              >
+              <div class="poster-graph-metric">${{ currentGraphTotal.toFixed(2) }}</div>
+              <div class="poster-graph-label">{{ dateRangeLabel }}</div>
+              <svg class="poster-graph-svg" viewBox="0 0 400 120" preserveAspectRatio="none">
                 <defs>
                   <linearGradient
                     id="posterGradient"
@@ -234,15 +298,8 @@
                     />
                   </linearGradient>
                 </defs>
-                <path
-                  class="poster-graph-area"
-                  d="M 0 110 L 0 90 Q 50 80, 100 70 T 200 50 T 300 35 L 400 20 L 400 120 L 0 120 Z"
-                  fill="url(#posterGradient)"
-                />
-                <path
-                  class="poster-graph-line"
-                  d="M 0 90 Q 50 80, 100 70 T 200 50 T 300 35 L 400 20"
-                />
+                <path class="poster-graph-area" :d="posterGraphAreaPath" fill="url(#posterGradient)" />
+                <path class="poster-graph-line" :d="posterGraphPath" />
               </svg>
             </div>
           </div>
@@ -259,8 +316,7 @@
                 />
               </div>
               <div class="poster-insight-text">
-                You tend to make most impulsive purchases on weekends. Consider
-                setting a 24-hour waiting period before weekend purchases.
+                {{ aiTrendAlert }}
               </div>
             </div>
           </div>
@@ -305,25 +361,59 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
+import { useRouter } from "vue-router";
+import { useAuth } from "../composables/useAuth";
+import { useStatsAPI } from "../composables/useStatsAPI";
 import html2canvas from "html2canvas";
-import Navbar from "../components/Navbar.vue";
+
+const router = useRouter();
+const { currentUser } = useAuth();
+const { fetchWishlist, getSwipeStats, getSwipeComments, getAIWishListInsight, buildInsightPrompt } = useStatsAPI();
+
 const exportSection = ref(null);
 const posterTemplate = ref(null);
 const showPreviewModal = ref(false);
 const previewImage = ref(null);
 
-// TODO: Replace with actual user data from auth/store
-const userName = ref("Alex"); // Placeholder - will be replaced with actual user name
-
-const recentPurchases = ref([
-  { id: 1, name: "Wireless Headphones", date: "2 weeks ago" },
-  { id: 2, name: "Running Shoes", date: "1 month ago" },
-  { id: 3, name: "Coffee Maker", date: "2 months ago" },
-  { id: 4, name: "Yoga Mat", date: "3 months ago" },
-  { id: 5, name: "Desk Lamp", date: "3 months ago" },
-  { id: 6, name: "Phone Case", date: "4 months ago" },
+// AI Insights
+const aiTrendAlert = ref("Oink oink! Our analysis shows that you tend to make most impulsive purchases on weekends, particularly Saturday afternoons.");
+const aiSuggestions = ref([
+  "Set a 24-hour waiting period before making weekend purchases",
+  "Create a wishlist and review items after 7 days before buying",
+  "Set a monthly spending limit and track progress weekly",
+  "Avoid shopping apps during high-risk hours (Sat 2-6pm)"
 ]);
+const isLoadingInsights = ref(false);
+
+// User name
+const userName = computed(() => {
+  if (currentUser?.value?.email) {
+    const emailName = currentUser.value.email.split('@')[0];
+    return emailName.charAt(0).toUpperCase() + emailName.slice(1);
+  }
+  return "Alex"; // Fallback
+});
+
+// Recent purchases
+const recentPurchases = ref([]);
+const isLoadingPurchases = ref(false);
+
+// Stats
+const totalSaved = ref(0);
+const totalBought = ref(0);
+const itemsBought = ref(0);
+const rejectionRate = ref(0);
+const itemsReviewed = ref(0);
+
+// Graph state
+const viewMode = ref('day'); // 'day' or 'month'
+const offset = ref(0); // Offset for navigation (0 = most recent)
+const selectedPoint = ref(null);
+const graphData = ref([]);
+const touchStartX = ref(0);
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const currentDate = computed(() => {
   const date = new Date();
@@ -334,9 +424,446 @@ const currentDate = computed(() => {
   });
 });
 
+// Fetch AI insights based on wishlist and swipe data
+const fetchAIInsights = async () => {
+  if (!currentUser?.value?.uid) {
+    console.log('No current user, skipping AI insights');
+    return;
+  }
+
+  isLoadingInsights.value = true;
+  try {
+    // 1. Fetch user's wishlist
+    const wishlistItems = await fetchWishlist(currentUser.value.uid);
+
+    if (wishlistItems.length === 0) {
+      console.log('No wishlist items found');
+      isLoadingInsights.value = false;
+      return;
+    }
+
+    // 2. For each item, get swipe stats and comments
+    const swipeDataMap = {};
+    for (const item of wishlistItems) {
+      const stats = await getSwipeStats(currentUser.value.uid, item._id);
+      const comments = await getSwipeComments(currentUser.value.uid, item._id);
+      swipeDataMap[item._id] = { stats, comments };
+    }
+
+    // 3. Build prompt with all data
+    const prompt = buildInsightPrompt(wishlistItems, swipeDataMap);
+
+    // 4. Get AI response
+    const response = await getAIWishListInsight(currentUser.value.uid, prompt);
+
+    if (!response) {
+      console.error('No AI response received');
+      return;
+    }
+
+    // 5. Parse JSON response and display
+    try {
+      // Strip markdown code blocks if present
+      let cleanResponse = response;
+      if (response.includes('```json')) {
+        cleanResponse = response.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+      } else if (response.includes('```')) {
+        cleanResponse = response.replace(/```\s*/g, '');
+      }
+
+      const parsed = JSON.parse(cleanResponse.trim());
+      if (parsed.trendAlert && parsed.improvementSuggestions) {
+        aiTrendAlert.value = parsed.trendAlert;
+        aiSuggestions.value = parsed.improvementSuggestions;
+      } else {
+        console.error('Invalid AI response format:', parsed);
+      }
+    } catch (parseError) {
+      console.error('Error parsing AI response:', parseError);
+      console.log('Raw response:', response);
+    }
+  } catch (error) {
+    console.error('Error fetching AI insights:', error);
+  } finally {
+    isLoadingInsights.value = false;
+  }
+};
+
+// Fetch purchased items
+const fetchPurchasedItems = async () => {
+  if (!currentUser?.value?.uid) {
+    console.log('No current user, skipping purchased items fetch');
+    return;
+  }
+
+  isLoadingPurchases.value = true;
+  try {
+    const response = await fetch(`${API_BASE_URL}/ItemCollection/_getPurchasedItems`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ owner: currentUser.value.uid }),
+    });
+
+    const data = await response.json();
+
+    if (data.error) {
+      console.log('Error fetching purchased items:', data.error);
+      recentPurchases.value = [];
+    } else if (Array.isArray(data)) {
+      // Sort by purchase date (most recent first)
+      const items = data.map(obj => obj.item).sort((a, b) => {
+        return (b.PurchasedTime || 0) - (a.PurchasedTime || 0);
+      });
+      recentPurchases.value = items;
+    } else {
+      recentPurchases.value = [];
+    }
+  } catch (error) {
+    console.error('Error fetching purchased items:', error);
+    recentPurchases.value = [];
+  } finally {
+    isLoadingPurchases.value = false;
+  }
+};
+
+// Format purchase date
+const formatPurchaseDate = (timestamp) => {
+  if (!timestamp) return 'Unknown date';
+
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffTime = Math.abs(now - date);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
+    return 'Today';
+  } else if (diffDays === 1) {
+    return 'Yesterday';
+  } else if (diffDays < 7) {
+    return `${diffDays} days ago`;
+  } else if (diffDays < 30) {
+    const weeks = Math.floor(diffDays / 7);
+    return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+  } else if (diffDays < 365) {
+    const months = Math.floor(diffDays / 30);
+    return `${months} month${months > 1 ? 's' : ''} ago`;
+  } else {
+    const years = Math.floor(diffDays / 365);
+    return `${years} year${years > 1 ? 's' : ''} ago`;
+  }
+};
+
+// Calculate stats
+const calculateStats = async () => {
+  if (!currentUser?.value?.uid) {
+    console.log('No current user, skipping stats calculation');
+    return;
+  }
+
+  try {
+    // 1. Fetch all items for this user
+    const wishlistResponse = await fetch(`${API_BASE_URL}/ItemCollection/_getWishListItems`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ owner: currentUser.value.uid }),
+    });
+
+    const wishlistData = await wishlistResponse.json();
+
+    if (wishlistData.error || !Array.isArray(wishlistData)) {
+      console.log('Error fetching wishlist for stats:', wishlistData.error);
+      return;
+    }
+
+    const allItems = wishlistData.map(obj => obj.item);
+
+    // 2. Calculate total saved (sum of prices of unpurchased items)
+    totalSaved.value = allItems
+      .filter(item => !item.wasPurchased)
+      .reduce((sum, item) => sum + (item.price || 0), 0);
+
+    // 3. Calculate total bought and items bought
+    const purchasedItems = allItems.filter(item => item.wasPurchased);
+    itemsBought.value = purchasedItems.length;
+    totalBought.value = purchasedItems.reduce((sum, item) => {
+      const price = item.actualPrice || item.price || 0;
+      const quantity = item.quantity || 1;
+      return sum + (price * quantity);
+    }, 0);
+
+    // 4. Get items reviewed (swipe count for this user)
+    const swipeCountResponse = await fetch(`${API_BASE_URL}/SwipeSystem/_getUserSwipeCount`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userId: currentUser.value.uid }),
+    });
+
+    const swipeCountData = await swipeCountResponse.json();
+    if (!swipeCountData.error) {
+      itemsReviewed.value = swipeCountData.count || 0;
+    }
+
+    // 5. Calculate rejection rate
+    let totalSum = 0;
+    let approvalSum = 0;
+
+    for (const item of allItems) {
+      const statsResponse = await fetch(`${API_BASE_URL}/SwipeSystem/_getSwipeStats`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ownerUserId: currentUser.value.uid,
+          itemId: item._id
+        }),
+      });
+
+      const statsData = await statsResponse.json();
+      if (!statsData.error) {
+        totalSum += statsData.total || 0;
+        approvalSum += statsData.approval || 0;
+      }
+    }
+
+    if (totalSum > 0) {
+      rejectionRate.value = Math.round(((totalSum - approvalSum) / totalSum) * 100);
+    } else {
+      rejectionRate.value = 0;
+    }
+
+  } catch (error) {
+    console.error('Error calculating stats:', error);
+  }
+};
+
+// Graph helper functions
+const processGraphData = () => {
+  const numPeriods = 7;
+  const data = [];
+  const now = new Date();
+
+  if (viewMode.value === 'day') {
+    // Generate last 7 days
+    for (let i = numPeriods - 1; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i - offset.value * numPeriods);
+      const dateStr = date.toISOString().split('T')[0];
+
+      // Sum purchases on this day
+      const value = recentPurchases.value
+        .filter(item => {
+          const purchaseDate = new Date(item.PurchasedTime);
+          return purchaseDate.toISOString().split('T')[0] === dateStr;
+        })
+        .reduce((sum, item) => {
+          const price = item.actualPrice || item.price || 0;
+          const quantity = item.quantity || 1;
+          return sum + (price * quantity);
+        }, 0);
+
+      data.push({
+        label: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        value,
+        date: dateStr
+      });
+    }
+  } else {
+    // Generate last 7 months
+    for (let i = numPeriods - 1; i >= 0; i--) {
+      const date = new Date(now);
+      date.setMonth(date.getMonth() - i - offset.value * numPeriods);
+      const monthStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+      // Sum purchases in this month
+      const value = recentPurchases.value
+        .filter(item => {
+          const purchaseDate = new Date(item.PurchasedTime);
+          const purchaseMonth = `${purchaseDate.getFullYear()}-${String(purchaseDate.getMonth() + 1).padStart(2, '0')}`;
+          return purchaseMonth === monthStr;
+        })
+        .reduce((sum, item) => {
+          const price = item.actualPrice || item.price || 0;
+          const quantity = item.quantity || 1;
+          return sum + (price * quantity);
+        }, 0);
+
+      data.push({
+        label: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        value,
+        date: monthStr
+      });
+    }
+  }
+
+  graphData.value = data;
+};
+
+// Computed properties for graph
+const currentGraphTotal = computed(() => {
+  return graphData.value.reduce((sum, point) => sum + point.value, 0);
+});
+
+const dateRangeLabel = computed(() => {
+  if (graphData.value.length === 0) return '';
+  return `${graphData.value[0].label} - ${graphData.value[graphData.value.length - 1].label}`;
+});
+
 const graphPoints = computed(() => {
-  // Simple upward trending line
-  return "0,180 50,160 100,140 150,120 200,100 250,80 300,60";
+  const maxValue = Math.max(...graphData.value.map(d => d.value), 1);
+  const width = 400;
+  const height = 200;
+  const padding = 20;
+
+  return graphData.value.map((point, index) => {
+    const x = (index / (graphData.value.length - 1)) * width;
+    const y = height - padding - ((point.value / maxValue) * (height - padding * 2));
+    return { x, y };
+  });
+});
+
+const graphPath = computed(() => {
+  if (graphPoints.value.length === 0) return '';
+
+  const points = graphPoints.value;
+  let path = `M ${points[0].x} ${points[0].y}`;
+
+  for (let i = 1; i < points.length; i++) {
+    path += ` L ${points[i].x} ${points[i].y}`;
+  }
+
+  return path;
+});
+
+const graphAreaPath = computed(() => {
+  if (graphPoints.value.length === 0) return '';
+
+  const points = graphPoints.value;
+  let path = `M ${points[0].x} 200 L ${points[0].x} ${points[0].y}`;
+
+  for (let i = 1; i < points.length; i++) {
+    path += ` L ${points[i].x} ${points[i].y}`;
+  }
+
+  path += ` L ${points[points.length - 1].x} 200 Z`;
+  return path;
+});
+
+const xAxisLabels = computed(() => {
+  return graphData.value.map((point, index) => ({
+    x: (index / (graphData.value.length - 1)) * 400,
+    text: viewMode.value === 'day'
+      ? point.label.split(' ')[1]
+      : point.label.split(' ')[0]
+  }));
+});
+
+const tooltipStyle = computed(() => {
+  if (selectedPoint.value === null || !graphPoints.value[selectedPoint.value]) return {};
+
+  const point = graphPoints.value[selectedPoint.value];
+  return {
+    left: `${point.x}px`,
+    top: `${point.y - 50}px`
+  };
+});
+
+// Poster graph computed properties (for export with different dimensions)
+const posterGraphPoints = computed(() => {
+  const maxValue = Math.max(...graphData.value.map(d => d.value), 1);
+  const width = 400;
+  const height = 120;
+  const padding = 10;
+
+  return graphData.value.map((point, index) => {
+    const x = (index / (graphData.value.length - 1)) * width;
+    const y = height - padding - ((point.value / maxValue) * (height - padding * 2));
+    return { x, y };
+  });
+});
+
+const posterGraphPath = computed(() => {
+  if (posterGraphPoints.value.length === 0) return '';
+
+  const points = posterGraphPoints.value;
+  let path = `M ${points[0].x} ${points[0].y}`;
+
+  for (let i = 1; i < points.length; i++) {
+    path += ` L ${points[i].x} ${points[i].y}`;
+  }
+
+  return path;
+});
+
+const posterGraphAreaPath = computed(() => {
+  if (posterGraphPoints.value.length === 0) return '';
+
+  const points = posterGraphPoints.value;
+  let path = `M ${points[0].x} 120 L ${points[0].x} ${points[0].y}`;
+
+  for (let i = 1; i < points.length; i++) {
+    path += ` L ${points[i].x} ${points[i].y}`;
+  }
+
+  path += ` L ${points[points.length - 1].x} 120 Z`;
+  return path;
+});
+
+// Graph interaction functions
+const selectPoint = (index) => {
+  selectedPoint.value = index;
+};
+
+const navigateGraph = (direction) => {
+  offset.value = Math.max(0, offset.value + direction);
+  processGraphData();
+  selectedPoint.value = null;
+};
+
+// Touch handlers for mobile swipe
+const handleTouchStart = (e) => {
+  touchStartX.value = e.touches[0].clientX;
+};
+
+const handleTouchMove = (e) => {
+  // Optional: add visual feedback during drag
+};
+
+const handleTouchEnd = (e) => {
+  const touchEndX = e.changedTouches[0].clientX;
+  const diff = touchStartX.value - touchEndX;
+
+  if (Math.abs(diff) > 50) {
+    if (diff > 0) {
+      // Swipe left - go back in time
+      navigateGraph(1);
+    } else {
+      // Swipe right - go forward in time
+      navigateGraph(-1);
+    }
+  }
+};
+
+// Watch for changes to update graph
+watch(viewMode, () => {
+  offset.value = 0;
+  selectedPoint.value = null;
+  processGraphData();
+});
+
+// Fetch AI insights on component mount
+onMounted(() => {
+  fetchAIInsights();
+  fetchPurchasedItems().then(() => {
+    processGraphData();
+  });
+  calculateStats();
 });
 
 const exportStats = async () => {
@@ -559,6 +1086,13 @@ const downloadImage = () => {
   color: var(--color-text-tertiary);
 }
 
+.purchase-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
 .purchase-details {
   flex: 1;
   display: flex;
@@ -573,8 +1107,22 @@ const downloadImage = () => {
   color: var(--color-text-primary);
 }
 
+.purchase-price {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-accent-green);
+}
+
 .purchase-date {
   font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.loading-message,
+.empty-message {
+  text-align: center;
+  padding: 2rem;
+  font-size: 0.875rem;
   color: var(--color-text-secondary);
 }
 
@@ -644,6 +1192,118 @@ const downloadImage = () => {
   font-size: 0.75rem;
   fill: var(--color-text-tertiary);
   font-family: var(--font-secondary);
+}
+
+.graph-point {
+  fill: var(--color-accent-green);
+  stroke: var(--color-bg);
+  stroke-width: 2;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.graph-point:hover,
+.graph-point.active {
+  r: 7;
+  fill: var(--color-text-primary);
+}
+
+.graph-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.graph-controls .card-title {
+  margin-bottom: 0;
+}
+
+.view-select {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-family: var(--font-secondary);
+  font-size: 0.75rem;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-select:hover {
+  border-color: var(--color-border-dark);
+}
+
+.graph-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: var(--color-bg-secondary);
+  border-radius: 8px;
+}
+
+.nav-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg);
+  border-radius: 6px;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-primary);
+}
+
+.nav-btn:hover:not(:disabled) {
+  background-color: var(--color-text-primary);
+  color: var(--color-bg);
+  border-color: var(--color-text-primary);
+}
+
+.nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.date-range {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  min-width: 200px;
+  text-align: center;
+}
+
+.graph-tooltip {
+  position: absolute;
+  background-color: var(--color-text-primary);
+  color: var(--color-bg);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  pointer-events: none;
+  transform: translateX(-50%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+}
+
+.tooltip-date {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.tooltip-amount {
+  font-family: var(--font-primary);
+  font-size: 1rem;
+  font-weight: 700;
 }
 
 .export-button {

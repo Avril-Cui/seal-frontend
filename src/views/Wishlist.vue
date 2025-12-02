@@ -27,6 +27,7 @@
           v-for="item in wishlistItems"
           :key="item._id"
           class="wishlist-item"
+          :class="{ 'purchased-item': item.wasPurchased }"
           @click="openEditModal(item)"
         >
           <button
@@ -36,6 +37,16 @@
           >
             ×
           </button>
+          <button
+            v-if="!item.wasPurchased"
+            @click.stop="openPurchaseModal(item)"
+            class="purchased-button"
+          >
+            Mark as Purchased
+          </button>
+          <div v-else class="purchased-label">
+            Purchased
+          </div>
           <div class="item-image">
             <img
               v-if="item.photo"
@@ -435,6 +446,74 @@
         </div>
       </div>
     </div>
+
+    <!-- Purchase Confirmation Modal -->
+    <div
+      v-if="showPurchaseModal"
+      class="modal-overlay"
+      @click="closePurchaseModal"
+    >
+      <div class="modal-content purchase-modal" @click.stop>
+        <div class="modal-header">
+          <h2>Mark as Purchased</h2>
+          <button @click="closePurchaseModal" class="close-button">×</button>
+        </div>
+        <div class="modal-body">
+          <div v-if="purchaseError" class="error-message">{{ purchaseError }}</div>
+
+          <p class="confirmation-text">Have you purchased "{{ purchasingItem?.itemName }}"?</p>
+
+          <div class="form-group">
+            <label class="form-label">Actual Price Paid</label>
+            <input
+              v-model="purchasePrice"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="Enter price"
+              class="modal-input"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Quantity</label>
+            <input
+              v-model.number="purchaseQuantity"
+              type="number"
+              step="1"
+              min="1"
+              placeholder="Enter quantity"
+              class="modal-input"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Purchase Date</label>
+            <input
+              v-model="purchaseDate"
+              type="date"
+              class="modal-input"
+            />
+          </div>
+
+          <div class="modal-actions">
+            <button
+              @click="closePurchaseModal"
+              class="modal-button cancel"
+            >
+              Cancel
+            </button>
+            <button
+              @click="confirmPurchase"
+              class="modal-button confirm"
+              :disabled="isPurchasing || !purchasePrice || !purchaseQuantity || !purchaseDate || purchaseQuantity < 1"
+            >
+              {{ isPurchasing ? "Saving..." : "Confirm Purchase" }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -581,6 +660,15 @@ const isAddingItem = ref(false);
 const addItemError = ref("");
 const hasCompletedQueue = ref(false);
 const isCheckingQueue = ref(false);
+
+// Purchase modal state
+const showPurchaseModal = ref(false);
+const purchasingItem = ref(null);
+const purchasePrice = ref(0);
+const purchaseQuantity = ref(1);
+const purchaseDate = ref("");
+const isPurchasing = ref(false);
+const purchaseError = ref("");
 
 // Check if user has completed their daily queue
 const checkQueueCompletion = async () => {
@@ -1035,6 +1123,87 @@ const removeItem = async (itemId) => {
   }
 };
 
+// Open purchase modal
+const openPurchaseModal = (item) => {
+  purchasingItem.value = item;
+  purchasePrice.value = item.price; // Default to original price
+  purchaseQuantity.value = 1; // Default quantity to 1
+  // Set default to today's date in YYYY-MM-DD format
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  purchaseDate.value = `${year}-${month}-${day}`;
+  purchaseError.value = "";
+  showPurchaseModal.value = true;
+};
+
+// Close purchase modal
+const closePurchaseModal = () => {
+  showPurchaseModal.value = false;
+  purchasingItem.value = null;
+  purchasePrice.value = 0;
+  purchaseQuantity.value = 1;
+  purchaseDate.value = "";
+  purchaseError.value = "";
+};
+
+// Confirm purchase
+const confirmPurchase = async () => {
+  if (!currentUser.value?.uid || !purchasingItem.value) {
+    purchaseError.value = "Invalid user or item.";
+    return;
+  }
+
+  if (!purchasePrice.value || !purchaseQuantity.value || !purchaseDate.value) {
+    purchaseError.value = "Please fill in all fields.";
+    return;
+  }
+
+  if (purchaseQuantity.value < 1 || !Number.isInteger(purchaseQuantity.value)) {
+    purchaseError.value = "Quantity must be a whole number greater than 0.";
+    return;
+  }
+
+  isPurchasing.value = true;
+  purchaseError.value = "";
+
+  try {
+    // Convert date string to timestamp (milliseconds)
+    const purchaseTimestamp = new Date(purchaseDate.value).getTime();
+
+    const response = await fetch(`${API_BASE_URL}/ItemCollection/setPurchased`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        owner: currentUser.value.uid,
+        item: purchasingItem.value._id,
+        quantity: purchaseQuantity.value,
+        purchaseTime: purchaseTimestamp,
+        actualPrice: parseFloat(purchasePrice.value),
+      }),
+    });
+
+    const data = await response.json();
+
+    if (data.error) {
+      purchaseError.value = data.error || "Failed to mark item as purchased.";
+      return;
+    }
+
+    // Success! Close modal and refresh wishlist
+    closePurchaseModal();
+    await fetchWishlist();
+  } catch (err) {
+    purchaseError.value = "Failed to mark item as purchased. Please try again.";
+    console.error("Error marking as purchased:", err);
+  } finally {
+    isPurchasing.value = false;
+  }
+};
+
 onMounted(async () => {
   await checkQueueCompletion();
   await fetchWishlist();
@@ -1239,6 +1408,15 @@ const getApprovalClass = (stats) => {
   transform: translateY(-2px);
 }
 
+.wishlist-item.purchased-item {
+  opacity: 0.7;
+  background-color: #f0f0f0;
+}
+
+.wishlist-item.purchased-item:hover {
+  opacity: 0.85;
+}
+
 .remove-button {
   position: absolute;
   top: 0.75rem;
@@ -1270,6 +1448,54 @@ const getApprovalClass = (stats) => {
   color: var(--color-bg);
   border-color: var(--color-accent-red);
   transform: scale(1.1);
+}
+
+.purchased-button {
+  position: absolute;
+  top: 0.75rem;
+  right: 3.5rem;
+  padding: 0.5rem 1rem;
+  border: 2px solid #2d0000;
+  border-radius: 8px;
+  background-color: #f5f0e1;
+  color: #2d0000;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.purchased-button:hover {
+  background-color: #4caf50;
+  color: #f5f0e1;
+  border-color: #4caf50;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.purchased-label {
+  position: absolute;
+  top: 0.75rem;
+  right: 3.5rem;
+  padding: 0.5rem 1rem;
+  border: 2px solid #4caf50;
+  border-radius: 8px;
+  background-color: #4caf50;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .item-image {
@@ -2015,5 +2241,61 @@ const getApprovalClass = (stats) => {
     width: 100%;
     height: 200px;
   }
+}
+
+/* Purchase Modal Styles */
+.purchase-modal {
+  max-width: 500px;
+}
+
+.confirmation-text {
+  font-size: 1rem;
+  color: #2d0000;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.modal-button {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  border: 2px solid #2d0000;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.modal-button.cancel {
+  background-color: #f5f0e1;
+  color: #2d0000;
+}
+
+.modal-button.cancel:hover {
+  background-color: #e0dbc7;
+}
+
+.modal-button.confirm {
+  background-color: #4caf50;
+  color: #fff;
+  border-color: #4caf50;
+}
+
+.modal-button.confirm:hover {
+  background-color: #45a049;
+  border-color: #45a049;
+}
+
+.modal-button.confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>
