@@ -120,7 +120,7 @@ import Navbar from "../components/Navbar.vue";
 
 const router = useRouter();
 const { palette } = useColors();
-const { currentUser } = useAuth();
+const { currentUser, getSession } = useAuth();
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
@@ -154,8 +154,9 @@ const progressPercentage = computed(() => {
 
 // Load or generate today's queue
 const loadQueue = async () => {
-  if (!currentUser.value?.uid) {
-    console.log("No user logged in");
+  const session = getSession();
+  if (!session) {
+    console.log("No session - user not logged in");
     return;
   }
 
@@ -170,7 +171,7 @@ const loadQueue = async () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ owner: currentUser.value.uid }),
+        body: JSON.stringify({ session }),
       }
     );
 
@@ -183,7 +184,7 @@ const loadQueue = async () => {
       // No queue exists for today, generate one
       console.log("No queue found, generating new queue...");
 
-      // Get 10 random items
+      // Get 10 random items (public route - no auth needed)
       const randomItemsResponse = await fetch(
         `${API_BASE_URL}/ItemCollection/_getTenRandomItems`,
         {
@@ -191,7 +192,7 @@ const loadQueue = async () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ owner: currentUser.value.uid }),
+          body: JSON.stringify({}),
         }
       );
 
@@ -216,7 +217,7 @@ const loadQueue = async () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ owner: currentUser.value.uid, itemIds }),
+          body: JSON.stringify({ session, itemIds }),
         }
       );
 
@@ -236,14 +237,14 @@ const loadQueue = async () => {
 
     completedSwipes.value = completed;
 
-    // Fetch full item details for each itemId
+    // Fetch full item details for each itemId (using session for authenticated route)
     const itemDetailsPromises = itemIds.map((itemId) =>
       fetch(`${API_BASE_URL}/ItemCollection/_getItemDetails`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ itemId }),
+        body: JSON.stringify({ session, itemId }),
       }).then((res) => res.json())
     );
 
@@ -320,6 +321,7 @@ const performSwipe = async (direction) => {
 
   const item = currentItem.value;
   const decision = direction === "right" ? "Buy" : "Don't Buy";
+  const session = getSession();
 
   // Record the swipe
   try {
@@ -329,7 +331,7 @@ const performSwipe = async (direction) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        ownerUserId: currentUser.value.uid,
+        session,
         itemId: item._id,
         decision: decision,
       }),
@@ -342,7 +344,7 @@ const performSwipe = async (direction) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        owner: currentUser.value.uid,
+        session,
         itemId: item._id,
       }),
     });

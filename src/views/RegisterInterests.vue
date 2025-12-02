@@ -34,9 +34,11 @@ import { useAuth } from "../composables/useAuth";
 
 const router = useRouter();
 const route = useRoute();
-const { login, currentUser, isAuthenticated, completeRegistration } = useAuth();
+const { currentUser, completeRegistration, getSession } = useAuth();
 const selectedInterests = ref([]);
 const isEditing = ref(false);
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
 const interests = ref([
   { id: 1, name: "TECH", icon: "💻" },
@@ -66,9 +68,24 @@ const toggleInterest = (id) => {
   }
 };
 
-const handleContinue = () => {
+const handleContinue = async () => {
+  const session = getSession();
+  
+  // Save interests to backend if we have a session
+  if (session) {
+    try {
+      await fetch(`${API_BASE_URL}/UserProfile/updateInterests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session, interests: selectedInterests.value }),
+      });
+    } catch (error) {
+      console.error("Error saving interests:", error);
+    }
+  }
+
   if (isEditing.value) {
-    // Update existing user's interests
+    // Update existing user's interests locally
     if (currentUser.value) {
       currentUser.value.interests = selectedInterests.value;
       localStorage.setItem("currentUser", JSON.stringify(currentUser.value));

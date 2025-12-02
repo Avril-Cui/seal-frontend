@@ -113,7 +113,9 @@ import Navbar from "../components/Navbar.vue";
 
 const router = useRouter();
 const { colorBlindMode, toggleColorBlindMode } = useColors();
-const { logout, currentUser } = useAuth();
+const { logout, currentUser, getSession } = useAuth();
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
 // Create a local ref that syncs with the composable
 const isColorBlindMode = computed({
@@ -131,26 +133,38 @@ const userEmail = ref(currentUser.value?.email || "email@example.com");
 const isEditingName = ref(false);
 const isEditingEmail = ref(false);
 
-const saveName = () => {
+const saveName = async () => {
   isEditingName.value = false;
-  // In a real app, you'd save this to the backend
-  if (currentUser.value) {
-    currentUser.value.name = userName.value;
-    localStorage.setItem("currentUser", JSON.stringify(currentUser.value));
+  const session = getSession();
+  if (session && userName.value) {
+    try {
+      await fetch(`${API_BASE_URL}/UserProfile/updateProfileName`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session, name: userName.value }),
+      });
+      // Update local storage
+      if (currentUser.value) {
+        currentUser.value.name = userName.value;
+        localStorage.setItem("currentUser", JSON.stringify(currentUser.value));
+      }
+    } catch (error) {
+      console.error("Error saving name:", error);
+    }
   }
 };
 
 const saveEmail = () => {
   isEditingEmail.value = false;
-  // In a real app, you'd save this to the backend
+  // Email is part of UserAuth, not easily editable - just update locally for display
   if (currentUser.value) {
     currentUser.value.email = userEmail.value;
     localStorage.setItem("currentUser", JSON.stringify(currentUser.value));
   }
 };
 
-const handleLogout = () => {
-  logout();
+const handleLogout = async () => {
+  await logout();
   router.push("/login");
 };
 
