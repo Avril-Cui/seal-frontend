@@ -49,6 +49,16 @@
             <h3 class="item-name">{{ item.itemName }}</h3>
             <p class="item-desc">{{ item.description }}</p>
             <p class="item-price">${{ item.price.toFixed(2) }}</p>
+            <a
+              v-if="item.amazonUrl"
+              :href="item.amazonUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="amazon-link"
+              @click.stop
+            >
+              🔗 View on Amazon
+            </a>
 
             <!-- AI Insight Section -->
             <div class="ai-insight-section">
@@ -816,6 +826,7 @@ const addItem = async () => {
     reason: reasonAnswer.value,
     isNeed: isNeedAnswer.value,
     isFutureApprove: futureApproveAnswer.value,
+    amazonUrl: amazonUrl.value || undefined, // Include Amazon URL if present
   };
 
   console.log("Payload:", payload);
@@ -850,6 +861,7 @@ const addItem = async () => {
     submissionAttempted.value = false;
 
     // Reset form values
+    amazonUrl.value = "";
     newItemName.value = "";
     newItemDesc.value = "";
     newItemPhoto.value = "";
@@ -1581,6 +1593,32 @@ const getApprovalClass = (stats) => {
   margin: 0.5rem 0 0 0;
   color: var(--color-text-primary);
   letter-spacing: -0.02em;
+}
+
+.amazon-link {
+  display: inline-block;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-family: var(--font-primary);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-decoration: none;
+  background-color: #fff8f0;
+  color: #ff9900;
+  border: 1px solid #ff9900;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.amazon-link:hover {
+  background-color: #ff9900;
+  color: #fff;
+  border-color: #ff9900;
+  text-decoration: none;
 }
 
 .loading-message,
