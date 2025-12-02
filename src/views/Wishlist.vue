@@ -904,11 +904,26 @@ const openEditModal = (item) => {
 
 const addItem = async () => {
   console.log("addItem called!");
+  console.log("currentUser:", currentUser.value);
+  console.log("getSession():", getSession());
 
   const session = getSession();
   if (!session) {
     console.error("No session! User not logged in.");
-    addItemError.value = "You must be logged in to add items.";
+    console.error("currentUser value:", currentUser.value);
+    console.error("sessionToken from localStorage:", localStorage.getItem("sessionToken"));
+
+    // If we have a currentUser but no session, the session expired or was lost
+    if (currentUser.value) {
+      addItemError.value = "Your session has expired. Please log out and log back in to continue.";
+      // Optionally, auto-redirect to login after a delay
+      setTimeout(() => {
+        router.push("/login");
+      }, 2000);
+    } else {
+      addItemError.value = "You must be logged in to add items.";
+      router.push("/login");
+    }
     return;
   }
 

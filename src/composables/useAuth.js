@@ -14,6 +14,17 @@ const currentUser = ref(
 // Session token storage (used for authenticated API calls)
 const sessionToken = ref(localStorage.getItem("sessionToken") || null);
 
+// Helper function to get current session for API calls
+const getSession = () => {
+  // Always check localStorage in case it was updated
+  const stored = localStorage.getItem("sessionToken");
+  if (stored && stored !== sessionToken.value) {
+    sessionToken.value = stored;
+  }
+  console.log("getSession called, returning:", sessionToken.value);
+  return sessionToken.value;
+};
+
 const login = async (email, password) => {
   try {
     console.log("API_BASE_URL:", API_BASE_URL);
@@ -35,15 +46,22 @@ const login = async (email, password) => {
     }
 
     const data = await response.json();
+    console.log("Login response data:", data);
+    console.log("Login response keys:", Object.keys(data));
 
     if (data.error) {
       throw new Error(data.error);
     }
 
     // Store session token from backend
+    console.log("data.session value:", data.session);
     if (data.session) {
       sessionToken.value = data.session;
       localStorage.setItem("sessionToken", data.session);
+      console.log("Session token saved to localStorage:", data.session);
+    } else {
+      console.error("WARNING: No session token in login response!");
+      console.error("Full response data:", JSON.stringify(data));
     }
 
     // Store user data with uid (backend uses _id)
@@ -56,6 +74,9 @@ const login = async (email, password) => {
     currentUser.value = userData;
     localStorage.setItem("isAuthenticated", "true");
     localStorage.setItem("currentUser", JSON.stringify(userData));
+
+    console.log("Login completed. sessionToken.value:", sessionToken.value);
+    console.log("localStorage sessionToken:", localStorage.getItem("sessionToken"));
 
     return { success: true, user: userData, session: data.session };
   } catch (error) {
@@ -154,9 +175,6 @@ const completeRegistration = () => {
   isAuthenticated.value = true;
   localStorage.setItem("isAuthenticated", "true");
 };
-
-// Helper function to get current session for API calls
-const getSession = () => sessionToken.value;
 
 export function useAuth() {
   return {

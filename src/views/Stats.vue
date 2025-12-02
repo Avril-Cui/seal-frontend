@@ -133,65 +133,6 @@
                 </p>
               </div>
             </div>
-            <div class="graph-container">
-              <svg
-                class="graph-svg"
-                viewBox="0 0 400 200"
-                preserveAspectRatio="none"
-              >
-                <!-- Grid lines -->
-                <line class="graph-grid" x1="0" y1="50" x2="400" y2="50" />
-                <line class="graph-grid" x1="0" y1="100" x2="400" y2="100" />
-                <line class="graph-grid" x1="0" y1="150" x2="400" y2="150" />
-
-                <!-- Area under curve -->
-                <path
-                  class="graph-area"
-                  d="M 0 180 L 0 160 Q 50 140, 100 130 T 200 110 T 300 90 L 400 70 L 400 200 L 0 200 Z"
-                />
-
-                <!-- Line graph -->
-                <path
-                  class="graph-line"
-                  d="M 0 160 Q 50 140, 100 130 T 200 110 T 300 90 L 400 70"
-                />
-
-                <!-- Labels -->
-                <text class="graph-label" x="0" y="195">Jan</text>
-                <text class="graph-label" x="100" y="195">Mar</text>
-                <text class="graph-label" x="200" y="195">May</text>
-                <text class="graph-label" x="300" y="195">Jul</text>
-                <text class="graph-label" x="385" y="195">Sep</text>
-              </svg>
-            </div>
-            <button class="export-button" @click="exportStats">
-              <span class="export-icon">☁</span>
-              EXPORT DATA
-            </button>
-          </div>
-
-          <!-- AI Insights -->
-          <div class="card insights-card">
-            <h2 class="card-title">Behavioral Insights</h2>
-            <div class="insights-wrapper">
-              <!-- Trend Alert Section -->
-              <div class="insight-section">
-                <div class="mascot">
-                  <img
-                    src="../assets/pig_sprite.png"
-                    alt="Pig mascot"
-                    class="pig-icon"
-                  />
-                </div>
-                <div class="insight-content">
-                  <span class="insight-tag">Trend Alert</span>
-                  <p class="insight-text">
-                    Oink oink! Our analysis shows that you tend to make most
-                    impulsive purchases on weekends, particularly Saturday
-                    afternoons.
-                  </p>
-                </div>
-              </div>
 
             <!-- Improvement Suggestions Section -->
             <div class="insight-section">
@@ -366,6 +307,7 @@ import { useRouter } from "vue-router";
 import { useAuth } from "../composables/useAuth";
 import { useStatsAPI } from "../composables/useStatsAPI";
 import html2canvas from "html2canvas";
+import Navbar from "../components/Navbar.vue";
 
 const router = useRouter();
 const { currentUser } = useAuth();
@@ -377,12 +319,12 @@ const showPreviewModal = ref(false);
 const previewImage = ref(null);
 
 // AI Insights
-const aiTrendAlert = ref("Oink oink! Our analysis shows that you tend to make most impulsive purchases on weekends, particularly Saturday afternoons.");
+const aiTrendAlert = ref("Oink oink! Your pause cart is empty. Start adding items you're considering buying to get personalized insights!");
 const aiSuggestions = ref([
-  "Set a 24-hour waiting period before making weekend purchases",
-  "Create a wishlist and review items after 7 days before buying",
-  "Set a monthly spending limit and track progress weekly",
-  "Avoid shopping apps during high-risk hours (Sat 2-6pm)"
+  "Add items to your pause cart that you're thinking about purchasing",
+  "Take time to reflect on each item using our guided questions",
+  "Complete your daily SwipeSense queue to see community feedback",
+  "Check back here after adding items to see your shopping patterns"
 ]);
 const isLoadingInsights = ref(false);
 
@@ -438,6 +380,14 @@ const fetchAIInsights = async () => {
 
     if (wishlistItems.length === 0) {
       console.log('No wishlist items found');
+      // Set default messages encouraging users to add items
+      aiTrendAlert.value = "Oink oink! Your pause cart is empty. Start adding items you're considering buying to get personalized insights!";
+      aiSuggestions.value = [
+        "Add items to your pause cart that you're thinking about purchasing",
+        "Take time to reflect on each item using our guided questions",
+        "Complete your daily SwipeSense queue to see community feedback",
+        "Check back here after adding items to see your shopping patterns"
+      ];
       isLoadingInsights.value = false;
       return;
     }
