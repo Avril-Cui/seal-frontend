@@ -5,7 +5,10 @@
     <div class="wishlist-content">
       <div v-if="!hasCompletedQueue && !isCheckingQueue" class="queue-reminder">
         <div class="reminder-icon">📊</div>
-        <p>Complete your daily SwipeSense queue to see what the community thinks about your items!</p>
+        <p>
+          Complete your daily SwipeSense queue to see what the community thinks
+          about your items!
+        </p>
       </div>
 
       <div class="add-item-section">
@@ -16,7 +19,8 @@
       <div v-if="isLoading" class="loading-message">Loading your items...</div>
       <div v-else-if="error" class="error-message">{{ error }}</div>
       <div v-else-if="wishlistItems.length === 0" class="empty-message">
-        Your pause cart is empty. Click the "ADD ITEM" button above to get started!
+        Your pause cart is empty. Click the "ADD ITEM" button above to get
+        started!
       </div>
       <div v-else class="items-list">
         <div
@@ -45,20 +49,106 @@
             <h3 class="item-name">{{ item.itemName }}</h3>
             <p class="item-desc">{{ item.description }}</p>
             <p class="item-price">${{ item.price.toFixed(2) }}</p>
+            <a
+              v-if="item.amazonUrl"
+              :href="item.amazonUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="amazon-link"
+              @click.stop
+            >
+              🔗 View on Amazon
+            </a>
+
+            <!-- AI Insight Section -->
+            <div class="ai-insight-section">
+              <button
+                v-if="!item.aiInsight && !item.isLoadingAI"
+                @click.stop="getAIInsight(item)"
+                class="ai-insight-button"
+              >
+                🤖 Get AI Insight
+              </button>
+              <div v-if="item.isLoadingAI" class="ai-loading">
+                <span class="loading-spinner">⏳</span> Analyzing purchase...
+              </div>
+              <div v-if="item.aiInsight" class="ai-insight-content">
+                <div class="ai-header">
+                  <span>🤖 AI Analysis</span>
+                  <button
+                    @click.stop="
+                      item.aiInsight = null;
+                      item.aiStructured = null;
+                    "
+                    class="ai-dismiss-x"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <!-- Structured Display -->
+                <div v-if="item.aiStructured" class="ai-structured">
+                  <div class="ai-verdict-row">
+                    <div
+                      class="ai-score"
+                      :class="getScoreClass(item.aiStructured.impulseScore)"
+                    >
+                      {{ item.aiStructured.impulseScore }}/10
+                    </div>
+                    <div
+                      class="ai-verdict"
+                      :class="getVerdictClass(item.aiStructured.verdict)"
+                    >
+                      {{ item.aiStructured.verdict }}
+                    </div>
+                  </div>
+
+                  <div class="ai-insight-item">
+                    <span class="ai-label">💡 Insight:</span>
+                    <span class="ai-value">{{
+                      item.aiStructured.keyInsight
+                    }}</span>
+                  </div>
+
+                  <div class="ai-insight-item">
+                    <span class="ai-label">📊 Fact:</span>
+                    <span class="ai-value">{{ item.aiStructured.fact }}</span>
+                  </div>
+
+                  <div class="ai-insight-item ai-advice">
+                    <span class="ai-label">✅ Advice:</span>
+                    <span class="ai-value">{{ item.aiStructured.advice }}</span>
+                  </div>
+                </div>
+
+                <!-- Fallback plain text -->
+                <p v-else class="ai-text">{{ item.aiInsight }}</p>
+              </div>
+            </div>
 
             <div class="community-stats">
               <div v-if="!hasCompletedQueue" class="locked-stats">
                 <div class="lock-icon">🔒</div>
                 <p class="lock-message">
-                  Complete your daily SwipeSense queue to unlock community feedback!
+                  Complete your daily SwipeSense queue to unlock community
+                  feedback!
                 </p>
               </div>
-              <div v-else-if="item.communityStats && item.communityStats.total > 0">
-                <div class="stat-badge" :class="getApprovalClass(item.communityStats)">
-                  {{ getApprovalPercentage(item.communityStats) }}% community approval
+              <div
+                v-else-if="item.communityStats && item.communityStats.total > 0"
+              >
+                <div
+                  class="stat-badge"
+                  :class="getApprovalClass(item.communityStats)"
+                >
+                  {{ getApprovalPercentage(item.communityStats) }}% community
+                  approval
                 </div>
                 <div class="stat-info">
-                  {{ item.communityStats.total }} community member{{ item.communityStats.total !== 1 ? 's' : '' }} reviewed this
+                  {{ item.communityStats.total }} community member{{
+                    item.communityStats.total !== 1 ? "s" : ""
+                  }}
+                  reviewed this
                 </div>
               </div>
               <div v-else class="no-stats">
@@ -71,26 +161,69 @@
     </div>
 
     <!-- Add Item Modal -->
-    <div
-      v-if="showAddModal"
-      class="modal-overlay"
-      @click="closeModal"
-    >
+    <div v-if="showAddModal" class="modal-overlay" @click="closeModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
-          <h2>{{ isEditMode ? 'Edit Item' : 'Add Item' }}</h2>
+          <h2>{{ isEditMode ? "Edit Item" : "Add Item" }}</h2>
           <button @click="closeModal" class="close-button">×</button>
         </div>
         <div class="modal-body">
-          <div v-if="addItemError" class="error-message">{{ addItemError }}</div>
+          <div v-if="addItemError" class="error-message">
+            {{ addItemError }}
+          </div>
+
+          <!-- Amazon URL Section -->
+          <div class="amazon-url-section">
+            <div class="form-group">
+              <label class="form-label">Amazon Product URL</label>
+              <div class="url-input-row">
+                <input
+                  v-model="amazonUrl"
+                  placeholder="Paste Amazon product URL here..."
+                  class="modal-input url-input"
+                  :disabled="isFetchingDetails"
+                />
+                <button
+                  @click="fetchAmazonDetails"
+                  class="fetch-button"
+                  :disabled="!amazonUrl || isFetchingDetails"
+                >
+                  {{ isFetchingDetails ? "FETCHING..." : "FETCH" }}
+                </button>
+              </div>
+              <p class="url-hint">
+                Paste an Amazon URL to auto-fill product details, or enter
+                manually below
+              </p>
+            </div>
+          </div>
+
+          <div class="divider-with-text">
+            <span>Product Details</span>
+          </div>
 
           <div class="form-group">
-            <label class="form-label">Image URL</label>
+            <label class="form-label"
+              >Image URL <span class="required-asterisk">*</span></label
+            >
             <input
               v-model="newItemPhoto"
               placeholder="Enter image URL"
               class="modal-input"
+              :class="{
+                'input-error':
+                  submissionAttempted &&
+                  (!newItemPhoto || !newItemPhoto.trim()),
+              }"
             />
+            <p
+              v-if="
+                submissionAttempted && (!newItemPhoto || !newItemPhoto.trim())
+              "
+              class="price-warning"
+            >
+              ⚠️ Image URL is required
+            </p>
             <div class="modal-image">
               <img
                 v-if="newItemPhoto"
@@ -103,78 +236,201 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label">Item Name</label>
+            <label class="form-label"
+              >Item Name <span class="required-asterisk">*</span></label
+            >
             <input
               v-model="newItemName"
               placeholder="Enter item name"
               class="modal-input"
+              :class="{
+                'input-error':
+                  submissionAttempted && (!newItemName || !newItemName.trim()),
+              }"
             />
+            <p
+              v-if="
+                submissionAttempted && (!newItemName || !newItemName.trim())
+              "
+              class="field-warning"
+            >
+              ⚠️ Item name is required
+            </p>
           </div>
 
           <div class="form-group">
-            <label class="form-label">Description</label>
+            <label class="form-label"
+              >Description <span class="required-asterisk">*</span></label
+            >
             <textarea
               v-model="newItemDesc"
               placeholder="Enter description"
               class="modal-textarea"
               rows="3"
+              :class="{
+                'input-error':
+                  submissionAttempted && (!newItemDesc || !newItemDesc.trim()),
+              }"
             ></textarea>
+            <p
+              v-if="
+                submissionAttempted && (!newItemDesc || !newItemDesc.trim())
+              "
+              class="field-warning"
+            >
+              ⚠️ Description is required
+            </p>
           </div>
 
           <div class="form-group">
-            <label class="form-label">Price</label>
-            <input
-              v-model="newItemPrice"
-              type="number"
-              step="0.01"
-              placeholder="Price"
-              class="modal-input"
-            />
+            <label class="form-label"
+              >Price <span class="required-asterisk">*</span></label
+            >
+            <div class="price-input-wrapper">
+              <span class="price-prefix">$</span>
+              <input
+                :value="newItemPrice"
+                @input="handlePriceInput"
+                @keydown="handlePriceKeydown"
+                type="text"
+                inputmode="numeric"
+                placeholder="0.00"
+                class="modal-input price-input"
+                :class="{
+                  'input-error':
+                    newItemPrice !== '0.00' &&
+                    newItemPrice !== '' &&
+                    isPriceInvalid(newItemPrice),
+                }"
+              />
+            </div>
+            <p
+              v-if="
+                newItemPrice !== '0.00' &&
+                newItemPrice !== '' &&
+                isPriceInvalid(newItemPrice)
+              "
+              class="price-warning"
+            >
+              ⚠️ {{ priceErrorMessage }}
+            </p>
           </div>
 
           <div class="reflection-section">
             <h3 class="reflection-title">Reflection Questions</h3>
 
             <div class="form-group">
-              <label class="form-label">Why do you want this item?</label>
+              <label class="form-label"
+                >Why do you want this item?
+                <span class="required-asterisk">*</span></label
+              >
               <textarea
                 v-model="reasonAnswer"
                 placeholder="Enter your reason..."
                 class="modal-textarea"
                 rows="2"
+                :class="{
+                  'input-error':
+                    submissionAttempted &&
+                    (!reasonAnswer || !reasonAnswer.trim()),
+                }"
               ></textarea>
+              <p
+                v-if="
+                  submissionAttempted && (!reasonAnswer || !reasonAnswer.trim())
+                "
+                class="field-warning"
+              >
+                ⚠️ Please explain why you want this item
+              </p>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Is this a need or a want?</label>
+              <label class="form-label"
+                >Is this a need or a want?
+                <span class="required-asterisk">*</span></label
+              >
               <textarea
                 v-model="isNeedAnswer"
                 placeholder="Enter your answer..."
                 class="modal-textarea"
                 rows="2"
+                :class="{
+                  'input-error':
+                    submissionAttempted &&
+                    (!isNeedAnswer || !isNeedAnswer.trim()),
+                }"
               ></textarea>
+              <p
+                v-if="
+                  submissionAttempted && (!isNeedAnswer || !isNeedAnswer.trim())
+                "
+                class="field-warning"
+              >
+                ⚠️ Please answer: is this a need or a want?
+              </p>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Would Future-You approve?</label>
+              <label class="form-label"
+                >Would Future-You approve?
+                <span class="required-asterisk">*</span></label
+              >
               <textarea
                 v-model="futureApproveAnswer"
                 placeholder="Enter your answer..."
                 class="modal-textarea"
                 rows="2"
+                :class="{
+                  'input-error':
+                    submissionAttempted &&
+                    (!futureApproveAnswer || !futureApproveAnswer.trim()),
+                }"
               ></textarea>
+              <p
+                v-if="
+                  submissionAttempted &&
+                  (!futureApproveAnswer || !futureApproveAnswer.trim())
+                "
+                class="field-warning"
+              >
+                ⚠️ Please answer: would future-you approve?
+              </p>
             </div>
           </div>
 
           <button
-            @click="isEditMode ? updateItem() : addItem()"
+            @click="
+              submissionAttempted = true;
+              isEditMode ? updateItem() : addItem();
+            "
             class="modal-submit"
-            :disabled="!newItemName || !newItemDesc || !newItemPrice || !reasonAnswer || !isNeedAnswer || !futureApproveAnswer || isAddingItem"
+            :disabled="isAddingItem"
           >
-            {{ isAddingItem ? "SAVING..." : (isEditMode ? "UPDATE ITEM" : "SAVE TO PAUSE CART") }}
+            {{
+              isAddingItem
+                ? "SAVING..."
+                : isEditMode
+                ? "UPDATE ITEM"
+                : "SAVE TO PAUSE CART"
+            }}
           </button>
-          <p v-if="!newItemName || !newItemDesc || !newItemPrice || !reasonAnswer || !isNeedAnswer || !futureApproveAnswer" class="validation-hint">
-            Please fill in all fields and answer all reflection questions before saving.
+          <p v-if="hasValidationErrors" class="validation-error-summary">
+            ⚠️ Please fix errors above before saving
+          </p>
+          <p
+            v-else-if="
+              !newItemName ||
+              !newItemDesc ||
+              !newItemPrice ||
+              !reasonAnswer ||
+              !isNeedAnswer ||
+              !futureApproveAnswer
+            "
+            class="validation-hint"
+          >
+            Please fill in all fields and answer all reflection questions before
+            saving.
           </p>
         </div>
       </div>
@@ -183,7 +439,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "../composables/useAuth";
 import Navbar from "../components/Navbar.vue";
@@ -191,7 +447,7 @@ import Navbar from "../components/Navbar.vue";
 const router = useRouter();
 const { currentUser } = useAuth();
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
 const showAddModal = ref(false);
 const isEditMode = ref(false);
@@ -199,10 +455,124 @@ const editingItemId = ref(null);
 const newItemName = ref("");
 const newItemDesc = ref("");
 const newItemPhoto = ref("");
-const newItemPrice = ref(0);
+const newItemPrice = ref("0.00");
 const reasonAnswer = ref("");
 const isNeedAnswer = ref("");
 const futureApproveAnswer = ref("");
+const submissionAttempted = ref(false);
+
+// Currency input handler - formats as XX.XX (cents-first input like ATM)
+const handlePriceInput = (event) => {
+  // Get only digits from input
+  const digits = event.target.value.replace(/\D/g, "");
+
+  // Convert to cents then format
+  const cents = parseInt(digits || "0", 10);
+  const formatted = (cents / 100).toFixed(2);
+
+  newItemPrice.value = formatted;
+
+  // Update input value to formatted
+  event.target.value = formatted;
+};
+
+const handlePriceKeydown = (event) => {
+  // Allow: backspace, delete, tab, escape, enter, arrows
+  const allowedKeys = [
+    "Backspace",
+    "Delete",
+    "Tab",
+    "Escape",
+    "Enter",
+    "ArrowLeft",
+    "ArrowRight",
+    "ArrowUp",
+    "ArrowDown",
+  ];
+  if (allowedKeys.includes(event.key)) {
+    return;
+  }
+
+  // Only allow digits
+  if (!/^\d$/.test(event.key)) {
+    event.preventDefault();
+  }
+};
+
+// Helper function to check if price is invalid
+const isPriceInvalid = (priceValue) => {
+  // Check if empty or null
+  if (priceValue === "" || priceValue === null || priceValue === undefined) {
+    return true;
+  }
+
+  // Convert to string and trim
+  const priceStr = String(priceValue).trim();
+  if (priceStr === "" || priceStr === "-" || priceStr === "0.00") return true;
+
+  // Check if it's a valid price format (XX.XX with exactly 2 decimal places)
+  const validPricePattern = /^\d+\.\d{2}$/;
+  if (!validPricePattern.test(priceStr)) return true;
+
+  // Check if it's a valid number using parseFloat
+  const priceNum = parseFloat(priceStr);
+
+  // If NaN, it's invalid
+  if (isNaN(priceNum)) return true;
+
+  // If <= 0, it's invalid
+  if (priceNum <= 0) return true;
+
+  return false;
+};
+
+// Computed property to check for validation errors
+const hasValidationErrors = computed(() => {
+  if (!submissionAttempted.value) return false;
+
+  const hasNameError = !newItemName.value || !newItemName.value.trim();
+  const hasDescError = !newItemDesc.value || !newItemDesc.value.trim();
+  const hasPhotoError = !newItemPhoto.value || !newItemPhoto.value.trim();
+  const hasPriceError = isPriceInvalid(newItemPrice.value);
+  const hasReasonError = !reasonAnswer.value || !reasonAnswer.value.trim();
+  const hasNeedError = !isNeedAnswer.value || !isNeedAnswer.value.trim();
+  const hasFutureError =
+    !futureApproveAnswer.value || !futureApproveAnswer.value.trim();
+
+  return (
+    hasNameError ||
+    hasDescError ||
+    hasPhotoError ||
+    hasPriceError ||
+    hasReasonError ||
+    hasNeedError ||
+    hasFutureError
+  );
+});
+
+// Computed property for price error message (real-time)
+const priceErrorMessage = computed(() => {
+  if (!isPriceInvalid(newItemPrice.value)) return "";
+
+  const priceStr = String(newItemPrice.value || "").trim();
+
+  // Check if empty or zero - only show after submission attempt
+  if (priceStr === "" || priceStr === "0.00") {
+    return submissionAttempted.value ? "Price is required" : "";
+  }
+
+  const priceNum = parseFloat(priceStr);
+
+  if (priceNum <= 0) {
+    return "Price must be greater than $0";
+  }
+
+  return "Invalid price";
+});
+
+// Amazon URL fetching
+const amazonUrl = ref("");
+const isFetchingDetails = ref(false);
 
 const wishlistItems = ref([]);
 const isLoading = ref(false);
@@ -337,19 +707,67 @@ const fetchWishlist = async () => {
   }
 };
 
+// Fetch product details from Amazon URL
+const fetchAmazonDetails = async () => {
+  if (!amazonUrl.value) {
+    addItemError.value = "Please enter an Amazon URL";
+    return;
+  }
+
+  isFetchingDetails.value = true;
+  addItemError.value = "";
+
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/ItemCollection/fetchAmazonDetails`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ url: amazonUrl.value }),
+      }
+    );
+
+    const data = await response.json();
+    console.log("Amazon fetch response:", data);
+
+    if (data.error) {
+      addItemError.value = data.error;
+      return;
+    }
+
+    // Auto-fill the form with fetched data
+    newItemName.value = data.itemName || "";
+    newItemDesc.value = data.description || "";
+    newItemPhoto.value = data.photo || "";
+    newItemPrice.value = (data.price || 0).toFixed(2);
+
+    console.log("Auto-filled form with Amazon data");
+  } catch (err) {
+    addItemError.value =
+      "Failed to fetch Amazon details. Please enter manually.";
+    console.error("Error fetching Amazon details:", err);
+  } finally {
+    isFetchingDetails.value = false;
+  }
+};
+
 // Open the add item modal with empty fields
 const openAddModal = () => {
   // Reset all fields
   isEditMode.value = false;
   editingItemId.value = null;
+  amazonUrl.value = "";
   newItemName.value = "";
   newItemDesc.value = "";
   newItemPhoto.value = "";
-  newItemPrice.value = 0;
+  newItemPrice.value = "0.00";
   reasonAnswer.value = "";
   isNeedAnswer.value = "";
   futureApproveAnswer.value = "";
   addItemError.value = "";
+  submissionAttempted.value = false;
   showAddModal.value = true;
 };
 
@@ -360,14 +778,14 @@ const openEditModal = (item) => {
   newItemName.value = item.itemName;
   newItemDesc.value = item.description;
   newItemPhoto.value = item.photo;
-  newItemPrice.value = item.price;
+  newItemPrice.value = parseFloat(item.price || 0).toFixed(2);
   reasonAnswer.value = item.reason || "";
   isNeedAnswer.value = item.isNeed || "";
   futureApproveAnswer.value = item.isFutureApprove || "";
   addItemError.value = "";
+  submissionAttempted.value = false;
   showAddModal.value = true;
 };
-
 
 const addItem = async () => {
   console.log("addItem called!");
@@ -379,6 +797,22 @@ const addItem = async () => {
     return;
   }
 
+  // Validate all required fields (errors shown per-field)
+  const priceNum = Number(newItemPrice.value);
+  if (
+    !newItemName.value?.trim() ||
+    !newItemDesc.value?.trim() ||
+    !newItemPhoto.value?.trim() ||
+    !newItemPrice.value ||
+    isNaN(priceNum) ||
+    priceNum <= 0 ||
+    !reasonAnswer.value?.trim() ||
+    !isNeedAnswer.value?.trim() ||
+    !futureApproveAnswer.value?.trim()
+  ) {
+    return; // Individual field warnings are shown
+  }
+
   console.log("Starting to save item...");
   isAddingItem.value = true;
   addItemError.value = "";
@@ -388,10 +822,11 @@ const addItem = async () => {
     itemName: newItemName.value,
     description: newItemDesc.value,
     photo: newItemPhoto.value,
-    price: newItemPrice.value,
+    price: Number(newItemPrice.value),
     reason: reasonAnswer.value,
     isNeed: isNeedAnswer.value,
     isFutureApprove: futureApproveAnswer.value,
+    amazonUrl: amazonUrl.value || undefined, // Include Amazon URL if present
   };
 
   console.log("Payload:", payload);
@@ -412,7 +847,8 @@ const addItem = async () => {
     console.log("Response data:", data);
 
     if (data.error) {
-      addItemError.value = data.error || "Failed to save item. Please try again.";
+      addItemError.value =
+        data.error || "Failed to save item. Please try again.";
       return;
     }
 
@@ -422,12 +858,14 @@ const addItem = async () => {
 
     // Close modal and reset form
     showAddModal.value = false;
+    submissionAttempted.value = false;
 
     // Reset form values
+    amazonUrl.value = "";
     newItemName.value = "";
     newItemDesc.value = "";
     newItemPhoto.value = "";
-    newItemPrice.value = 0;
+    newItemPrice.value = "0.00";
     reasonAnswer.value = "";
     isNeedAnswer.value = "";
     futureApproveAnswer.value = "";
@@ -454,6 +892,23 @@ const updateItem = async () => {
     return;
   }
 
+  // Validate all required fields (errors shown per-field)
+  const priceNum = Number(newItemPrice.value);
+  if (
+    !newItemName.value?.trim() ||
+    !newItemDesc.value?.trim() ||
+    !newItemPhoto.value?.trim() ||
+    !newItemPrice.value ||
+    isNaN(priceNum) ||
+    priceNum <= 0 ||
+    !reasonAnswer.value?.trim() ||
+    !isNeedAnswer.value?.trim() ||
+    !futureApproveAnswer.value?.trim()
+  ) {
+    return; // Individual field warnings are shown
+    return;
+  }
+
   isAddingItem.value = true;
   addItemError.value = "";
 
@@ -463,7 +918,7 @@ const updateItem = async () => {
     itemName: newItemName.value,
     description: newItemDesc.value,
     photo: newItemPhoto.value,
-    price: newItemPrice.value,
+    price: Number(newItemPrice.value),
     reason: reasonAnswer.value,
     isNeed: isNeedAnswer.value,
     isFutureApprove: futureApproveAnswer.value,
@@ -484,7 +939,8 @@ const updateItem = async () => {
     console.log("Update response:", data);
 
     if (data.error) {
-      addItemError.value = data.error || "Failed to update item. Please try again.";
+      addItemError.value =
+        data.error || "Failed to update item. Please try again.";
       return;
     }
 
@@ -494,10 +950,11 @@ const updateItem = async () => {
 
     // Close modal and reset form
     showAddModal.value = false;
+    submissionAttempted.value = false;
     newItemName.value = "";
     newItemDesc.value = "";
     newItemPhoto.value = "";
-    newItemPrice.value = 0;
+    newItemPrice.value = "0.00";
     reasonAnswer.value = "";
     isNeedAnswer.value = "";
     futureApproveAnswer.value = "";
@@ -519,7 +976,9 @@ const removeItem = async (itemId) => {
     return;
   }
 
-  if (!confirm("Are you sure you want to remove this item from your pause cart?")) {
+  if (
+    !confirm("Are you sure you want to remove this item from your pause cart?")
+  ) {
     return;
   }
 
@@ -557,8 +1016,67 @@ onMounted(async () => {
 const closeModal = () => {
   showAddModal.value = false;
   addItemError.value = "";
+  submissionAttempted.value = false;
 };
 
+// Get AI insight for an item
+const getAIInsight = async (item) => {
+  if (!currentUser.value?.uid) {
+    console.error("No user logged in");
+    return;
+  }
+
+  // Set loading state
+  item.isLoadingAI = true;
+
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/ItemCollection/getAIInsight`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          owner: currentUser.value.uid,
+          item: item._id,
+        }),
+      }
+    );
+
+    const data = await response.json();
+    console.log("AI Insight response:", data);
+
+    if (data.error) {
+      item.aiInsight = `Error: ${data.error}`;
+      item.aiStructured = null;
+    } else {
+      item.aiInsight = data.llm_response;
+      item.aiStructured = data.structured || null;
+    }
+  } catch (err) {
+    console.error("Error getting AI insight:", err);
+    item.aiInsight = "Failed to get AI insight. Please try again.";
+    item.aiStructured = null;
+  } finally {
+    item.isLoadingAI = false;
+  }
+};
+
+// Helper functions for AI insight styling
+const getScoreClass = (score) => {
+  if (score <= 3) return "score-low";
+  if (score <= 6) return "score-medium";
+  return "score-high";
+};
+
+const getVerdictClass = (verdict) => {
+  if (!verdict) return "";
+  const v = verdict.toUpperCase();
+  if (v === "BUY") return "verdict-buy";
+  if (v === "WAIT") return "verdict-wait";
+  return "verdict-skip";
+};
 
 // Calculate approval percentage from community stats
 const getApprovalPercentage = (stats) => {
@@ -576,11 +1094,11 @@ const getApprovalClass = (stats) => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap");
 
 .wishlist-container {
-  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-secondary: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-primary: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-secondary: "Nunito", -apple-system, BlinkMacSystemFont, sans-serif;
 
   min-height: 100vh;
   background-color: var(--color-bg);
@@ -875,6 +1393,57 @@ const getApprovalClass = (stats) => {
   border-color: var(--color-border-dark);
 }
 
+.modal-input.input-error {
+  border-color: #e74c3c;
+  background-color: #fdf2f2;
+}
+
+/* Hide spinner buttons for number inputs */
+.modal-input[type="number"]::-webkit-inner-spin-button,
+.modal-input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.modal-input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.price-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.price-prefix {
+  position: absolute;
+  left: 14px;
+  color: #666;
+  font-weight: 600;
+  font-size: 1rem;
+  pointer-events: none;
+}
+
+.price-input {
+  padding-left: 28px !important;
+  font-family: "SF Mono", "Monaco", "Consolas", monospace;
+  letter-spacing: 0.5px;
+}
+
+.price-warning,
+.field-warning {
+  color: #e74c3c;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.modal-textarea.input-error {
+  border-color: #e74c3c;
+  background-color: #fff5f5;
+}
+
 .modal-textarea {
   width: 100%;
   padding: 0.875rem 1rem;
@@ -914,6 +1483,87 @@ const getApprovalClass = (stats) => {
   color: var(--color-text-primary);
 }
 
+.required-asterisk {
+  color: #e74c3c;
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+/* Amazon URL Section Styles */
+.amazon-url-section {
+  background-color: var(--color-bg-secondary);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border: 1px solid var(--color-border);
+}
+
+.url-input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.url-input {
+  flex: 1;
+}
+
+.fetch-button {
+  padding: 0.875rem 1.25rem;
+  font-family: var(--font-primary);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background-color: var(--color-text-primary);
+  color: var(--color-bg);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.fetch-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(26, 26, 26, 0.15);
+}
+
+.fetch-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.url-hint {
+  font-size: 0.7rem;
+  color: var(--color-text-tertiary);
+  margin-top: 0.5rem;
+  font-family: var(--font-secondary);
+}
+
+.divider-with-text {
+  display: flex;
+  align-items: center;
+  margin: 1rem 0;
+}
+
+.divider-with-text::before,
+.divider-with-text::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background-color: var(--color-border);
+}
+
+.divider-with-text span {
+  padding: 0 1rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-primary);
+}
+
 .reflection-section {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
@@ -943,6 +1593,32 @@ const getApprovalClass = (stats) => {
   margin: 0.5rem 0 0 0;
   color: var(--color-text-primary);
   letter-spacing: -0.02em;
+}
+
+.amazon-link {
+  display: inline-block;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-family: var(--font-primary);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-decoration: none;
+  background-color: #fff8f0;
+  color: #ff9900;
+  border: 1px solid #ff9900;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.amazon-link:hover {
+  background-color: #ff9900;
+  color: #fff;
+  border-color: #ff9900;
+  text-decoration: none;
 }
 
 .loading-message,
@@ -1000,6 +1676,218 @@ const getApprovalClass = (stats) => {
   color: var(--color-text-tertiary);
   margin-top: 0.5rem;
   font-family: var(--font-secondary);
+}
+
+.validation-error-summary {
+  text-align: center;
+  font-size: 0.875rem;
+  color: #e74c3c;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-family: var(--font-secondary);
+  font-weight: 500;
+}
+
+/* AI Insight Styles */
+.ai-insight-section {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.ai-insight-button {
+  padding: 0.5rem 1rem;
+  font-family: var(--font-primary);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ai-insight-button:hover {
+  background-color: var(--color-text-primary);
+  color: var(--color-bg);
+  border-color: var(--color-text-primary);
+}
+
+.ai-loading {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  font-family: var(--font-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ai-insight-content {
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.ai-header {
+  font-family: var(--font-primary);
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-primary);
+  margin-bottom: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ai-dismiss-x {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.ai-dismiss-x:hover {
+  color: var(--color-text-primary);
+}
+
+.ai-structured {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ai-verdict-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.ai-score {
+  font-family: var(--font-primary);
+  font-size: 1.25rem;
+  font-weight: 700;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+}
+
+.score-low {
+  background-color: var(--color-accent-green);
+  color: var(--color-text-primary);
+}
+
+.score-medium {
+  background-color: var(--color-accent-pink);
+  color: var(--color-text-primary);
+}
+
+.score-high {
+  background-color: #ffcccc;
+  color: #8b0000;
+}
+
+.ai-verdict {
+  font-family: var(--font-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+}
+
+.verdict-buy {
+  background-color: var(--color-accent-green);
+  color: var(--color-text-primary);
+}
+
+.verdict-wait {
+  background-color: var(--color-accent-pink);
+  color: var(--color-text-primary);
+}
+
+.verdict-skip {
+  background-color: #ffcccc;
+  color: #8b0000;
+}
+
+.ai-insight-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ai-label {
+  font-family: var(--font-primary);
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-tertiary);
+}
+
+.ai-value {
+  font-family: var(--font-secondary);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--color-text-primary);
+}
+
+.ai-advice {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.ai-text {
+  font-family: var(--font-secondary);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.ai-dismiss {
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-family: var(--font-primary);
+  font-size: 0.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ai-dismiss:hover {
+  border-color: var(--color-text-primary);
+  color: var(--color-text-primary);
 }
 
 .community-stats {
