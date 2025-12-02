@@ -480,13 +480,19 @@ const fetchPurchasedItems = async () => {
 
     const data = await response.json();
 
+    console.log('Purchased items response:', data);
+
     if (data.error) {
       console.log('Error fetching purchased items:', data.error);
       recentPurchases.value = [];
     } else if (data.items && Array.isArray(data.items)) {
-      // Data comes back as { items: [...] } from the sync
+      // Data comes back as { items: [{ item: {...} }] } from the sync
+      // Unwrap the nested item structure
+      const unwrappedItems = data.items.map(obj => obj.item || obj);
+      console.log('Unwrapped purchased items:', unwrappedItems);
+
       // Sort by purchase date (most recent first)
-      const items = data.items.sort((a, b) => {
+      const items = unwrappedItems.sort((a, b) => {
         return (b.PurchasedTime || 0) - (a.PurchasedTime || 0);
       });
       recentPurchases.value = items;

@@ -1184,6 +1184,14 @@ const confirmPurchase = async () => {
   purchaseError.value = "";
 
   try {
+    // Get session token for authentication
+    const session = getSession();
+    if (!session) {
+      purchaseError.value = "Your session has expired. Please log in again.";
+      isPurchasing.value = false;
+      return;
+    }
+
     // Convert date string to timestamp (milliseconds)
     const purchaseTimestamp = new Date(purchaseDate.value).getTime();
 
@@ -1193,7 +1201,7 @@ const confirmPurchase = async () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        owner: currentUser.value.uid,
+        session: session,
         item: purchasingItem.value._id,
         quantity: purchaseQuantity.value,
         purchaseTime: purchaseTimestamp,
