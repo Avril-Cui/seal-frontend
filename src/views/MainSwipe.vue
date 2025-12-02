@@ -45,11 +45,18 @@
         @mouseup="handleMouseEnd"
         @mouseleave="handleMouseEnd"
       >
-        <div class="card-image" v-if="currentItem.photo">
+        <div class="card-image">
           <img
+            v-if="currentItem.photo"
             :src="currentItem.photo"
             :alt="currentItem.itemName"
             class="item-photo"
+          />
+          <img
+            v-else
+            src="../assets/pig_sprite.png"
+            alt="Item placeholder"
+            class="item-photo placeholder"
           />
         </div>
         <div class="card-content">
@@ -665,6 +672,11 @@ onMounted(() => {
   height: 100%;
   object-fit: cover;
   min-height: 100%;
+}
+
+.item-photo.placeholder {
+  object-fit: contain;
+  padding: 2rem;
 }
 
 .card-content {
