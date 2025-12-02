@@ -1,6 +1,9 @@
 <template>
   <div class="register-container">
     <div class="register-content">
+      <div class="mascot">
+        <img src="../assets/pig_sprite.png" alt="Pig mascot" class="pig" />
+      </div>
       <h1 class="app-title">BYEBUY</h1>
 
       <form @submit.prevent="handleRegister" class="register-form">
@@ -32,10 +35,6 @@
         <a href="#" @click.prevent="goToLogin"
           >Already have an account? Login</a
         >
-      </div>
-
-      <div class="mascot">
-        <img src="../assets/pig_sprite.png" alt="Pig mascot" class="pig" />
       </div>
     </div>
   </div>
@@ -210,12 +209,9 @@ const goToLogin = () => {
 }
 
 .mascot {
-  position: absolute;
-  right: -60px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 2rem;
-  filter: grayscale(20%);
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
 }
 
 .pig {
@@ -225,13 +221,6 @@ const goToLogin = () => {
 }
 
 @media (max-width: 768px) {
-  .mascot {
-    position: static;
-    transform: none;
-    text-align: center;
-    margin-top: 2rem;
-  }
-
   .app-title {
     font-size: 1.5rem;
   }

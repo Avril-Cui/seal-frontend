@@ -59,12 +59,7 @@ const router = createRouter({
 });
 
 // Route guards
-// TEMPORARILY DISABLED FOR DESIGN TESTING
 router.beforeEach((to, from, next) => {
-  // Temporarily bypass authentication
-  next();
-
-  /* ORIGINAL AUTH CODE - UNCOMMENT WHEN READY
   const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
 
   if (to.meta.requiresAuth && !isAuthenticated) {
@@ -74,7 +69,6 @@ router.beforeEach((to, from, next) => {
   } else {
     next();
   }
-  */
 });
 
 export default router;
