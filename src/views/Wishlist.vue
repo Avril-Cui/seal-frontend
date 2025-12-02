@@ -193,12 +193,27 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label">Image URL</label>
+            <label class="form-label"
+              >Image URL <span class="required-asterisk">*</span></label
+            >
             <input
               v-model="newItemPhoto"
               placeholder="Enter image URL"
               class="modal-input"
+              :class="{
+                'input-error':
+                  submissionAttempted &&
+                  (!newItemPhoto || !newItemPhoto.trim()),
+              }"
             />
+            <p
+              v-if="
+                submissionAttempted && (!newItemPhoto || !newItemPhoto.trim())
+              "
+              class="price-warning"
+            >
+              ⚠️ Image URL is required
+            </p>
             <div class="modal-image">
               <img
                 v-if="newItemPhoto"
@@ -211,81 +226,176 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label">Item Name</label>
+            <label class="form-label"
+              >Item Name <span class="required-asterisk">*</span></label
+            >
             <input
               v-model="newItemName"
               placeholder="Enter item name"
               class="modal-input"
+              :class="{
+                'input-error':
+                  submissionAttempted && (!newItemName || !newItemName.trim()),
+              }"
             />
+            <p
+              v-if="
+                submissionAttempted && (!newItemName || !newItemName.trim())
+              "
+              class="field-warning"
+            >
+              ⚠️ Item name is required
+            </p>
           </div>
 
           <div class="form-group">
-            <label class="form-label">Description</label>
+            <label class="form-label"
+              >Description <span class="required-asterisk">*</span></label
+            >
             <textarea
               v-model="newItemDesc"
               placeholder="Enter description"
               class="modal-textarea"
               rows="3"
+              :class="{
+                'input-error':
+                  submissionAttempted && (!newItemDesc || !newItemDesc.trim()),
+              }"
             ></textarea>
+            <p
+              v-if="
+                submissionAttempted && (!newItemDesc || !newItemDesc.trim())
+              "
+              class="field-warning"
+            >
+              ⚠️ Description is required
+            </p>
           </div>
 
           <div class="form-group">
-            <label class="form-label">Price</label>
-            <input
-              v-model="newItemPrice"
-              type="number"
-              step="0.01"
-              placeholder="Price"
-              class="modal-input"
-            />
+            <label class="form-label"
+              >Price <span class="required-asterisk">*</span></label
+            >
+            <div class="price-input-wrapper">
+              <span class="price-prefix">$</span>
+              <input
+                :value="newItemPrice"
+                @input="handlePriceInput"
+                @keydown="handlePriceKeydown"
+                type="text"
+                inputmode="numeric"
+                placeholder="0.00"
+                class="modal-input price-input"
+                :class="{
+                  'input-error':
+                    newItemPrice !== '0.00' &&
+                    newItemPrice !== '' &&
+                    isPriceInvalid(newItemPrice),
+                }"
+              />
+            </div>
+            <p
+              v-if="
+                newItemPrice !== '0.00' &&
+                newItemPrice !== '' &&
+                isPriceInvalid(newItemPrice)
+              "
+              class="price-warning"
+            >
+              ⚠️ {{ priceErrorMessage }}
+            </p>
           </div>
 
           <div class="reflection-section">
             <h3 class="reflection-title">Reflection Questions</h3>
 
             <div class="form-group">
-              <label class="form-label">Why do you want this item?</label>
+              <label class="form-label"
+                >Why do you want this item?
+                <span class="required-asterisk">*</span></label
+              >
               <textarea
                 v-model="reasonAnswer"
                 placeholder="Enter your reason..."
                 class="modal-textarea"
                 rows="2"
+                :class="{
+                  'input-error':
+                    submissionAttempted &&
+                    (!reasonAnswer || !reasonAnswer.trim()),
+                }"
               ></textarea>
+              <p
+                v-if="
+                  submissionAttempted && (!reasonAnswer || !reasonAnswer.trim())
+                "
+                class="field-warning"
+              >
+                ⚠️ Please explain why you want this item
+              </p>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Is this a need or a want?</label>
+              <label class="form-label"
+                >Is this a need or a want?
+                <span class="required-asterisk">*</span></label
+              >
               <textarea
                 v-model="isNeedAnswer"
                 placeholder="Enter your answer..."
                 class="modal-textarea"
                 rows="2"
+                :class="{
+                  'input-error':
+                    submissionAttempted &&
+                    (!isNeedAnswer || !isNeedAnswer.trim()),
+                }"
               ></textarea>
+              <p
+                v-if="
+                  submissionAttempted && (!isNeedAnswer || !isNeedAnswer.trim())
+                "
+                class="field-warning"
+              >
+                ⚠️ Please answer: is this a need or a want?
+              </p>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Would Future-You approve?</label>
+              <label class="form-label"
+                >Would Future-You approve?
+                <span class="required-asterisk">*</span></label
+              >
               <textarea
                 v-model="futureApproveAnswer"
                 placeholder="Enter your answer..."
                 class="modal-textarea"
                 rows="2"
+                :class="{
+                  'input-error':
+                    submissionAttempted &&
+                    (!futureApproveAnswer || !futureApproveAnswer.trim()),
+                }"
               ></textarea>
+              <p
+                v-if="
+                  submissionAttempted &&
+                  (!futureApproveAnswer || !futureApproveAnswer.trim())
+                "
+                class="field-warning"
+              >
+                ⚠️ Please answer: would future-you approve?
+              </p>
             </div>
           </div>
 
           <button
-            @click="isEditMode ? updateItem() : addItem()"
-            class="modal-submit"
-            :disabled="
-              !newItemName ||
-              !newItemDesc ||
-              !newItemPrice ||
-              !reasonAnswer ||
-              !isNeedAnswer ||
-              !futureApproveAnswer ||
-              isAddingItem
+            @click="
+              submissionAttempted = true;
+              isEditMode ? updateItem() : addItem();
             "
+            class="modal-submit"
+            :disabled="isAddingItem"
           >
             {{
               isAddingItem
@@ -295,8 +405,11 @@
                 : "SAVE TO PAUSE CART"
             }}
           </button>
+          <p v-if="hasValidationErrors" class="validation-error-summary">
+            ⚠️ Please fix errors above before saving
+          </p>
           <p
-            v-if="
+            v-else-if="
               !newItemName ||
               !newItemDesc ||
               !newItemPrice ||
@@ -316,7 +429,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "../composables/useAuth";
 import Navbar from "../components/Navbar.vue";
@@ -332,10 +445,120 @@ const editingItemId = ref(null);
 const newItemName = ref("");
 const newItemDesc = ref("");
 const newItemPhoto = ref("");
-const newItemPrice = ref(0);
+const newItemPrice = ref("0.00");
 const reasonAnswer = ref("");
 const isNeedAnswer = ref("");
 const futureApproveAnswer = ref("");
+const submissionAttempted = ref(false);
+
+// Currency input handler - formats as XX.XX (cents-first input like ATM)
+const handlePriceInput = (event) => {
+  // Get only digits from input
+  const digits = event.target.value.replace(/\D/g, "");
+
+  // Convert to cents then format
+  const cents = parseInt(digits || "0", 10);
+  const formatted = (cents / 100).toFixed(2);
+
+  newItemPrice.value = formatted;
+
+  // Update input value to formatted
+  event.target.value = formatted;
+};
+
+const handlePriceKeydown = (event) => {
+  // Allow: backspace, delete, tab, escape, enter, arrows
+  const allowedKeys = [
+    "Backspace",
+    "Delete",
+    "Tab",
+    "Escape",
+    "Enter",
+    "ArrowLeft",
+    "ArrowRight",
+    "ArrowUp",
+    "ArrowDown",
+  ];
+  if (allowedKeys.includes(event.key)) {
+    return;
+  }
+
+  // Only allow digits
+  if (!/^\d$/.test(event.key)) {
+    event.preventDefault();
+  }
+};
+
+// Helper function to check if price is invalid
+const isPriceInvalid = (priceValue) => {
+  // Check if empty or null
+  if (priceValue === "" || priceValue === null || priceValue === undefined) {
+    return true;
+  }
+
+  // Convert to string and trim
+  const priceStr = String(priceValue).trim();
+  if (priceStr === "" || priceStr === "-" || priceStr === "0.00") return true;
+
+  // Check if it's a valid price format (XX.XX with exactly 2 decimal places)
+  const validPricePattern = /^\d+\.\d{2}$/;
+  if (!validPricePattern.test(priceStr)) return true;
+
+  // Check if it's a valid number using parseFloat
+  const priceNum = parseFloat(priceStr);
+
+  // If NaN, it's invalid
+  if (isNaN(priceNum)) return true;
+
+  // If <= 0, it's invalid
+  if (priceNum <= 0) return true;
+
+  return false;
+};
+
+// Computed property to check for validation errors
+const hasValidationErrors = computed(() => {
+  if (!submissionAttempted.value) return false;
+
+  const hasNameError = !newItemName.value || !newItemName.value.trim();
+  const hasDescError = !newItemDesc.value || !newItemDesc.value.trim();
+  const hasPhotoError = !newItemPhoto.value || !newItemPhoto.value.trim();
+  const hasPriceError = isPriceInvalid(newItemPrice.value);
+  const hasReasonError = !reasonAnswer.value || !reasonAnswer.value.trim();
+  const hasNeedError = !isNeedAnswer.value || !isNeedAnswer.value.trim();
+  const hasFutureError =
+    !futureApproveAnswer.value || !futureApproveAnswer.value.trim();
+
+  return (
+    hasNameError ||
+    hasDescError ||
+    hasPhotoError ||
+    hasPriceError ||
+    hasReasonError ||
+    hasNeedError ||
+    hasFutureError
+  );
+});
+
+// Computed property for price error message (real-time)
+const priceErrorMessage = computed(() => {
+  if (!isPriceInvalid(newItemPrice.value)) return "";
+
+  const priceStr = String(newItemPrice.value || "").trim();
+
+  // Check if empty or zero - only show after submission attempt
+  if (priceStr === "" || priceStr === "0.00") {
+    return submissionAttempted.value ? "Price is required" : "";
+  }
+
+  const priceNum = parseFloat(priceStr);
+
+  if (priceNum <= 0) {
+    return "Price must be greater than $0";
+  }
+
+  return "Invalid price";
+});
 
 // Amazon URL fetching
 const amazonUrl = ref("");
@@ -508,7 +731,7 @@ const fetchAmazonDetails = async () => {
     newItemName.value = data.itemName || "";
     newItemDesc.value = data.description || "";
     newItemPhoto.value = data.photo || "";
-    newItemPrice.value = data.price || 0;
+    newItemPrice.value = (data.price || 0).toFixed(2);
 
     console.log("Auto-filled form with Amazon data");
   } catch (err) {
@@ -529,11 +752,12 @@ const openAddModal = () => {
   newItemName.value = "";
   newItemDesc.value = "";
   newItemPhoto.value = "";
-  newItemPrice.value = 0;
+  newItemPrice.value = "0.00";
   reasonAnswer.value = "";
   isNeedAnswer.value = "";
   futureApproveAnswer.value = "";
   addItemError.value = "";
+  submissionAttempted.value = false;
   showAddModal.value = true;
 };
 
@@ -544,11 +768,12 @@ const openEditModal = (item) => {
   newItemName.value = item.itemName;
   newItemDesc.value = item.description;
   newItemPhoto.value = item.photo;
-  newItemPrice.value = item.price;
+  newItemPrice.value = parseFloat(item.price || 0).toFixed(2);
   reasonAnswer.value = item.reason || "";
   isNeedAnswer.value = item.isNeed || "";
   futureApproveAnswer.value = item.isFutureApprove || "";
   addItemError.value = "";
+  submissionAttempted.value = false;
   showAddModal.value = true;
 };
 
@@ -562,6 +787,22 @@ const addItem = async () => {
     return;
   }
 
+  // Validate all required fields (errors shown per-field)
+  const priceNum = Number(newItemPrice.value);
+  if (
+    !newItemName.value?.trim() ||
+    !newItemDesc.value?.trim() ||
+    !newItemPhoto.value?.trim() ||
+    !newItemPrice.value ||
+    isNaN(priceNum) ||
+    priceNum <= 0 ||
+    !reasonAnswer.value?.trim() ||
+    !isNeedAnswer.value?.trim() ||
+    !futureApproveAnswer.value?.trim()
+  ) {
+    return; // Individual field warnings are shown
+  }
+
   console.log("Starting to save item...");
   isAddingItem.value = true;
   addItemError.value = "";
@@ -571,7 +812,7 @@ const addItem = async () => {
     itemName: newItemName.value,
     description: newItemDesc.value,
     photo: newItemPhoto.value,
-    price: newItemPrice.value,
+    price: Number(newItemPrice.value),
     reason: reasonAnswer.value,
     isNeed: isNeedAnswer.value,
     isFutureApprove: futureApproveAnswer.value,
@@ -606,12 +847,13 @@ const addItem = async () => {
 
     // Close modal and reset form
     showAddModal.value = false;
+    submissionAttempted.value = false;
 
     // Reset form values
     newItemName.value = "";
     newItemDesc.value = "";
     newItemPhoto.value = "";
-    newItemPrice.value = 0;
+    newItemPrice.value = "0.00";
     reasonAnswer.value = "";
     isNeedAnswer.value = "";
     futureApproveAnswer.value = "";
@@ -638,6 +880,23 @@ const updateItem = async () => {
     return;
   }
 
+  // Validate all required fields (errors shown per-field)
+  const priceNum = Number(newItemPrice.value);
+  if (
+    !newItemName.value?.trim() ||
+    !newItemDesc.value?.trim() ||
+    !newItemPhoto.value?.trim() ||
+    !newItemPrice.value ||
+    isNaN(priceNum) ||
+    priceNum <= 0 ||
+    !reasonAnswer.value?.trim() ||
+    !isNeedAnswer.value?.trim() ||
+    !futureApproveAnswer.value?.trim()
+  ) {
+    return; // Individual field warnings are shown
+    return;
+  }
+
   isAddingItem.value = true;
   addItemError.value = "";
 
@@ -647,7 +906,7 @@ const updateItem = async () => {
     itemName: newItemName.value,
     description: newItemDesc.value,
     photo: newItemPhoto.value,
-    price: newItemPrice.value,
+    price: Number(newItemPrice.value),
     reason: reasonAnswer.value,
     isNeed: isNeedAnswer.value,
     isFutureApprove: futureApproveAnswer.value,
@@ -679,10 +938,11 @@ const updateItem = async () => {
 
     // Close modal and reset form
     showAddModal.value = false;
+    submissionAttempted.value = false;
     newItemName.value = "";
     newItemDesc.value = "";
     newItemPhoto.value = "";
-    newItemPrice.value = 0;
+    newItemPrice.value = "0.00";
     reasonAnswer.value = "";
     isNeedAnswer.value = "";
     futureApproveAnswer.value = "";
@@ -744,6 +1004,7 @@ onMounted(async () => {
 const closeModal = () => {
   showAddModal.value = false;
   addItemError.value = "";
+  submissionAttempted.value = false;
 };
 
 // Get AI insight for an item
@@ -1120,6 +1381,57 @@ const getApprovalClass = (stats) => {
   border-color: var(--color-border-dark);
 }
 
+.modal-input.input-error {
+  border-color: #e74c3c;
+  background-color: #fdf2f2;
+}
+
+/* Hide spinner buttons for number inputs */
+.modal-input[type="number"]::-webkit-inner-spin-button,
+.modal-input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.modal-input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.price-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.price-prefix {
+  position: absolute;
+  left: 14px;
+  color: #666;
+  font-weight: 600;
+  font-size: 1rem;
+  pointer-events: none;
+}
+
+.price-input {
+  padding-left: 28px !important;
+  font-family: "SF Mono", "Monaco", "Consolas", monospace;
+  letter-spacing: 0.5px;
+}
+
+.price-warning,
+.field-warning {
+  color: #e74c3c;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.modal-textarea.input-error {
+  border-color: #e74c3c;
+  background-color: #fff5f5;
+}
+
 .modal-textarea {
   width: 100%;
   padding: 0.875rem 1rem;
@@ -1157,6 +1469,12 @@ const getApprovalClass = (stats) => {
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--color-text-primary);
+}
+
+.required-asterisk {
+  color: #e74c3c;
+  font-weight: 700;
+  margin-left: 2px;
 }
 
 /* Amazon URL Section Styles */
@@ -1320,6 +1638,16 @@ const getApprovalClass = (stats) => {
   color: var(--color-text-tertiary);
   margin-top: 0.5rem;
   font-family: var(--font-secondary);
+}
+
+.validation-error-summary {
+  text-align: center;
+  font-size: 0.875rem;
+  color: #e74c3c;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-family: var(--font-secondary);
+  font-weight: 500;
 }
 
 /* AI Insight Styles */
