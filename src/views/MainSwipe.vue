@@ -14,17 +14,7 @@
       :style="overlayStyle"
     ></div>
 
-    <nav class="navbar">
-      <div class="nav-left">
-        <h1 class="nav-title">BYEBUY</h1>
-      </div>
-      <div class="nav-right">
-        <button @click="goToSwipe" class="nav-link active">SWIPESENSE</button>
-        <button @click="goToWishlist" class="nav-link">PAUSE CART</button>
-        <button @click="goToStats" class="nav-link">STATS</button>
-        <button @click="goToSettings" class="nav-link settings-icon">⚙</button>
-      </div>
-    </nav>
+    <Navbar />
 
     <div class="progress-bar-container">
       <div class="progress-bar">
@@ -117,6 +107,7 @@ import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useColors } from "../composables/useColors";
 import { useAuth } from "../composables/useAuth";
+import Navbar from "../components/Navbar.vue";
 
 const router = useRouter();
 const { palette } = useColors();
@@ -460,21 +451,6 @@ const handleMouseEnd = () => {
   isDragging.value = false;
 };
 
-const goToSwipe = () => {
-  router.push("/swipe");
-};
-
-const goToWishlist = () => {
-  router.push("/wishlist");
-};
-
-const goToStats = () => {
-  router.push("/stats");
-};
-
-const goToSettings = () => {
-  router.push("/settings");
-};
 
 onMounted(() => {
   loadQueue();
@@ -482,11 +458,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap');
 
 .swipe-container {
-  --font-primary: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-secondary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-secondary: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
 
   min-height: 100vh;
   background-color: var(--color-bg);
@@ -529,74 +505,6 @@ onMounted(() => {
 
 .color-overlay.expand-green {
   background-color: v-bind("palette.green");
-}
-
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.25rem 2.5rem;
-  border-bottom: 1px solid var(--color-border);
-  background-color: var(--color-bg);
-}
-
-.nav-left {
-  display: flex;
-  align-items: center;
-}
-
-.nav-right {
-  display: flex;
-  align-items: center;
-  gap: 2.5rem;
-}
-
-.nav-title {
-  font-family: var(--font-primary);
-  font-size: 1.75rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: var(--color-text-primary);
-}
-
-.nav-link {
-  font-family: var(--font-primary);
-  font-size: 0.875rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  color: var(--color-text-secondary);
-  text-decoration: none;
-  transition: color 0.2s ease;
-  cursor: pointer;
-  background: none;
-  border: none;
-  padding: 0;
-}
-
-.nav-link:hover {
-  color: var(--color-text-primary);
-}
-
-.nav-link.active {
-  color: var(--color-text-primary);
-  position: relative;
-}
-
-.nav-link.active::after {
-  content: '';
-  position: absolute;
-  bottom: -0.5rem;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background-color: var(--color-text-primary);
-}
-
-.settings-icon {
-  font-size: 1.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .progress-bar-container {

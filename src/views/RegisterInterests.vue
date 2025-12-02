@@ -87,11 +87,11 @@ const handleContinue = () => {
 </script>
 
 <style scoped>
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap");
 
 .interests-container {
-  --font-primary: "Space Grotesk", -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-secondary: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-primary: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-secondary: "Nunito", -apple-system, BlinkMacSystemFont, sans-serif;
 
   min-height: 100vh;
   padding: 2rem;

@@ -1,16 +1,6 @@
 <template>
   <div class="wishlist-container">
-    <nav class="navbar">
-      <div class="nav-left">
-        <h1 class="nav-title">BYEBUY</h1>
-      </div>
-      <div class="nav-right">
-        <button @click="goToSwipe" class="nav-link">SWIPESENSE</button>
-        <button @click="goToWishlist" class="nav-link active">PAUSE CART</button>
-        <button @click="goToStats" class="nav-link">STATS</button>
-        <button @click="goToSettings" class="nav-link settings-icon">⚙</button>
-      </div>
-    </nav>
+    <Navbar />
 
     <div class="wishlist-content">
       <div v-if="!hasCompletedQueue && !isCheckingQueue" class="queue-reminder">
@@ -196,6 +186,7 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "../composables/useAuth";
+import Navbar from "../components/Navbar.vue";
 
 const router = useRouter();
 const { currentUser } = useAuth();
@@ -568,21 +559,6 @@ const closeModal = () => {
   addItemError.value = "";
 };
 
-const goToSwipe = () => {
-  router.push("/swipe");
-};
-
-const goToWishlist = () => {
-  router.push("/wishlist");
-};
-
-const goToStats = () => {
-  router.push("/stats");
-};
-
-const goToSettings = () => {
-  router.push("/settings");
-};
 
 // Calculate approval percentage from community stats
 const getApprovalPercentage = (stats) => {
@@ -600,11 +576,11 @@ const getApprovalClass = (stats) => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap');
 
 .wishlist-container {
-  --font-primary: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-secondary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-secondary: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
 
   min-height: 100vh;
   background-color: var(--color-bg);
@@ -614,34 +590,6 @@ const getApprovalClass = (stats) => {
   font-family: var(--font-secondary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.25rem 2.5rem;
-  border-bottom: 1px solid var(--color-border);
-  background-color: var(--color-bg);
-}
-
-.nav-left {
-  display: flex;
-  align-items: center;
-}
-
-.nav-right {
-  display: flex;
-  align-items: center;
-  gap: 2.5rem;
-}
-
-.nav-title {
-  font-family: var(--font-primary);
-  font-size: 1.75rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: var(--color-text-primary);
 }
 
 .wishlist-content {
@@ -1126,46 +1074,6 @@ const getApprovalClass = (stats) => {
   color: var(--color-text-secondary);
   line-height: 1.4;
   font-family: var(--font-secondary);
-}
-
-.nav-link {
-  font-family: var(--font-primary);
-  font-size: 0.875rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  color: var(--color-text-secondary);
-  text-decoration: none;
-  transition: color 0.2s ease;
-  cursor: pointer;
-  background: none;
-  border: none;
-  padding: 0;
-}
-
-.nav-link:hover {
-  color: var(--color-text-primary);
-}
-
-.nav-link.active {
-  color: var(--color-text-primary);
-  position: relative;
-}
-
-.nav-link.active::after {
-  content: '';
-  position: absolute;
-  bottom: -0.5rem;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background-color: var(--color-text-primary);
-}
-
-.nav-link.settings-icon {
-  font-size: 1.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 @media (max-width: 768px) {

@@ -1,113 +1,106 @@
 <template>
   <div class="settings-container">
-    <nav class="navbar">
-      <div class="nav-left">
-        <h1 class="nav-title">BYEBUY</h1>
-      </div>
-      <div class="nav-right">
-        <button @click="goToSwipe" class="nav-link">SWIPESENSE</button>
-        <button @click="goToWishlist" class="nav-link">PAUSE CART</button>
-        <button @click="goToStats" class="nav-link">STATS</button>
-        <button @click="goToSettings" class="nav-link settings-icon active">
-          ⚙
-        </button>
-      </div>
-    </nav>
+    <Navbar />
 
     <div class="settings-content">
-      <div class="profile-section">
-        <div class="profile-picture-container">
-          <div class="profile-picture">
-            <img src="../assets/pig_pfp.png" alt="Profile picture" class="avatar-image" />
-          </div>
-        </div>
+      <div class="settings-grid">
+        <div class="settings-column-left">
+          <div class="profile-section">
+            <div class="profile-picture-container">
+              <div class="profile-picture">
+                <img src="../assets/pig_pfp.png" alt="Profile picture" class="avatar-image" />
+              </div>
+            </div>
 
-        <div class="user-details">
-          <div class="detail-item">
-            <span class="detail-label">Name</span>
-            <div class="detail-value-with-icon">
-              <input
-                v-if="isEditingName"
-                v-model="userName"
-                @blur="saveName"
-                @keyup.enter="saveName"
-                class="edit-input"
-                autofocus
-              />
-              <span v-else>{{ userName }}</span>
-              <button
-                class="edit-icon-button"
-                @click="isEditingName = true"
-                v-if="!isEditingName"
-              >
-                ✎
-              </button>
+            <div class="user-details">
+              <div class="detail-item">
+                <span class="detail-label">Name</span>
+                <div class="detail-value-with-icon">
+                  <input
+                    v-if="isEditingName"
+                    v-model="userName"
+                    @blur="saveName"
+                    @keyup.enter="saveName"
+                    class="edit-input"
+                    autofocus
+                  />
+                  <span v-else>{{ userName }}</span>
+                  <button
+                    class="edit-icon-button"
+                    @click="isEditingName = true"
+                    v-if="!isEditingName"
+                  >
+                    ✎
+                  </button>
+                </div>
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label">email</span>
+                <div class="detail-value-with-icon">
+                  <input
+                    v-if="isEditingEmail"
+                    v-model="userEmail"
+                    @blur="saveEmail"
+                    @keyup.enter="saveEmail"
+                    type="email"
+                    class="edit-input"
+                    autofocus
+                  />
+                  <span v-else>{{ userEmail }}</span>
+                  <button
+                    class="edit-icon-button"
+                    @click="isEditingEmail = true"
+                    v-if="!isEditingEmail"
+                  >
+                    ✎
+                  </button>
+                </div>
+              </div>
+
+              <div class="detail-item">
+                <a href="#" class="reset-password-link">reset password</a>
+              </div>
             </div>
           </div>
 
-          <div class="detail-item">
-            <span class="detail-label">email</span>
-            <div class="detail-value-with-icon">
-              <input
-                v-if="isEditingEmail"
-                v-model="userEmail"
-                @blur="saveEmail"
-                @keyup.enter="saveEmail"
-                type="email"
-                class="edit-input"
-                autofocus
-              />
-              <span v-else>{{ userEmail }}</span>
-              <button
-                class="edit-icon-button"
-                @click="isEditingEmail = true"
-                v-if="!isEditingEmail"
-              >
-                ✎
-              </button>
+          <div class="logout-section">
+            <button @click="handleLogout" class="logout-button">LOGOUT</button>
+          </div>
+        </div>
+
+        <div class="settings-column-right">
+          <h2 class="column-header">PREFERENCES</h2>
+          <div class="accessibility-section">
+            <div class="toggle-item">
+              <div class="toggle-label">
+                <span class="toggle-title">Red-Green Color Blind Toggle</span>
+                <span class="toggle-description"
+                  >Use color-blind friendly palette</span
+                >
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" v-model="isColorBlindMode" />
+                <span class="toggle-slider"></span>
+              </label>
             </div>
           </div>
 
-          <div class="detail-item">
-            <a href="#" class="reset-password-link">reset password</a>
+          <div class="interests-section">
+            <h2 class="section-title">FIELDS OF INTEREST</h2>
+            <div class="interests-tags">
+              <span
+                v-for="interest in fieldsOfInterest"
+                :key="interest"
+                class="interest-tag"
+              >
+                {{ interest }}
+              </span>
+              <button @click="goToEditInterests" class="interest-tag edit-button">
+                ✎ EDIT
+              </button>
+            </div>
           </div>
-        </div>
-      </div>
-
-      <div class="logout-section">
-        <button @click="handleLogout" class="logout-button">LOGOUT</button>
-      </div>
-
-      <div class="accessibility-section">
-        <h2 class="section-title">ACCESSIBILITY</h2>
-        <div class="toggle-item">
-          <div class="toggle-label">
-            <span class="toggle-title">Red-Green Color Blind Toggle</span>
-            <span class="toggle-description"
-              >Use color-blind friendly palette</span
-            >
-          </div>
-          <label class="toggle-switch">
-            <input type="checkbox" v-model="isColorBlindMode" />
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-      </div>
-
-      <div class="interests-section">
-        <h2 class="section-title">FIELDS OF INTEREST</h2>
-        <div class="interests-tags">
-          <span
-            v-for="interest in fieldsOfInterest"
-            :key="interest"
-            class="interest-tag"
-          >
-            {{ interest }}
-          </span>
-          <span class="interest-tag etc">etc</span>
-          <button @click="goToEditInterests" class="interest-tag edit-button">
-            ✎ EDIT
-          </button>
         </div>
       </div>
     </div>
@@ -119,6 +112,7 @@ import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useColors } from "../composables/useColors";
 import { useAuth } from "../composables/useAuth";
+import Navbar from "../components/Navbar.vue";
 
 const router = useRouter();
 const { colorBlindMode, toggleColorBlindMode } = useColors();
@@ -183,29 +177,14 @@ const goToEditInterests = () => {
   router.push("/register/interests?from=settings");
 };
 
-const goToSwipe = () => {
-  router.push("/swipe");
-};
-
-const goToWishlist = () => {
-  router.push("/wishlist");
-};
-
-const goToStats = () => {
-  router.push("/stats");
-};
-
-const goToSettings = () => {
-  router.push("/settings");
-};
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap');
 
 .settings-container {
-  --font-primary: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-secondary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-secondary: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
 
   min-height: 100vh;
   background-color: var(--color-bg);
@@ -217,40 +196,25 @@ const goToSettings = () => {
   -moz-osx-font-smoothing: grayscale;
 }
 
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.25rem 2.5rem;
-  border-bottom: 1px solid var(--color-border);
-  background-color: var(--color-bg);
-}
-
-.nav-left {
-  display: flex;
-  align-items: center;
-}
-
-.nav-right {
-  display: flex;
-  align-items: center;
-  gap: 2.5rem;
-}
-
-.nav-title {
-  font-family: var(--font-primary);
-  font-size: 1.75rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: var(--color-text-primary);
-}
-
 .settings-content {
   flex: 1;
   padding: 2rem 2.5rem;
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: start;
+}
+
+.settings-column-left,
+.settings-column-right {
+  display: flex;
+  flex-direction: column;
 }
 
 .profile-section {
@@ -363,8 +327,6 @@ const goToSettings = () => {
 }
 
 .accessibility-section {
-  border-top: 1px solid var(--color-border);
-  padding-top: 2rem;
   margin-bottom: 3rem;
 }
 
@@ -447,11 +409,9 @@ const goToSettings = () => {
 }
 
 .logout-section {
-  border-top: 1px solid var(--color-border);
   padding-top: 2rem;
   padding-bottom: 2rem;
-  margin-top: 3rem;
-  margin-bottom: 0;
+  margin-top: auto;
 }
 
 .logout-button {
@@ -477,13 +437,20 @@ const goToSettings = () => {
 }
 
 .interests-section {
-  border-top: 1px solid var(--color-border);
-  padding-top: 2rem;
-  margin-top: 3rem;
+  margin-top: 0;
 }
 
 .interests-section .section-title {
   margin-bottom: 1rem;
+}
+
+.column-header {
+  font-family: var(--font-primary);
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.25rem;
+  color: var(--color-text-primary);
 }
 
 .section-title {
@@ -520,12 +487,6 @@ const goToSettings = () => {
   border-color: var(--color-border-dark);
 }
 
-.interest-tag.etc {
-  font-style: italic;
-  font-weight: 400;
-  color: var(--color-text-secondary);
-}
-
 .interest-tag.edit-button {
   background-color: var(--color-text-primary);
   color: var(--color-bg);
@@ -540,46 +501,6 @@ const goToSettings = () => {
   border-color: var(--color-border-dark);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(26, 26, 26, 0.15);
-}
-
-.nav-link {
-  font-family: var(--font-primary);
-  font-size: 0.875rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  color: var(--color-text-secondary);
-  text-decoration: none;
-  transition: color 0.2s ease;
-  cursor: pointer;
-  background: none;
-  border: none;
-  padding: 0;
-}
-
-.nav-link:hover {
-  color: var(--color-text-primary);
-}
-
-.nav-link.active {
-  color: var(--color-text-primary);
-  position: relative;
-}
-
-.nav-link.active::after {
-  content: '';
-  position: absolute;
-  bottom: -0.5rem;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background-color: var(--color-text-primary);
-}
-
-.nav-link.settings-icon {
-  font-size: 1.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 @media (max-width: 768px) {
