@@ -1,6 +1,6 @@
 import { ref } from "vue";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
 /**
  * Composable for Stats page API calls
@@ -11,21 +11,24 @@ export function useStatsAPI() {
 
   /**
    * Fetch user's wishlist items
-   * @param {string} owner - User ID
+   * @param {string} session - Session token
    * @returns {Promise<Array>} Array of items or empty array
    */
-  const fetchWishlist = async (owner) => {
+  const fetchWishlist = async (session) => {
     try {
       loading.value = true;
       error.value = null;
 
-      const response = await fetch(`${API_BASE_URL}/ItemCollection/_getWishListItems`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ owner }),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/ItemCollection/_getWishListItems`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ session }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -38,7 +41,7 @@ export function useStatsAPI() {
       }
 
       // Data comes back as array of { item: ItemDoc } objects
-      return data.map(d => d.item) || [];
+      return data.map((d) => d.item) || [];
     } catch (err) {
       error.value = err.message;
       console.error("Error fetching wishlist:", err);
@@ -50,19 +53,22 @@ export function useStatsAPI() {
 
   /**
    * Get swipe stats for an item
-   * @param {string} ownerUserId - User ID
+   * @param {string} session - Session token
    * @param {string} itemId - Item ID
    * @returns {Promise<Object|null>} { total, approval } or null
    */
-  const getSwipeStats = async (ownerUserId, itemId) => {
+  const getSwipeStats = async (session, itemId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/SwipeSystem/_getSwipeStats`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ownerUserId, itemId }),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/SwipeSystem/_getSwipeStats`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ session, itemId }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -90,13 +96,16 @@ export function useStatsAPI() {
    */
   const getSwipeComments = async (ownerUserId, itemId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/SwipeSystem/_getSwipeComments`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ownerUserId, itemId }),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/SwipeSystem/_getSwipeComments`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ownerUserId, itemId }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -117,22 +126,25 @@ export function useStatsAPI() {
 
   /**
    * Call AI to get wishlist insights
-   * @param {string} owner - User ID
+   * @param {string} session - Session token
    * @param {string} context_prompt - Configured prompt with all data
    * @returns {Promise<string|null>} LLM response or null
    */
-  const getAIWishListInsight = async (owner, context_prompt) => {
+  const getAIWishListInsight = async (session, context_prompt) => {
     try {
       loading.value = true;
       error.value = null;
 
-      const response = await fetch(`${API_BASE_URL}/ItemCollection/getAIWishListInsight`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ owner, context_prompt }),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/ItemCollection/getAIWishListInsight`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ session, context_prompt }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -179,17 +191,20 @@ ${index + 1}. ${item.itemName}
    - Will future self approve? ${item.isFutureApprove}`;
 
       if (stats) {
-        const approvalRate = stats.total > 0 ? ((stats.approval / stats.total) * 100).toFixed(0) : 0;
+        const approvalRate =
+          stats.total > 0
+            ? ((stats.approval / stats.total) * 100).toFixed(0)
+            : 0;
         prompt += `
    - Community feedback: ${stats.approval}/${stats.total} people think you should buy this (${approvalRate}% approval)`;
       }
 
       if (comments && comments.length > 0) {
         prompt += `
-   - Community comments: ${comments.slice(0, 3).join('; ')}`;
+   - Community comments: ${comments.slice(0, 3).join("; ")}`;
       }
 
-      prompt += '\n';
+      prompt += "\n";
     });
 
     prompt += `
