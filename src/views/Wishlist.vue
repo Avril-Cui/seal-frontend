@@ -44,9 +44,7 @@
           >
             Mark as Purchased
           </button>
-          <div v-else class="purchased-label">
-            Purchased
-          </div>
+          <div v-else class="purchased-label">Purchased</div>
           <div class="item-image">
             <img
               v-if="item.photo"
@@ -459,9 +457,13 @@
           <button @click="closePurchaseModal" class="close-button">×</button>
         </div>
         <div class="modal-body">
-          <div v-if="purchaseError" class="error-message">{{ purchaseError }}</div>
+          <div v-if="purchaseError" class="error-message">
+            {{ purchaseError }}
+          </div>
 
-          <p class="confirmation-text">Have you purchased "{{ purchasingItem?.itemName }}"?</p>
+          <p class="confirmation-text">
+            Have you purchased "{{ purchasingItem?.itemName }}"?
+          </p>
 
           <div class="form-group">
             <label class="form-label">Actual Price Paid</label>
@@ -489,24 +491,23 @@
 
           <div class="form-group">
             <label class="form-label">Purchase Date</label>
-            <input
-              v-model="purchaseDate"
-              type="date"
-              class="modal-input"
-            />
+            <input v-model="purchaseDate" type="date" class="modal-input" />
           </div>
 
           <div class="modal-actions">
-            <button
-              @click="closePurchaseModal"
-              class="modal-button cancel"
-            >
+            <button @click="closePurchaseModal" class="modal-button cancel">
               Cancel
             </button>
             <button
               @click="confirmPurchase"
               class="modal-button confirm"
-              :disabled="isPurchasing || !purchasePrice || !purchaseQuantity || !purchaseDate || purchaseQuantity < 1"
+              :disabled="
+                isPurchasing ||
+                !purchasePrice ||
+                !purchaseQuantity ||
+                !purchaseDate ||
+                purchaseQuantity < 1
+              "
             >
               {{ isPurchasing ? "Saving..." : "Confirm Purchase" }}
             </button>
@@ -746,12 +747,12 @@ const fetchWishlist = async () => {
 
     // Extract items from various possible response formats
     let items = [];
-    
+
     if (data.items && Array.isArray(data.items)) {
       // Format: { items: [{item: {...}}, ...] } or { items: [{...}, ...] }
       console.log("Found data.items array with length:", data.items.length);
       console.log("First raw item from data.items:", data.items[0]);
-      items = data.items.map(obj => {
+      items = data.items.map((obj) => {
         const extracted = obj.item ? obj.item : obj;
         console.log("Extracted item from obj:", extracted);
         console.log("Extracted item._id:", extracted._id);
@@ -760,7 +761,7 @@ const fetchWishlist = async () => {
     } else if (Array.isArray(data)) {
       // Format: [{item: {...}}, ...] or [{...}, ...]
       console.log("Found direct array with length:", data.length);
-      items = data.map(obj => obj.item ? obj.item : obj);
+      items = data.map((obj) => (obj.item ? obj.item : obj));
     } else {
       console.log("Unexpected format, keys:", Object.keys(data));
       wishlistItems.value = [];
@@ -791,12 +792,28 @@ const fetchWishlist = async () => {
 
             const statsData = await statsResponse.json();
 
-            if (!statsData.error) {
+            // Handle both array and object response formats
+            let communityStats = null;
+            if (
+              Array.isArray(statsData) &&
+              statsData.length > 0 &&
+              !statsData[0].error
+            ) {
+              communityStats = statsData[0];
+            } else if (
+              statsData &&
+              !statsData.error &&
+              typeof statsData.total !== "undefined"
+            ) {
+              communityStats = statsData;
+            }
+
+            if (communityStats) {
               return {
                 ...item,
                 communityStats: {
-                  total: statsData.total,
-                  approval: statsData.approval,
+                  total: communityStats.total,
+                  approval: communityStats.approval,
                 },
               };
             }
@@ -812,7 +829,7 @@ const fetchWishlist = async () => {
     } else {
       wishlistItems.value = items;
     }
-    
+
     console.log("Final wishlistItems:", wishlistItems.value);
   } catch (err) {
     error.value = "Failed to load your items. Please try again.";
@@ -911,11 +928,15 @@ const addItem = async () => {
   if (!session) {
     console.error("No session! User not logged in.");
     console.error("currentUser value:", currentUser.value);
-    console.error("sessionToken from localStorage:", localStorage.getItem("sessionToken"));
+    console.error(
+      "sessionToken from localStorage:",
+      localStorage.getItem("sessionToken")
+    );
 
     // If we have a currentUser but no session, the session expired or was lost
     if (currentUser.value) {
-      addItemError.value = "Your session has expired. Please log out and log back in to continue.";
+      addItemError.value =
+        "Your session has expired. Please log out and log back in to continue.";
       // Optionally, auto-redirect to login after a delay
       setTimeout(() => {
         router.push("/login");
@@ -1146,8 +1167,8 @@ const openPurchaseModal = (item) => {
   // Set default to today's date in YYYY-MM-DD format
   const today = new Date();
   const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
   purchaseDate.value = `${year}-${month}-${day}`;
   purchaseError.value = "";
   showPurchaseModal.value = true;
@@ -1243,7 +1264,7 @@ const getAIInsight = async (item) => {
   console.log("getAIInsight called with item:", item);
   console.log("item._id:", item._id);
   console.log("item keys:", Object.keys(item));
-  
+
   const session = getSession();
   if (!session) {
     console.error("No session - user not logged in");
@@ -1253,9 +1274,12 @@ const getAIInsight = async (item) => {
   // Get the item ID - it might be _id or id depending on the response format
   const itemId = item._id || item.id;
   console.log("Using itemId:", itemId);
-  
+
   if (!itemId) {
-    console.error("No item ID found! Item structure:", JSON.stringify(item, null, 2));
+    console.error(
+      "No item ID found! Item structure:",
+      JSON.stringify(item, null, 2)
+    );
     item.aiInsight = "Error: Could not find item ID";
     return;
   }

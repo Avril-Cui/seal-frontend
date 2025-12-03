@@ -186,7 +186,7 @@ const loadQueue = async () => {
       // No queue exists for today, generate one
       console.log("No queue found, generating new queue...");
 
-      // Get 10 random items (public route - no auth needed)
+      // Get 10 random items (requires session to exclude user's own items)
       const randomItemsResponse = await fetch(
         `${API_BASE_URL}/ItemCollection/_getTenRandomItems`,
         {
@@ -194,7 +194,7 @@ const loadQueue = async () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({}),
+          body: JSON.stringify({ session }),
         }
       );
 
