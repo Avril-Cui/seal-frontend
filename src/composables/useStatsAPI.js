@@ -182,32 +182,13 @@ WISHLIST ITEMS (${wishlistItems.length} total):
 `;
 
     wishlistItems.forEach((item, index) => {
-      const swipeData = swipeDataMap[item._id] || { stats: null, comments: [] };
-      const stats = swipeData.stats;
-      const comments = swipeData.comments;
-
       prompt += `
 ${index + 1}. ${item.itemName}
    - Price: $${item.price}
    - User's reason: ${item.reason}
    - Is this a need? ${item.isNeed}
-   - Will future self approve? ${item.isFutureApprove}`;
-
-      if (stats) {
-        const approvalRate =
-          stats.total > 0
-            ? ((stats.approval / stats.total) * 100).toFixed(0)
-            : 0;
-        prompt += `
-   - Community feedback: ${stats.approval}/${stats.total} people think you should buy this (${approvalRate}% approval)`;
-      }
-
-      if (comments && comments.length > 0) {
-        prompt += `
-   - Community comments: ${comments.slice(0, 3).join("; ")}`;
-      }
-
-      prompt += "\n";
+   - Will future self approve? ${item.isFutureApprove}
+`;
     });
 
     prompt += `
@@ -227,8 +208,8 @@ If INSUFFICIENT DATA:
   "improvementSuggestions": [
     "Add at least 5-10 items to your wishlist to help us understand your preferences",
     "Complete reflection questions thoughtfully for each item",
-    "Review items from other users to build community data",
-    "Use the app for a few weeks to establish shopping patterns"
+    "Use the app regularly to establish shopping patterns",
+    "Review your wishlist weekly to refine your purchasing decisions"
   ]
 }
 
@@ -244,7 +225,7 @@ If SUFFICIENT DATA:
 }
 
 Guidelines:
-- trendAlert: Identify a pattern (e.g., weekend purchases, price ranges, need vs want ratio, community approval patterns). IMPORTANT: Keep trendAlert to approximately 30 words.
+- trendAlert: Identify a pattern (e.g., price ranges, need vs want ratio, purchase justifications). IMPORTANT: Keep trendAlert to approximately 30 words.
 - improvementSuggestions: Provide exactly 4 specific, actionable tips to improve their purchasing decisions
 - Keep all text concise and friendly
 - Use "you" to address the user directly

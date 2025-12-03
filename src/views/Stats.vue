@@ -371,7 +371,7 @@ import Navbar from "../components/Navbar.vue";
 
 const router = useRouter();
 const { currentUser, getSession } = useAuth();
-const { fetchWishlist, getSwipeStats, getSwipeComments, getAIWishListInsight, buildInsightPrompt } = useStatsAPI();
+const { fetchWishlist, getAIWishListInsight, buildInsightPrompt } = useStatsAPI();
 
 const exportSection = ref(null);
 const posterTemplate = ref(null);
@@ -385,7 +385,7 @@ const aiTrendAlert = ref(
 const aiSuggestions = ref([
   "Add items to your pause cart that you're thinking about purchasing",
   "Take time to reflect on each item using our guided questions",
-  "Complete your daily SwipeSense queue to see community feedback",
+  "Use the AI insight feature to get personalized shopping advice",
   "Check back here after adding items to see your shopping patterns",
 ]);
 const isLoadingInsights = ref(false);
@@ -428,7 +428,7 @@ const currentDate = computed(() => {
   });
 });
 
-// Fetch AI insights based on wishlist and swipe data
+// Fetch AI insights based on wishlist data only (no swipe data)
 const fetchAIInsights = async () => {
   if (!currentUser?.value?.uid) {
     console.log("No current user, skipping AI insights");
@@ -462,23 +462,15 @@ const fetchAIInsights = async () => {
       aiSuggestions.value = [
         "Add items to your pause cart that you're thinking about purchasing",
         "Take time to reflect on each item using our guided questions",
-        "Complete your daily SwipeSense queue to see community feedback",
+        "Use the AI insight feature to get personalized shopping advice",
         "Check back here after adding items to see your shopping patterns",
       ];
       isLoadingInsights.value = false;
       return;
     }
 
-    // 2. For each item, get swipe stats and comments
-    const swipeDataMap = {};
-    for (const item of wishlistItems) {
-      const stats = await getSwipeStats(session, item._id);
-      const comments = await getSwipeComments(currentUser.value.uid, item._id);
-      swipeDataMap[item._id] = { stats, comments };
-    }
-
-    // 3. Build prompt with all data
-    const prompt = buildInsightPrompt(wishlistItems, swipeDataMap);
+    // 2. Build prompt with wishlist items only (no swipe data)
+    const prompt = buildInsightPrompt(wishlistItems, {});
 
     // 4. Get AI response
     const response = await getAIWishListInsight(session, prompt);
@@ -656,49 +648,11 @@ const calculateStats = async () => {
       return sum + price * quantity;
     }, 0);
 
-    // 4. Get items reviewed (swipe count for this user)
-    const swipeCountResponse = await fetch(
-      `${API_BASE_URL}/SwipeSystem/_getUserSwipeCount`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ session }),
-      }
-    );
+    // 4. Items reviewed - set to 0 (swipe system removed)
+    itemsReviewed.value = 0;
 
-    const swipeCountData = await swipeCountResponse.json();
-    if (!swipeCountData.error) {
-      itemsReviewed.value = swipeCountData.count || 0;
-    }
-
-    // 5. Calculate rejection rate based on user's swipe decisions
-    const swipeStatsResponse = await fetch(
-      `${API_BASE_URL}/SwipeSystem/_getUserSwipeStatistics`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ session }),
-      }
-    );
-
-    const swipeStatsData = await swipeStatsResponse.json();
-    if (!swipeStatsData.error) {
-      const buyCount = swipeStatsData.buyCount || 0;
-      const dontBuyCount = swipeStatsData.dontBuyCount || 0;
-      const totalSwipes = buyCount + dontBuyCount;
-
-      if (totalSwipes > 0) {
-        rejectionRate.value = Math.round((dontBuyCount / totalSwipes) * 100);
-      } else {
-        rejectionRate.value = 0;
-      }
-    } else {
-      rejectionRate.value = 0;
-    }
+    // 5. Rejection rate - set to 0 (swipe system removed)
+    rejectionRate.value = 0;
   } catch (error) {
     console.error("Error calculating stats:", error);
   }

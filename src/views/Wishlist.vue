@@ -134,36 +134,6 @@
                 <p v-else class="ai-text">{{ item.aiInsight }}</p>
               </div>
             </div>
-
-            <div class="community-stats">
-              <div v-if="!hasCompletedQueue" class="locked-stats">
-                <div class="lock-icon">🔒</div>
-                <p class="lock-message">
-                  Complete your daily SwipeSense queue to unlock community
-                  feedback!
-                </p>
-              </div>
-              <div
-                v-else-if="item.communityStats && item.communityStats.total > 0"
-              >
-                <div
-                  class="stat-badge"
-                  :class="getApprovalClass(item.communityStats)"
-                >
-                  {{ getApprovalPercentage(item.communityStats) }}% community
-                  approval
-                </div>
-                <div class="stat-info">
-                  {{ item.communityStats.total }} community member{{
-                    item.communityStats.total !== 1 ? "s" : ""
-                  }}
-                  reviewed this
-                </div>
-              </div>
-              <div v-else class="no-stats">
-                <p class="stat-info">No community feedback yet</p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -771,63 +741,8 @@ const fetchWishlist = async () => {
     console.log("Extracted items:", items);
     console.log("First extracted item _id:", items[0]?._id);
 
-    // Fetch community stats for each item if queue is completed
-    console.log("hasCompletedQueue:", hasCompletedQueue.value);
-    console.log("currentUser.uid:", currentUser.value.uid);
-
-    if (hasCompletedQueue.value && items.length > 0) {
-      const itemsWithStats = await Promise.all(
-        items.map(async (item) => {
-          try {
-            console.log(`Fetching stats for item ${item._id}, excluding user ${currentUser.value.uid}`);
-
-            const statsResponse = await fetch(
-              `${API_BASE_URL}/SwipeSystem/_getCommunitySwipeStats`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  itemId: item._id,
-                  excludeUserId: currentUser.value.uid,
-                }),
-              }
-            );
-
-            const statsData = await statsResponse.json();
-            console.log(`Stats response for item ${item._id}:`, statsData);
-
-            // Backend returns data as an array [{ total, approval }] or [{ error }]
-            // We need to unwrap the array
-            const unwrappedData = Array.isArray(statsData) ? statsData[0] : statsData;
-            console.log(`Unwrapped stats for item ${item._id}:`, unwrappedData);
-
-            if (unwrappedData && !unwrappedData.error) {
-              console.log(`Adding stats to item ${item._id}: total=${unwrappedData.total}, approval=${unwrappedData.approval}`);
-              return {
-                ...item,
-                communityStats: {
-                  total: unwrappedData.total,
-                  approval: unwrappedData.approval,
-                },
-              };
-            } else {
-              console.log(`No stats for item ${item._id}: ${unwrappedData?.error || 'unknown error'}`);
-            }
-            return item;
-          } catch (err) {
-            console.error("Error fetching stats for item:", item._id, err);
-            return item;
-          }
-        })
-      );
-
-      wishlistItems.value = itemsWithStats;
-    } else {
-      console.log("Not fetching stats - hasCompletedQueue:", hasCompletedQueue.value, "items.length:", items.length);
-      wishlistItems.value = items;
-    }
+    // Community stats removed - AI insight doesn't need swipe stats
+    wishlistItems.value = items;
 
     console.log("Final wishlistItems:", wishlistItems.value);
   } catch (err) {
@@ -1335,19 +1250,7 @@ const getVerdictClass = (verdict) => {
   return "verdict-skip";
 };
 
-// Calculate approval percentage from community stats
-const getApprovalPercentage = (stats) => {
-  if (!stats || stats.total === 0) return 0;
-  return Math.round((stats.approval / stats.total) * 100);
-};
-
-// Get approval class based on percentage
-const getApprovalClass = (stats) => {
-  const percentage = getApprovalPercentage(stats);
-  if (percentage >= 70) return "high-approval";
-  if (percentage >= 50) return "medium-approval";
-  return "low-approval";
-};
+// Community stats functions removed - AI insight doesn't need swipe stats
 </script>
 
 <style scoped>
