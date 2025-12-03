@@ -723,7 +723,7 @@ const calculateStats = async () => {
         totalSum += statsData.total || 0;
         approvalSum += statsData.approval || 0;
       }
-    );
+    }
 
     if (totalSum > 0) {
       rejectionRate.value = Math.round(
