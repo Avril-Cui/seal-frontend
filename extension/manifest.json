@@ -3,6 +3,11 @@
   "name": "ByeBuy Wishlist",
   "version": "1.0",
   "description": "Add Amazon products to your ByeBuy wishlist with a single click",
+  "icons": {
+    "16": "dist/pig_icon.png",
+    "48": "dist/pig_icon.png",
+    "128": "dist/pig_icon.png"
+  },
   "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": [
     "*://*.amazon.com/*",

@@ -1,21 +1,19 @@
 # ByeBuy Wishlist Chrome Extension
 
-A Chrome extension built with React and Tailwind CSS that adds Amazon products to your ByeBuy wishlist with a single click.
+A Chrome extension built with React and Tailwind CSS that adds Amazon products to your ByeBuy wishlist with reflection prompts to encourage mindful purchasing.
 
 ## Features
 
-- Collects comprehensive product metadata including:
-  - Product title
-  - Price and currency
-  - Rating and review count
-  - ASIN (Amazon product ID)
-  - Product description
-  - Brand
-  - Images
-  - Availability
-  - Product specifications
-  - Category breadcrumbs
-  - And more...
+- **User Authentication** - Login with your ByeBuy account
+- **Reflection Questions** - Answer prompts before adding items:
+  - Why do you want this item?
+  - Is this a need or a want?
+  - Would Future-You approve?
+- **Collapsible UI** - Minimizes to a pig icon, expands on click
+- **Product Data Collection** - Automatically captures:
+  - Product title, price, and images
+  - Description and specifications
+  - ASIN, rating, availability, and more
 
 ## Setup
 
@@ -49,27 +47,35 @@ npm run dev
 ## Usage
 
 1. Navigate to any Amazon product page
-2. A floating "Add to ByeBuy Wishlist" button will automatically appear in the bottom right corner
-3. Click the button to add the product to your wishlist
-4. Open the browser console (F12) to see the collected metadata
+2. A floating pig icon appears in the bottom right corner
+3. Click to expand the ByeBuy panel
+4. If not logged in, enter your ByeBuy credentials
+5. Fill out the reflection questions
+6. Click "Add to ByeBuy Wishlist" to save the item
 
 ## Development
 
 The extension uses:
 
-- **React** - UI component framework
-- **Tailwind CSS** - Utility-first styling
+- **React** - UI components
+- **Tailwind CSS** - Styling
 - **Vite** - Build tool
+- **Chrome Storage API** - Session persistence
 
-After making changes to the source code, rebuild with `npm run build` and reload the extension in Chrome.
+After making changes, rebuild with `npm run build` and reload the extension in Chrome.
 
 ## Files
 
-- `src/content.jsx` - Main React component and product fetching logic
-- `src/styles.css` - Tailwind imports
+- `src/content.jsx` - Main React component, login form, and product scraping
+- `src/background.js` - API calls (login, logout, add item)
+- `src/styles.css` - Tailwind imports and CSS overrides
 - `manifest.json` - Extension configuration
-- `vite.config.js` - Build configuration
+- `vite.config.js` - Build configuration (copies pig icon from main app)
 
-## Note
+## API Endpoints
 
-Currently, the extension logs data to the console. Future versions will add functionality to save or export this data.
+The extension communicates with these backend endpoints:
+
+- `POST /api/UserAuth/login` - Authenticate user
+- `POST /api/Sessioning/delete` - Logout
+- `POST /api/ItemCollection/addItemFromExtension` - Add item to wishlist
