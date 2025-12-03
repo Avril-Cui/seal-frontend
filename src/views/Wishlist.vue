@@ -37,16 +37,6 @@
           >
             ×
           </button>
-          <button
-            v-if="!item.wasPurchased"
-            @click.stop="openPurchaseModal(item)"
-            class="purchased-button"
-          >
-            Mark as Purchased
-          </button>
-          <div v-else class="purchased-label">
-            Purchased
-          </div>
           <div class="item-image">
             <img
               v-if="item.photo"
@@ -73,13 +63,23 @@
 
             <!-- AI Insight Section -->
             <div class="ai-insight-section">
-              <button
-                v-if="!item.aiInsight && !item.isLoadingAI"
-                @click.stop="getAIInsight(item)"
-                class="ai-insight-button"
-              >
-                🤖 Get AI Insight
-              </button>
+              <div class="action-buttons">
+                <button
+                  v-if="!item.wasPurchased"
+                  @click.stop="openPurchaseModal(item)"
+                  class="purchased-button"
+                >
+                  Mark as Purchased
+                </button>
+                <div v-else class="purchased-label">Purchased</div>
+                <button
+                  v-if="!item.aiInsight && !item.isLoadingAI"
+                  @click.stop="getAIInsight(item)"
+                  class="ai-insight-button"
+                >
+                  🤖 Get AI Insight
+                </button>
+              </div>
               <div v-if="item.isLoadingAI" class="ai-loading">
                 <span class="loading-spinner">⏳</span> Analyzing purchase...
               </div>
@@ -99,19 +99,11 @@
 
                 <!-- Structured Display -->
                 <div v-if="item.aiStructured" class="ai-structured">
-                  <div class="ai-verdict-row">
-                    <div
-                      class="ai-score"
-                      :class="getScoreClass(item.aiStructured.impulseScore)"
-                    >
-                      {{ item.aiStructured.impulseScore }}/10
-                    </div>
-                    <div
-                      class="ai-verdict"
-                      :class="getVerdictClass(item.aiStructured.verdict)"
-                    >
-                      {{ item.aiStructured.verdict }}
-                    </div>
+                  <div
+                    class="ai-score"
+                    :class="getScoreClass(item.aiStructured.impulseScore)"
+                  >
+                    {{ getScoreLabel(item.aiStructured.impulseScore) }}
                   </div>
 
                   <div class="ai-insight-item">
@@ -459,9 +451,13 @@
           <button @click="closePurchaseModal" class="close-button">×</button>
         </div>
         <div class="modal-body">
-          <div v-if="purchaseError" class="error-message">{{ purchaseError }}</div>
+          <div v-if="purchaseError" class="error-message">
+            {{ purchaseError }}
+          </div>
 
-          <p class="confirmation-text">Have you purchased "{{ purchasingItem?.itemName }}"?</p>
+          <p class="confirmation-text">
+            Have you purchased "{{ purchasingItem?.itemName }}"?
+          </p>
 
           <div class="form-group">
             <label class="form-label">Actual Price Paid</label>
@@ -489,24 +485,23 @@
 
           <div class="form-group">
             <label class="form-label">Purchase Date</label>
-            <input
-              v-model="purchaseDate"
-              type="date"
-              class="modal-input"
-            />
+            <input v-model="purchaseDate" type="date" class="modal-input" />
           </div>
 
           <div class="modal-actions">
-            <button
-              @click="closePurchaseModal"
-              class="modal-button cancel"
-            >
+            <button @click="closePurchaseModal" class="modal-button cancel">
               Cancel
             </button>
             <button
               @click="confirmPurchase"
               class="modal-button confirm"
-              :disabled="isPurchasing || !purchasePrice || !purchaseQuantity || !purchaseDate || purchaseQuantity < 1"
+              :disabled="
+                isPurchasing ||
+                !purchasePrice ||
+                !purchaseQuantity ||
+                !purchaseDate ||
+                purchaseQuantity < 1
+              "
             >
               {{ isPurchasing ? "Saving..." : "Confirm Purchase" }}
             </button>
@@ -746,12 +741,12 @@ const fetchWishlist = async () => {
 
     // Extract items from various possible response formats
     let items = [];
-    
+
     if (data.items && Array.isArray(data.items)) {
       // Format: { items: [{item: {...}}, ...] } or { items: [{...}, ...] }
       console.log("Found data.items array with length:", data.items.length);
       console.log("First raw item from data.items:", data.items[0]);
-      items = data.items.map(obj => {
+      items = data.items.map((obj) => {
         const extracted = obj.item ? obj.item : obj;
         console.log("Extracted item from obj:", extracted);
         console.log("Extracted item._id:", extracted._id);
@@ -760,7 +755,7 @@ const fetchWishlist = async () => {
     } else if (Array.isArray(data)) {
       // Format: [{item: {...}}, ...] or [{...}, ...]
       console.log("Found direct array with length:", data.length);
-      items = data.map(obj => obj.item ? obj.item : obj);
+      items = data.map((obj) => (obj.item ? obj.item : obj));
     } else {
       console.log("Unexpected format, keys:", Object.keys(data));
       wishlistItems.value = [];
@@ -812,7 +807,7 @@ const fetchWishlist = async () => {
     } else {
       wishlistItems.value = items;
     }
-    
+
     console.log("Final wishlistItems:", wishlistItems.value);
   } catch (err) {
     error.value = "Failed to load your items. Please try again.";
@@ -911,11 +906,15 @@ const addItem = async () => {
   if (!session) {
     console.error("No session! User not logged in.");
     console.error("currentUser value:", currentUser.value);
-    console.error("sessionToken from localStorage:", localStorage.getItem("sessionToken"));
+    console.error(
+      "sessionToken from localStorage:",
+      localStorage.getItem("sessionToken")
+    );
 
     // If we have a currentUser but no session, the session expired or was lost
     if (currentUser.value) {
-      addItemError.value = "Your session has expired. Please log out and log back in to continue.";
+      addItemError.value =
+        "Your session has expired. Please log out and log back in to continue.";
       // Optionally, auto-redirect to login after a delay
       setTimeout(() => {
         router.push("/login");
@@ -1146,8 +1145,8 @@ const openPurchaseModal = (item) => {
   // Set default to today's date in YYYY-MM-DD format
   const today = new Date();
   const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
   purchaseDate.value = `${year}-${month}-${day}`;
   purchaseError.value = "";
   showPurchaseModal.value = true;
@@ -1195,19 +1194,22 @@ const confirmPurchase = async () => {
     // Convert date string to timestamp (milliseconds)
     const purchaseTimestamp = new Date(purchaseDate.value).getTime();
 
-    const response = await fetch(`${API_BASE_URL}/ItemCollection/setPurchased`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        session: session,
-        item: purchasingItem.value._id,
-        quantity: purchaseQuantity.value,
-        purchaseTime: purchaseTimestamp,
-        actualPrice: parseFloat(purchasePrice.value),
-      }),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/ItemCollection/setPurchased`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          session: session,
+          item: purchasingItem.value._id,
+          quantity: purchaseQuantity.value,
+          purchaseTime: purchaseTimestamp,
+          actualPrice: parseFloat(purchasePrice.value),
+        }),
+      }
+    );
 
     const data = await response.json();
 
@@ -1243,7 +1245,7 @@ const getAIInsight = async (item) => {
   console.log("getAIInsight called with item:", item);
   console.log("item._id:", item._id);
   console.log("item keys:", Object.keys(item));
-  
+
   const session = getSession();
   if (!session) {
     console.error("No session - user not logged in");
@@ -1253,9 +1255,12 @@ const getAIInsight = async (item) => {
   // Get the item ID - it might be _id or id depending on the response format
   const itemId = item._id || item.id;
   console.log("Using itemId:", itemId);
-  
+
   if (!itemId) {
-    console.error("No item ID found! Item structure:", JSON.stringify(item, null, 2));
+    console.error(
+      "No item ID found! Item structure:",
+      JSON.stringify(item, null, 2)
+    );
     item.aiInsight = "Error: Could not find item ID";
     return;
   }
@@ -1298,10 +1303,20 @@ const getAIInsight = async (item) => {
 };
 
 // Helper functions for AI insight styling
+const getScoreLabel = (score) => {
+  if (score >= 1 && score <= 2) return "REASONABLE";
+  if (score >= 3 && score <= 4) return "SOMEWHAT REASONABLE";
+  if (score >= 5 && score <= 6) return "UNCERTAIN";
+  if (score >= 7 && score <= 8) return "SOMEWHAT IMPULSIVE";
+  if (score >= 9 && score <= 10) return "IMPULSIVE";
+  return "UNKNOWN";
+};
+
 const getScoreClass = (score) => {
-  if (score <= 3) return "score-low";
-  if (score <= 6) return "score-medium";
-  return "score-high";
+  if (score >= 1 && score <= 4) return "score-reasonable"; // Green
+  if (score >= 5 && score <= 6) return "score-uncertain"; // Yellow
+  if (score >= 7 && score <= 10) return "score-impulsive"; // Red
+  return "score-unknown";
 };
 
 const getVerdictClass = (verdict) => {
@@ -1322,7 +1337,7 @@ const getApprovalPercentage = (stats) => {
 const getApprovalClass = (stats) => {
   const percentage = getApprovalPercentage(stats);
   if (percentage >= 70) return "high-approval";
-  if (percentage >= 50) return "medium-approval";
+  if (percentage >= 40) return "medium-approval";
   return "low-approval";
 };
 </script>
@@ -1473,49 +1488,47 @@ const getApprovalClass = (stats) => {
   transform: scale(1.1);
 }
 
-.purchased-button {
-  position: absolute;
-  top: 0.75rem;
-  right: 3.5rem;
-  padding: 0.5rem 1rem;
-  border: 2px solid #2d0000;
-  border-radius: 8px;
-  background-color: #f5f0e1;
-  color: #2d0000;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  cursor: pointer;
+.action-buttons {
   display: flex;
+  gap: 0.5rem;
   align-items: center;
-  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.purchased-button {
+  padding: 0.5rem 1rem;
+  font-family: var(--font-primary);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
 }
 
 .purchased-button:hover {
-  background-color: #4caf50;
-  color: #f5f0e1;
-  border-color: #4caf50;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+  background-color: var(--color-accent-red);
+  color: var(--color-bg);
+  border-color: var(--color-accent-red);
 }
 
 .purchased-label {
-  position: absolute;
-  top: 0.75rem;
-  right: 3.5rem;
   padding: 0.5rem 1rem;
-  border: 2px solid #4caf50;
-  border-radius: 8px;
-  background-color: #4caf50;
-  color: #fff;
-  font-size: 0.75rem;
+  font-family: var(--font-primary);
+  font-size: 0.625rem;
   font-weight: 600;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  display: flex;
+  background-color: var(--color-accent-red);
+  color: var(--color-bg);
+  border: 1px solid var(--color-accent-red);
+  border-radius: 6px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
@@ -2070,33 +2083,27 @@ const getApprovalClass = (stats) => {
   gap: 0.75rem;
 }
 
-.ai-verdict-row {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-}
-
 .ai-score {
-  font-family: var(--font-primary);
-  font-size: 1.25rem;
-  font-weight: 700;
-  padding: 0.25rem 0.75rem;
-  border-radius: 6px;
+  font-family: var(--font-secondary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: inline-block;
 }
 
-.score-low {
-  background-color: var(--color-accent-green);
-  color: var(--color-text-primary);
+.score-reasonable {
+  color: var(--color-accent-green);
 }
 
-.score-medium {
-  background-color: var(--color-accent-pink);
-  color: var(--color-text-primary);
+.score-uncertain {
+  color: #d4a574;
 }
 
-.score-high {
-  background-color: #ffcccc;
-  color: #8b0000;
+.score-impulsive {
+  color: var(--color-accent-red);
+}
+
+.score-unknown {
+  color: var(--color-text-secondary);
 }
 
 .ai-verdict {

@@ -21,148 +21,181 @@
 
         <!-- Stats Summary -->
         <div class="stats-summary">
-        <div class="stat-box">
-          <div class="stat-value positive">${{ totalSaved.toFixed(2) }}</div>
-          <div class="stat-label">Total Saved</div>
+          <div class="stat-box">
+            <div class="stat-value positive">${{ totalSaved.toFixed(2) }}</div>
+            <div class="stat-label">Total Saved</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value negative">${{ totalBought.toFixed(2) }}</div>
+            <div class="stat-label">Total Bought</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">{{ itemsBought }}</div>
+            <div class="stat-label">Items Bought</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">{{ rejectionRate }}%</div>
+            <div class="stat-label">Rejection Rate</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">{{ itemsReviewed }}</div>
+            <div class="stat-label">Items Reviewed</div>
+          </div>
         </div>
-        <div class="stat-box">
-          <div class="stat-value positive">${{ totalBought.toFixed(2) }}</div>
-          <div class="stat-label">Total Bought</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-value">{{ itemsBought }}</div>
-          <div class="stat-label">Items Bought</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-value">{{ rejectionRate }}%</div>
-          <div class="stat-label">Rejection Rate</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-value">{{ itemsReviewed }}</div>
-          <div class="stat-label">Items Reviewed</div>
-        </div>
-      </div>
 
-      <!-- Main Grid -->
-      <div class="stats-grid">
-        <!-- Progress Graph -->
-        <div class="card graph-card">
-          <div class="graph-header">
-            <div>
-              <div class="graph-controls">
-                <h2 class="card-title">Purchase Progress</h2>
-                <select v-model="viewMode" class="view-select">
-                  <option value="day">Daily View</option>
-                  <option value="month">Monthly View</option>
-                </select>
+        <!-- Main Grid -->
+        <div class="stats-grid">
+          <!-- Progress Graph -->
+          <div class="card graph-card">
+            <div class="graph-header">
+              <div>
+                <div class="graph-controls">
+                  <h2 class="card-title">Spending History</h2>
+                  <select v-model="viewMode" class="view-select">
+                    <option value="day">Daily View</option>
+                    <option value="month">Monthly View</option>
+                  </select>
+                </div>
+                <div class="graph-metric">
+                  ${{ currentGraphTotal.toFixed(2) }}
+                </div>
+                <div class="graph-metric-label">total purchased</div>
               </div>
-              <div class="graph-metric">${{ currentGraphTotal.toFixed(2) }}</div>
-              <div class="graph-metric-label">total purchased</div>
             </div>
-          </div>
 
-          <div class="graph-navigation">
-            <button @click="navigateGraph(-1)" class="nav-btn">←</button>
-            <span class="date-range">{{ dateRangeLabel }}</span>
-            <button @click="navigateGraph(1)" class="nav-btn" :disabled="offset === 0">→</button>
-          </div>
-
-          <div class="graph-container" @touchstart="handleTouchStart" @touchmove="handleTouchMove" @touchend="handleTouchEnd">
-            <svg class="graph-svg" viewBox="0 0 400 200" preserveAspectRatio="none">
-              <!-- Grid lines -->
-              <line class="graph-grid" x1="0" y1="50" x2="400" y2="50" />
-              <line class="graph-grid" x1="0" y1="100" x2="400" y2="100" />
-              <line class="graph-grid" x1="0" y1="150" x2="400" y2="150" />
-
-              <!-- Data points and line -->
-              <path v-if="graphPath" class="graph-area" :d="graphAreaPath" />
-              <path v-if="graphPath" class="graph-line" :d="graphPath" />
-
-              <!-- Interactive points -->
-              <g v-for="(point, index) in graphPoints" :key="index">
-                <circle
-                  :cx="point.x"
-                  :cy="point.y"
-                  r="5"
-                  class="graph-point"
-                  @mouseenter="selectPoint(index)"
-                  @mouseleave="selectedPoint = null"
-                  :class="{ active: selectedPoint === index }"
-                />
-              </g>
-
-              <!-- Labels -->
-              <text
-                v-for="(label, index) in xAxisLabels"
-                :key="index"
-                class="graph-label"
-                :x="label.x"
-                y="195"
+            <div class="graph-navigation">
+              <button @click="navigateGraph(-1)" class="nav-btn">←</button>
+              <span class="date-range">{{ dateRangeLabel }}</span>
+              <button
+                @click="navigateGraph(1)"
+                class="nav-btn"
+                :disabled="offset === 0"
               >
-                {{ label.text }}
-              </text>
-            </svg>
-
-            <!-- Tooltip -->
-            <div v-if="selectedPoint !== null" class="graph-tooltip" :style="tooltipStyle">
-              <div class="tooltip-date">{{ graphData[selectedPoint].label }}</div>
-              <div class="tooltip-amount">${{ graphData[selectedPoint].value.toFixed(2) }}</div>
+                →
+              </button>
             </div>
-          </div>
 
-          <button class="export-button" @click="exportStats">
-            <span class="export-icon">☁</span>
-            EXPORT DATA
-          </button>
-        </div>
+            <div
+              class="graph-container"
+              @touchstart="handleTouchStart"
+              @touchmove="handleTouchMove"
+              @touchend="handleTouchEnd"
+            >
+              <svg
+                class="graph-svg"
+                viewBox="0 0 400 200"
+                preserveAspectRatio="none"
+              >
+                <!-- Grid lines -->
+                <line class="graph-grid" x1="0" y1="50" x2="400" y2="50" />
+                <line class="graph-grid" x1="0" y1="100" x2="400" y2="100" />
+                <line class="graph-grid" x1="0" y1="150" x2="400" y2="150" />
 
-        <!-- AI Insights -->
-        <div class="card insights-card">
-          <h2 class="card-title">Behavioral Insights</h2>
-          <div class="insights-wrapper">
-            <!-- Trend Alert Section -->
-            <div class="insight-section">
-              <div class="mascot">🐷</div>
-              <div class="insight-content">
-                <span class="insight-tag">Trend Alert</span>
-                <p v-if="isLoadingInsights" class="insight-text">
-                  Loading insights...
-                </p>
-                <p v-else class="insight-text">
-                  {{ aiTrendAlert }}
-                </p>
+                <!-- Data points and line -->
+                <path v-if="graphPath" class="graph-area" :d="graphAreaPath" />
+                <path v-if="graphPath" class="graph-line" :d="graphPath" />
+
+                <!-- Interactive points -->
+                <g v-for="(point, index) in graphPoints" :key="index">
+                  <circle
+                    :cx="point.x"
+                    :cy="point.y"
+                    r="5"
+                    class="graph-point"
+                    @mouseenter="selectPoint(index)"
+                    @mouseleave="selectedPoint = null"
+                    :class="{ active: selectedPoint === index }"
+                  />
+                </g>
+
+                <!-- Labels -->
+                <text
+                  v-for="(label, index) in xAxisLabels"
+                  :key="index"
+                  class="graph-label"
+                  :x="label.x"
+                  y="195"
+                >
+                  {{ label.text }}
+                </text>
+              </svg>
+
+              <!-- Tooltip -->
+              <div
+                v-if="selectedPoint !== null"
+                class="graph-tooltip"
+                :style="tooltipStyle"
+              >
+                <div class="tooltip-date">
+                  {{ graphData[selectedPoint].label }}
+                </div>
+                <div class="tooltip-amount">
+                  ${{ graphData[selectedPoint].value.toFixed(2) }}
+                </div>
               </div>
             </div>
 
-            <!-- Improvement Suggestions Section -->
-            <div class="insight-section">
-              <div class="mascot">🐷</div>
-              <div class="insight-content">
-                <span class="insight-tag green">Improvement Suggestions</span>
-                <ul v-if="isLoadingInsights" class="suggestions-list">
-                  <li class="suggestion-item">
-                    <span class="suggestion-bullet">→</span>
-                    <span>Loading suggestions...</span>
-                  </li>
-                </ul>
-                <ul v-else class="suggestions-list">
-                  <li v-for="(suggestion, index) in aiSuggestions" :key="index" class="suggestion-item">
-                    <span class="suggestion-bullet">→</span>
-                    <span>{{ suggestion }}</span>
-                  </li>
-                </ul>
+            <button class="export-button" @click="exportStats">
+              <span class="export-icon">☁</span>
+              EXPORT DATA
+            </button>
+          </div>
+
+          <!-- AI Insights -->
+          <div class="card insights-card">
+            <h2 class="card-title">Behavioral Insights</h2>
+            <div class="insights-wrapper">
+              <!-- Trend Alert Section -->
+              <div class="insight-section">
+                <div class="mascot">🐷</div>
+                <div class="insight-content">
+                  <span class="insight-tag">Trend Alert</span>
+                  <p v-if="isLoadingInsights" class="insight-text">
+                    Loading insights...
+                  </p>
+                  <p v-else class="insight-text">
+                    {{ aiTrendAlert }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Improvement Suggestions Section -->
+              <div class="insight-section">
+                <div class="mascot">🐷</div>
+                <div class="insight-content">
+                  <span class="insight-tag green">Improvement Suggestions</span>
+                  <ul v-if="isLoadingInsights" class="suggestions-list">
+                    <li class="suggestion-item">
+                      <span class="suggestion-bullet">→</span>
+                      <span>Loading suggestions...</span>
+                    </li>
+                  </ul>
+                  <ul v-else class="suggestions-list">
+                    <li
+                      v-for="(suggestion, index) in aiSuggestions"
+                      :key="index"
+                      class="suggestion-item"
+                    >
+                      <span class="suggestion-bullet">→</span>
+                      <span>{{ suggestion }}</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-      <!-- End Exportable Section -->
+        <!-- End Exportable Section -->
 
-      <!-- Recent Purchases -->
-      <div class="card purchases-section">
+        <!-- Recent Purchases -->
+        <div class="card purchases-section">
           <h2 class="card-title">Recent Purchases</h2>
-          <div v-if="isLoadingPurchases" class="loading-message">Loading purchases...</div>
-          <div v-else-if="recentPurchases.length === 0" class="empty-message">No purchases yet</div>
+          <div v-if="isLoadingPurchases" class="loading-message">
+            Loading purchases...
+          </div>
+          <div v-else-if="recentPurchases.length === 0" class="empty-message">
+            No purchases yet
+          </div>
           <div v-else class="purchases-list">
             <div
               v-for="purchase in recentPurchases"
@@ -180,8 +213,17 @@
               </div>
               <div class="purchase-details">
                 <p class="purchase-name">{{ purchase.itemName }}</p>
-                <p class="purchase-price">${{ ((purchase.actualPrice || purchase.price) * (purchase.quantity || 1)).toFixed(2) }}</p>
-                <p class="purchase-date">{{ formatPurchaseDate(purchase.PurchasedTime) }}</p>
+                <p class="purchase-price">
+                  ${{
+                    (
+                      (purchase.actualPrice || purchase.price) *
+                      (purchase.quantity || 1)
+                    ).toFixed(2)
+                  }}
+                </p>
+                <p class="purchase-date">
+                  {{ formatPurchaseDate(purchase.PurchasedTime) }}
+                </p>
               </div>
             </div>
           </div>
@@ -205,22 +247,36 @@
           <!-- Key Metrics Grid -->
           <div class="poster-metrics">
             <div class="poster-metric-card highlight">
-              <div class="poster-metric-value">${{ totalSaved.toFixed(2) }}</div>
+              <div class="poster-metric-value">
+                ${{ totalSaved.toFixed(2) }}
+              </div>
               <div class="poster-metric-label">Total Saved</div>
             </div>
             <div class="poster-metric-card">
-              <div class="poster-metric-value">${{ totalBought.toFixed(2) }}</div>
+              <div class="poster-metric-value">
+                ${{ totalBought.toFixed(2) }}
+              </div>
               <div class="poster-metric-label">Total Bought</div>
             </div>
           </div>
 
-          <!-- Purchase Progress -->
+          <!-- Spending History -->
           <div class="poster-graph-section">
-            <div class="poster-section-title">Purchase Progress ({{ viewMode === 'day' ? 'Daily View' : 'Monthly View' }})</div>
+            <div class="poster-section-title">
+              Spending History ({{
+                viewMode === "day" ? "Daily View" : "Monthly View"
+              }})
+            </div>
             <div class="poster-graph-container">
-              <div class="poster-graph-metric">${{ currentGraphTotal.toFixed(2) }}</div>
+              <div class="poster-graph-metric">
+                ${{ currentGraphTotal.toFixed(2) }}
+              </div>
               <div class="poster-graph-label">{{ dateRangeLabel }}</div>
-              <svg class="poster-graph-svg" viewBox="0 0 400 120" preserveAspectRatio="none">
+              <svg
+                class="poster-graph-svg"
+                viewBox="0 0 400 120"
+                preserveAspectRatio="none"
+              >
                 <defs>
                   <linearGradient
                     id="posterGradient"
@@ -231,15 +287,19 @@
                   >
                     <stop
                       offset="0%"
-                      style="stop-color: #8ba888; stop-opacity: 0.3"
+                      style="stop-color: #d47b7b; stop-opacity: 0.3"
                     />
                     <stop
                       offset="100%"
-                      style="stop-color: #8ba888; stop-opacity: 0.05"
+                      style="stop-color: #d47b7b; stop-opacity: 0.05"
                     />
                   </linearGradient>
                 </defs>
-                <path class="poster-graph-area" :d="posterGraphAreaPath" fill="url(#posterGradient)" />
+                <path
+                  class="poster-graph-area"
+                  :d="posterGraphAreaPath"
+                  fill="url(#posterGradient)"
+                />
                 <path class="poster-graph-line" :d="posterGraphPath" />
               </svg>
             </div>
@@ -311,7 +371,13 @@ import Navbar from "../components/Navbar.vue";
 
 const router = useRouter();
 const { currentUser, getSession } = useAuth();
-const { fetchWishlist, getSwipeStats, getSwipeComments, getAIWishListInsight, buildInsightPrompt } = useStatsAPI();
+const {
+  fetchWishlist,
+  getSwipeStats,
+  getSwipeComments,
+  getAIWishListInsight,
+  buildInsightPrompt,
+} = useStatsAPI();
 
 const exportSection = ref(null);
 const posterTemplate = ref(null);
@@ -319,19 +385,21 @@ const showPreviewModal = ref(false);
 const previewImage = ref(null);
 
 // AI Insights
-const aiTrendAlert = ref("Oink oink! Your pause cart is empty. Start adding items you're considering buying to get personalized insights!");
+const aiTrendAlert = ref(
+  "Oink oink! Your pause cart is empty. Start adding items you're considering buying to get personalized insights!"
+);
 const aiSuggestions = ref([
   "Add items to your pause cart that you're thinking about purchasing",
   "Take time to reflect on each item using our guided questions",
   "Complete your daily SwipeSense queue to see community feedback",
-  "Check back here after adding items to see your shopping patterns"
+  "Check back here after adding items to see your shopping patterns",
 ]);
 const isLoadingInsights = ref(false);
 
 // User name
 const userName = computed(() => {
   if (currentUser?.value?.email) {
-    const emailName = currentUser.value.email.split('@')[0];
+    const emailName = currentUser.value.email.split("@")[0];
     return emailName.charAt(0).toUpperCase() + emailName.slice(1);
   }
   return "Alex"; // Fallback
@@ -349,13 +417,13 @@ const rejectionRate = ref(0);
 const itemsReviewed = ref(0);
 
 // Graph state
-const viewMode = ref('day'); // 'day' or 'month'
+const viewMode = ref("day"); // 'day' or 'month'
 const offset = ref(0); // Offset for navigation (0 = most recent)
 const selectedPoint = ref(null);
 const graphData = ref([]);
 const touchStartX = ref(0);
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
 const currentDate = computed(() => {
   const date = new Date();
@@ -369,37 +437,42 @@ const currentDate = computed(() => {
 // Fetch AI insights based on wishlist and swipe data
 const fetchAIInsights = async () => {
   if (!currentUser?.value?.uid) {
-    console.log('No current user, skipping AI insights');
+    console.log("No current user, skipping AI insights");
     return;
   }
 
-  console.log('Stats: fetchAIInsights called with user:', currentUser.value);
-  console.log('Stats: Fetching wishlist for uid:', currentUser.value.uid);
+  console.log("Stats: fetchAIInsights called with user:", currentUser.value);
+  console.log("Stats: Fetching wishlist for uid:", currentUser.value.uid);
 
   isLoadingInsights.value = true;
   try {
     // Get session token for authentication
     const session = getSession();
     if (!session) {
-      console.error('No session token available');
-      throw new Error('Authentication required. Please log in again.');
+      console.error("No session token available");
+      throw new Error("Authentication required. Please log in again.");
     }
 
     // 1. Fetch user's wishlist
     const wishlistItems = await fetchWishlist(currentUser.value.uid, session);
 
-    console.log('Stats: fetchWishlist returned:', wishlistItems.length, 'items');
-    console.log('Stats: wishlistItems:', wishlistItems);
+    console.log(
+      "Stats: fetchWishlist returned:",
+      wishlistItems.length,
+      "items"
+    );
+    console.log("Stats: wishlistItems:", wishlistItems);
 
     if (wishlistItems.length === 0) {
-      console.log('No wishlist items found');
+      console.log("No wishlist items found");
       // Set default messages encouraging users to add items
-      aiTrendAlert.value = "Oink oink! Your pause cart is empty. Start adding items you're considering buying to get personalized insights!";
+      aiTrendAlert.value =
+        "Oink oink! Your pause cart is empty. Start adding items you're considering buying to get personalized insights!";
       aiSuggestions.value = [
         "Add items to your pause cart that you're thinking about purchasing",
         "Take time to reflect on each item using our guided questions",
         "Complete your daily SwipeSense queue to see community feedback",
-        "Check back here after adding items to see your shopping patterns"
+        "Check back here after adding items to see your shopping patterns",
       ];
       isLoadingInsights.value = false;
       return;
@@ -420,7 +493,7 @@ const fetchAIInsights = async () => {
     const response = await getAIWishListInsight(currentUser.value.uid, prompt);
 
     if (!response) {
-      console.error('No AI response received');
+      console.error("No AI response received");
       return;
     }
 
@@ -428,10 +501,12 @@ const fetchAIInsights = async () => {
     try {
       // Strip markdown code blocks if present
       let cleanResponse = response;
-      if (response.includes('```json')) {
-        cleanResponse = response.replace(/```json\s*/g, '').replace(/```\s*/g, '');
-      } else if (response.includes('```')) {
-        cleanResponse = response.replace(/```\s*/g, '');
+      if (response.includes("```json")) {
+        cleanResponse = response
+          .replace(/```json\s*/g, "")
+          .replace(/```\s*/g, "");
+      } else if (response.includes("```")) {
+        cleanResponse = response.replace(/```\s*/g, "");
       }
 
       const parsed = JSON.parse(cleanResponse.trim());
@@ -439,14 +514,14 @@ const fetchAIInsights = async () => {
         aiTrendAlert.value = parsed.trendAlert;
         aiSuggestions.value = parsed.improvementSuggestions;
       } else {
-        console.error('Invalid AI response format:', parsed);
+        console.error("Invalid AI response format:", parsed);
       }
     } catch (parseError) {
-      console.error('Error parsing AI response:', parseError);
-      console.log('Raw response:', response);
+      console.error("Error parsing AI response:", parseError);
+      console.log("Raw response:", response);
     }
   } catch (error) {
-    console.error('Error fetching AI insights:', error);
+    console.error("Error fetching AI insights:", error);
   } finally {
     isLoadingInsights.value = false;
   }
@@ -455,7 +530,7 @@ const fetchAIInsights = async () => {
 // Fetch purchased items
 const fetchPurchasedItems = async () => {
   if (!currentUser?.value?.uid) {
-    console.log('No current user, skipping purchased items fetch');
+    console.log("No current user, skipping purchased items fetch");
     return;
   }
 
@@ -464,32 +539,35 @@ const fetchPurchasedItems = async () => {
     // Get session token for authentication
     const session = getSession();
     if (!session) {
-      console.error('No session token available for fetching purchases');
+      console.error("No session token available for fetching purchases");
       recentPurchases.value = [];
       isLoadingPurchases.value = false;
       return;
     }
 
-    const response = await fetch(`${API_BASE_URL}/ItemCollection/_getPurchasedItems`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ session }),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/ItemCollection/_getPurchasedItems`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ session }),
+      }
+    );
 
     const data = await response.json();
 
-    console.log('Purchased items response:', data);
+    console.log("Purchased items response:", data);
 
     if (data.error) {
-      console.log('Error fetching purchased items:', data.error);
+      console.log("Error fetching purchased items:", data.error);
       recentPurchases.value = [];
     } else if (data.items && Array.isArray(data.items)) {
       // Data comes back as { items: [{ item: {...} }] } from the sync
       // Unwrap the nested item structure
-      const unwrappedItems = data.items.map(obj => obj.item || obj);
-      console.log('Unwrapped purchased items:', unwrappedItems);
+      const unwrappedItems = data.items.map((obj) => obj.item || obj);
+      console.log("Unwrapped purchased items:", unwrappedItems);
 
       // Sort by purchase date (most recent first)
       const items = unwrappedItems.sort((a, b) => {
@@ -500,7 +578,7 @@ const fetchPurchasedItems = async () => {
       recentPurchases.value = [];
     }
   } catch (error) {
-    console.error('Error fetching purchased items:', error);
+    console.error("Error fetching purchased items:", error);
     recentPurchases.value = [];
   } finally {
     isLoadingPurchases.value = false;
@@ -509,7 +587,7 @@ const fetchPurchasedItems = async () => {
 
 // Format purchase date
 const formatPurchaseDate = (timestamp) => {
-  if (!timestamp) return 'Unknown date';
+  if (!timestamp) return "Unknown date";
 
   const date = new Date(timestamp);
   const now = new Date();
@@ -517,27 +595,27 @@ const formatPurchaseDate = (timestamp) => {
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
   if (diffDays === 0) {
-    return 'Today';
+    return "Today";
   } else if (diffDays === 1) {
-    return 'Yesterday';
+    return "Yesterday";
   } else if (diffDays < 7) {
     return `${diffDays} days ago`;
   } else if (diffDays < 30) {
     const weeks = Math.floor(diffDays / 7);
-    return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+    return `${weeks} week${weeks > 1 ? "s" : ""} ago`;
   } else if (diffDays < 365) {
     const months = Math.floor(diffDays / 30);
-    return `${months} month${months > 1 ? 's' : ''} ago`;
+    return `${months} month${months > 1 ? "s" : ""} ago`;
   } else {
     const years = Math.floor(diffDays / 365);
-    return `${years} year${years > 1 ? 's' : ''} ago`;
+    return `${years} year${years > 1 ? "s" : ""} ago`;
   }
 };
 
 // Calculate stats
 const calculateStats = async () => {
   if (!currentUser?.value?.uid) {
-    console.log('No current user, skipping stats calculation');
+    console.log("No current user, skipping stats calculation");
     return;
   }
 
@@ -545,57 +623,73 @@ const calculateStats = async () => {
     // Get session token for authentication
     const session = getSession();
     if (!session) {
-      console.error('No session token available for calculateStats');
+      console.error("No session token available for calculateStats");
       return;
     }
 
     // 1. Fetch all items for this user
-    const wishlistResponse = await fetch(`${API_BASE_URL}/ItemCollection/_getWishListItems`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ session }),
-    });
+    const wishlistResponse = await fetch(
+      `${API_BASE_URL}/ItemCollection/_getWishListItems`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ session }),
+      }
+    );
 
     const wishlistData = await wishlistResponse.json();
 
     if (wishlistData.error) {
-      console.log('Error fetching wishlist for stats:', wishlistData.error);
+      console.log("Error fetching wishlist for stats:", wishlistData.error);
       return;
     }
 
     // Data comes back as { items: [...] } from the sync
     // Each element is { item: {...} }, so we need to unwrap
-    const allItems = (wishlistData.items || []).map(obj => obj.item || obj);
-    console.log('calculateStats: allItems:', allItems);
-    console.log('calculateStats: allItems length:', allItems.length);
+    const allItems = (wishlistData.items || []).map((obj) => obj.item || obj);
+    console.log("calculateStats: allItems:", allItems);
+    console.log("calculateStats: allItems length:", allItems.length);
 
     // 2. Calculate total saved (sum of prices of unpurchased items)
-    const unpurchasedItems = allItems.filter(item => !item.wasPurchased);
-    console.log('calculateStats: unpurchasedItems:', unpurchasedItems);
-    console.log('calculateStats: unpurchasedItems prices:', unpurchasedItems.map(i => ({ name: i.itemName, price: i.price, wasPurchased: i.wasPurchased })));
+    const unpurchasedItems = allItems.filter((item) => !item.wasPurchased);
+    console.log("calculateStats: unpurchasedItems:", unpurchasedItems);
+    console.log(
+      "calculateStats: unpurchasedItems prices:",
+      unpurchasedItems.map((i) => ({
+        name: i.itemName,
+        price: i.price,
+        wasPurchased: i.wasPurchased,
+      }))
+    );
 
-    totalSaved.value = unpurchasedItems.reduce((sum, item) => sum + (item.price || 0), 0);
-    console.log('calculateStats: totalSaved:', totalSaved.value);
+    totalSaved.value = unpurchasedItems.reduce(
+      (sum, item) => sum + (item.price || 0),
+      0
+    );
+    console.log("calculateStats: totalSaved:", totalSaved.value);
 
     // 3. Calculate total bought and items bought
-    const purchasedItems = allItems.filter(item => item.wasPurchased);
+    const purchasedItems = allItems.filter((item) => item.wasPurchased);
     itemsBought.value = purchasedItems.length;
     totalBought.value = purchasedItems.reduce((sum, item) => {
       const price = item.actualPrice || item.price || 0;
       const quantity = item.quantity || 1;
-      return sum + (price * quantity);
+      return sum + price * quantity;
     }, 0);
 
     // 4. Get items reviewed (swipe count for this user)
-    const swipeCountResponse = await fetch(`${API_BASE_URL}/SwipeSystem/_getUserSwipeCount`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ userId: currentUser.value.uid }),
-    });
+    const swipeCountResponse = await fetch(
+      `${API_BASE_URL}/SwipeSystem/_getUserSwipeCount`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId: currentUser.value.uid }),
+      }
+    );
 
     const swipeCountData = await swipeCountResponse.json();
     if (!swipeCountData.error) {
@@ -607,16 +701,19 @@ const calculateStats = async () => {
     let approvalSum = 0;
 
     for (const item of allItems) {
-      const statsResponse = await fetch(`${API_BASE_URL}/SwipeSystem/_getSwipeStats`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          session: session,
-          itemId: item._id
-        }),
-      });
+      const statsResponse = await fetch(
+        `${API_BASE_URL}/SwipeSystem/_getSwipeStats`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            session: session,
+            itemId: item._id,
+          }),
+        }
+      );
 
       const statsData = await statsResponse.json();
       if (!statsData.error) {
@@ -626,13 +723,14 @@ const calculateStats = async () => {
     }
 
     if (totalSum > 0) {
-      rejectionRate.value = Math.round(((totalSum - approvalSum) / totalSum) * 100);
+      rejectionRate.value = Math.round(
+        ((totalSum - approvalSum) / totalSum) * 100
+      );
     } else {
       rejectionRate.value = 0;
     }
-
   } catch (error) {
-    console.error('Error calculating stats:', error);
+    console.error("Error calculating stats:", error);
   }
 };
 
@@ -642,29 +740,32 @@ const processGraphData = () => {
   const data = [];
   const now = new Date();
 
-  if (viewMode.value === 'day') {
+  if (viewMode.value === "day") {
     // Generate last 7 days
     for (let i = numPeriods - 1; i >= 0; i--) {
       const date = new Date(now);
       date.setDate(date.getDate() - i - offset.value * numPeriods);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = date.toISOString().split("T")[0];
 
       // Sum purchases on this day
       const value = recentPurchases.value
-        .filter(item => {
+        .filter((item) => {
           const purchaseDate = new Date(item.PurchasedTime);
-          return purchaseDate.toISOString().split('T')[0] === dateStr;
+          return purchaseDate.toISOString().split("T")[0] === dateStr;
         })
         .reduce((sum, item) => {
           const price = item.actualPrice || item.price || 0;
           const quantity = item.quantity || 1;
-          return sum + (price * quantity);
+          return sum + price * quantity;
         }, 0);
 
       data.push({
-        label: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        }),
         value,
-        date: dateStr
+        date: dateStr,
       });
     }
   } else {
@@ -672,25 +773,32 @@ const processGraphData = () => {
     for (let i = numPeriods - 1; i >= 0; i--) {
       const date = new Date(now);
       date.setMonth(date.getMonth() - i - offset.value * numPeriods);
-      const monthStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const monthStr = `${date.getFullYear()}-${String(
+        date.getMonth() + 1
+      ).padStart(2, "0")}`;
 
       // Sum purchases in this month
       const value = recentPurchases.value
-        .filter(item => {
+        .filter((item) => {
           const purchaseDate = new Date(item.PurchasedTime);
-          const purchaseMonth = `${purchaseDate.getFullYear()}-${String(purchaseDate.getMonth() + 1).padStart(2, '0')}`;
+          const purchaseMonth = `${purchaseDate.getFullYear()}-${String(
+            purchaseDate.getMonth() + 1
+          ).padStart(2, "0")}`;
           return purchaseMonth === monthStr;
         })
         .reduce((sum, item) => {
           const price = item.actualPrice || item.price || 0;
           const quantity = item.quantity || 1;
-          return sum + (price * quantity);
+          return sum + price * quantity;
         }, 0);
 
       data.push({
-        label: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        label: date.toLocaleDateString("en-US", {
+          month: "short",
+          year: "numeric",
+        }),
         value,
-        date: monthStr
+        date: monthStr,
       });
     }
   }
@@ -704,25 +812,28 @@ const currentGraphTotal = computed(() => {
 });
 
 const dateRangeLabel = computed(() => {
-  if (graphData.value.length === 0) return '';
-  return `${graphData.value[0].label} - ${graphData.value[graphData.value.length - 1].label}`;
+  if (graphData.value.length === 0) return "";
+  return `${graphData.value[0].label} - ${
+    graphData.value[graphData.value.length - 1].label
+  }`;
 });
 
 const graphPoints = computed(() => {
-  const maxValue = Math.max(...graphData.value.map(d => d.value), 1);
+  const maxValue = Math.max(...graphData.value.map((d) => d.value), 1);
   const width = 400;
   const height = 200;
   const padding = 20;
 
   return graphData.value.map((point, index) => {
     const x = (index / (graphData.value.length - 1)) * width;
-    const y = height - padding - ((point.value / maxValue) * (height - padding * 2));
+    const y =
+      height - padding - (point.value / maxValue) * (height - padding * 2);
     return { x, y };
   });
 });
 
 const graphPath = computed(() => {
-  if (graphPoints.value.length === 0) return '';
+  if (graphPoints.value.length === 0) return "";
 
   const points = graphPoints.value;
   let path = `M ${points[0].x} ${points[0].y}`;
@@ -735,7 +846,7 @@ const graphPath = computed(() => {
 });
 
 const graphAreaPath = computed(() => {
-  if (graphPoints.value.length === 0) return '';
+  if (graphPoints.value.length === 0) return "";
 
   const points = graphPoints.value;
   let path = `M ${points[0].x} 200 L ${points[0].x} ${points[0].y}`;
@@ -751,38 +862,41 @@ const graphAreaPath = computed(() => {
 const xAxisLabels = computed(() => {
   return graphData.value.map((point, index) => ({
     x: (index / (graphData.value.length - 1)) * 400,
-    text: viewMode.value === 'day'
-      ? point.label.split(' ')[1]
-      : point.label.split(' ')[0]
+    text:
+      viewMode.value === "day"
+        ? point.label.split(" ")[1]
+        : point.label.split(" ")[0],
   }));
 });
 
 const tooltipStyle = computed(() => {
-  if (selectedPoint.value === null || !graphPoints.value[selectedPoint.value]) return {};
+  if (selectedPoint.value === null || !graphPoints.value[selectedPoint.value])
+    return {};
 
   const point = graphPoints.value[selectedPoint.value];
   return {
     left: `${point.x}px`,
-    top: `${point.y - 50}px`
+    top: `${point.y - 50}px`,
   };
 });
 
 // Poster graph computed properties (for export with different dimensions)
 const posterGraphPoints = computed(() => {
-  const maxValue = Math.max(...graphData.value.map(d => d.value), 1);
+  const maxValue = Math.max(...graphData.value.map((d) => d.value), 1);
   const width = 400;
   const height = 120;
   const padding = 10;
 
   return graphData.value.map((point, index) => {
     const x = (index / (graphData.value.length - 1)) * width;
-    const y = height - padding - ((point.value / maxValue) * (height - padding * 2));
+    const y =
+      height - padding - (point.value / maxValue) * (height - padding * 2);
     return { x, y };
   });
 });
 
 const posterGraphPath = computed(() => {
-  if (posterGraphPoints.value.length === 0) return '';
+  if (posterGraphPoints.value.length === 0) return "";
 
   const points = posterGraphPoints.value;
   let path = `M ${points[0].x} ${points[0].y}`;
@@ -795,7 +909,7 @@ const posterGraphPath = computed(() => {
 });
 
 const posterGraphAreaPath = computed(() => {
-  if (posterGraphPoints.value.length === 0) return '';
+  if (posterGraphPoints.value.length === 0) return "";
 
   const points = posterGraphPoints.value;
   let path = `M ${points[0].x} 120 L ${points[0].x} ${points[0].y}`;
@@ -1137,7 +1251,7 @@ const downloadImage = () => {
   font-family: var(--font-primary);
   font-size: 2rem;
   font-weight: 700;
-  color: var(--color-accent-green);
+  color: var(--color-accent-red);
   letter-spacing: -0.02em;
 }
 
@@ -1164,14 +1278,14 @@ const downloadImage = () => {
 
 .graph-line {
   fill: none;
-  stroke: var(--color-accent-green);
+  stroke: var(--color-accent-red);
   stroke-width: 3;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .graph-area {
-  fill: var(--color-accent-green);
+  fill: var(--color-accent-red);
   opacity: 0.1;
 }
 
@@ -1188,7 +1302,7 @@ const downloadImage = () => {
 }
 
 .graph-point {
-  fill: var(--color-accent-green);
+  fill: var(--color-accent-red);
   stroke: var(--color-bg);
   stroke-width: 2;
   cursor: pointer;
@@ -1630,7 +1744,7 @@ const downloadImage = () => {
   font-family: var(--font-primary);
   font-size: 80px;
   font-weight: 700;
-  color: var(--color-accent-green);
+  color: var(--color-accent-red);
   letter-spacing: -0.02em;
   margin-bottom: 10px;
 }
@@ -1648,7 +1762,7 @@ const downloadImage = () => {
 
 .poster-graph-line {
   fill: none;
-  stroke: var(--color-accent-green);
+  stroke: var(--color-accent-red);
   stroke-width: 6;
   stroke-linecap: round;
   stroke-linejoin: round;
