@@ -34,11 +34,11 @@
             <div class="stat-label">Items Bought</div>
           </div>
           <div class="stat-box">
-            <div class="stat-value">{{ rejectionRate }}%</div>
+            <div class="stat-value">{{ rejectionRate === null ? 'Loading...' : rejectionRate + '%' }}</div>
             <div class="stat-label">Rejection Rate</div>
           </div>
           <div class="stat-box">
-            <div class="stat-value">{{ itemsReviewed }}</div>
+            <div class="stat-value">{{ itemsReviewed === null ? 'Loading...' : itemsReviewed }}</div>
             <div class="stat-label">Items Reviewed</div>
           </div>
         </div>
@@ -407,8 +407,8 @@ const isLoadingPurchases = ref(false);
 const totalSaved = ref(0);
 const totalBought = ref(0);
 const itemsBought = ref(0);
-const rejectionRate = ref(0);
-const itemsReviewed = ref(0);
+const rejectionRate = ref(null);
+const itemsReviewed = ref(null);
 
 // Graph state
 const viewMode = ref("day"); // 'day' or 'month'
