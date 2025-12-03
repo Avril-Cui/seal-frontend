@@ -673,33 +673,29 @@ const calculateStats = async () => {
       itemsReviewed.value = swipeCountData.count || 0;
     }
 
-    // 5. Calculate rejection rate
-    let totalSum = 0;
-    let approvalSum = 0;
-
-    for (const item of allItems) {
-      const statsResponse = await fetch(`${API_BASE_URL}/SwipeSystem/_getSwipeStats`, {
+    // 5. Calculate rejection rate based on user's swipe decisions
+    const swipeStatsResponse = await fetch(
+      `${API_BASE_URL}/SwipeSystem/_getUserSwipeStatistics`,
+      {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          session: session,
-          itemId: item._id
-        }),
-      });
-
-      const statsData = await statsResponse.json();
-      if (!statsData.error) {
-        totalSum += statsData.total || 0;
-        approvalSum += statsData.approval || 0;
+        body: JSON.stringify({ session }),
       }
-    }
+    );
 
-    if (totalSum > 0) {
-      rejectionRate.value = Math.round(
-        ((totalSum - approvalSum) / totalSum) * 100
-      );
+    const swipeStatsData = await swipeStatsResponse.json();
+    if (!swipeStatsData.error) {
+      const buyCount = swipeStatsData.buyCount || 0;
+      const dontBuyCount = swipeStatsData.dontBuyCount || 0;
+      const totalSwipes = buyCount + dontBuyCount;
+
+      if (totalSwipes > 0) {
+        rejectionRate.value = Math.round((dontBuyCount / totalSwipes) * 100);
+      } else {
+        rejectionRate.value = 0;
+      }
     } else {
       rejectionRate.value = 0;
     }

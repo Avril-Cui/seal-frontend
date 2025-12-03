@@ -182,7 +182,17 @@ const loadQueue = async () => {
     let itemIds = [];
     let completed = 0;
 
-    if (queueData.error) {
+    // Check if queue is completed (empty itemIdSet but has completedQueue)
+    if (!queueData.error && queueData.completedQueue > 0 && (!queueData.itemIdSet || queueData.itemIdSet.length === 0)) {
+      // Queue exists but all items have been completed
+      console.log("Today's queue is complete! All items have been swiped.");
+      queueItems.value = [];
+      completedSwipes.value = queueData.completedQueue;
+      totalSwipes.value = queueData.completedQueue;
+      return;
+    }
+
+    if (queueData.error || !queueData.itemIdSet || queueData.itemIdSet.length === 0) {
       // No queue exists for today, generate one
       console.log("No queue found, generating new queue...");
 
@@ -202,14 +212,14 @@ const loadQueue = async () => {
 
       if (
         randomItemsData.error ||
-        !Array.isArray(randomItemsData) ||
-        randomItemsData.length === 0
+        !randomItemsData.itemIdSet ||
+        randomItemsData.itemIdSet.length === 0
       ) {
         console.error("Failed to get random items:", randomItemsData.error);
         return;
       }
 
-      itemIds = randomItemsData[0].itemIdSet;
+      itemIds = randomItemsData.itemIdSet;
 
       // Generate daily queue
       const generateResponse = await fetch(
@@ -226,11 +236,34 @@ const loadQueue = async () => {
       const generateData = await generateResponse.json();
 
       if (generateData.error) {
-        console.error("Failed to generate queue:", generateData.error);
-        return;
+        // If queue already exists, retry loading it
+        if (generateData.error.includes("already exists")) {
+          console.log("Queue already exists, loading existing queue...");
+          const retryQueueResponse = await fetch(
+            `${API_BASE_URL}/QueueSystem/_getTodayQueue`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ session }),
+            }
+          );
+          const retryQueueData = await retryQueueResponse.json();
+          if (retryQueueData.itemIdSet && retryQueueData.itemIdSet.length > 0) {
+            itemIds = retryQueueData.itemIdSet;
+            completed = retryQueueData.completedQueue;
+          } else {
+            console.error("Failed to load existing queue");
+            return;
+          }
+        } else {
+          console.error("Failed to generate queue:", generateData.error);
+          return;
+        }
+      } else {
+        completed = 0;
       }
-
-      completed = 0;
     } else {
       // Queue exists, load unrated items
       itemIds = queueData.itemIdSet;
