@@ -26,7 +26,7 @@
             <div class="stat-label">Total Saved</div>
           </div>
           <div class="stat-box">
-            <div class="stat-value positive">${{ totalBought.toFixed(2) }}</div>
+            <div class="stat-value negative">${{ totalBought.toFixed(2) }}</div>
             <div class="stat-label">Total Bought</div>
           </div>
           <div class="stat-box">
@@ -50,7 +50,7 @@
             <div class="graph-header">
               <div>
                 <div class="graph-controls">
-                  <h2 class="card-title">Purchase Progress</h2>
+                  <h2 class="card-title">Spending History</h2>
                   <select v-model="viewMode" class="view-select">
                     <option value="day">Daily View</option>
                     <option value="month">Monthly View</option>
@@ -260,10 +260,10 @@
             </div>
           </div>
 
-          <!-- Purchase Progress -->
+          <!-- Spending History -->
           <div class="poster-graph-section">
             <div class="poster-section-title">
-              Purchase Progress ({{
+              Spending History ({{
                 viewMode === "day" ? "Daily View" : "Monthly View"
               }})
             </div>
@@ -287,11 +287,11 @@
                   >
                     <stop
                       offset="0%"
-                      style="stop-color: #8ba888; stop-opacity: 0.3"
+                      style="stop-color: #d47b7b; stop-opacity: 0.3"
                     />
                     <stop
                       offset="100%"
-                      style="stop-color: #8ba888; stop-opacity: 0.05"
+                      style="stop-color: #d47b7b; stop-opacity: 0.05"
                     />
                   </linearGradient>
                 </defs>
@@ -371,7 +371,13 @@ import Navbar from "../components/Navbar.vue";
 
 const router = useRouter();
 const { currentUser, getSession } = useAuth();
-const { fetchWishlist, getSwipeStats, getSwipeComments, getAIWishListInsight, buildInsightPrompt } = useStatsAPI();
+const {
+  fetchWishlist,
+  getSwipeStats,
+  getSwipeComments,
+  getAIWishListInsight,
+  buildInsightPrompt,
+} = useStatsAPI();
 
 const exportSection = ref(null);
 const posterTemplate = ref(null);
@@ -435,8 +441,8 @@ const fetchAIInsights = async () => {
     return;
   }
 
-  console.log('Stats: fetchAIInsights called with user:', currentUser.value);
-  console.log('Stats: Fetching wishlist for uid:', currentUser.value.uid);
+  console.log("Stats: fetchAIInsights called with user:", currentUser.value);
+  console.log("Stats: Fetching wishlist for uid:", currentUser.value.uid);
 
   isLoadingInsights.value = true;
   const session = getSession();
@@ -444,15 +450,19 @@ const fetchAIInsights = async () => {
     // Get session token for authentication
     const session = getSession();
     if (!session) {
-      console.error('No session token available');
-      throw new Error('Authentication required. Please log in again.');
+      console.error("No session token available");
+      throw new Error("Authentication required. Please log in again.");
     }
 
     // 1. Fetch user's wishlist
     const wishlistItems = await fetchWishlist(currentUser.value.uid, session);
 
-    console.log('Stats: fetchWishlist returned:', wishlistItems.length, 'items');
-    console.log('Stats: wishlistItems:', wishlistItems);
+    console.log(
+      "Stats: fetchWishlist returned:",
+      wishlistItems.length,
+      "items"
+    );
+    console.log("Stats: wishlistItems:", wishlistItems);
 
     if (wishlistItems.length === 0) {
       console.log("No wishlist items found");
@@ -531,23 +541,26 @@ const fetchPurchasedItems = async () => {
     // Get session token for authentication
     const session = getSession();
     if (!session) {
-      console.error('No session token available for fetching purchases');
+      console.error("No session token available for fetching purchases");
       recentPurchases.value = [];
       isLoadingPurchases.value = false;
       return;
     }
 
-    const response = await fetch(`${API_BASE_URL}/ItemCollection/_getPurchasedItems`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ session }),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/ItemCollection/_getPurchasedItems`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ session }),
+      }
+    );
 
     const data = await response.json();
 
-    console.log('Purchased items response:', data);
+    console.log("Purchased items response:", data);
 
     if (data.error) {
       console.log("Error fetching purchased items:", data.error);
@@ -555,8 +568,8 @@ const fetchPurchasedItems = async () => {
     } else if (data.items && Array.isArray(data.items)) {
       // Data comes back as { items: [{ item: {...} }] } from the sync
       // Unwrap the nested item structure
-      const unwrappedItems = data.items.map(obj => obj.item || obj);
-      console.log('Unwrapped purchased items:', unwrappedItems);
+      const unwrappedItems = data.items.map((obj) => obj.item || obj);
+      console.log("Unwrapped purchased items:", unwrappedItems);
 
       // Sort by purchase date (most recent first)
       const items = unwrappedItems.sort((a, b) => {
@@ -613,39 +626,52 @@ const calculateStats = async () => {
     // Get session token for authentication
     const session = getSession();
     if (!session) {
-      console.error('No session token available for calculateStats');
+      console.error("No session token available for calculateStats");
       return;
     }
 
     // 1. Fetch all items for this user
-    const wishlistResponse = await fetch(`${API_BASE_URL}/ItemCollection/_getWishListItems`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ session }),
-    });
+    const wishlistResponse = await fetch(
+      `${API_BASE_URL}/ItemCollection/_getWishListItems`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ session }),
+      }
+    );
 
     const wishlistData = await wishlistResponse.json();
 
     if (wishlistData.error) {
-      console.log('Error fetching wishlist for stats:', wishlistData.error);
+      console.log("Error fetching wishlist for stats:", wishlistData.error);
       return;
     }
 
     // Data comes back as { items: [...] } from the sync
     // Each element is { item: {...} }, so we need to unwrap
-    const allItems = (wishlistData.items || []).map(obj => obj.item || obj);
-    console.log('calculateStats: allItems:', allItems);
-    console.log('calculateStats: allItems length:', allItems.length);
+    const allItems = (wishlistData.items || []).map((obj) => obj.item || obj);
+    console.log("calculateStats: allItems:", allItems);
+    console.log("calculateStats: allItems length:", allItems.length);
 
     // 2. Calculate total saved (sum of prices of unpurchased items)
-    const unpurchasedItems = allItems.filter(item => !item.wasPurchased);
-    console.log('calculateStats: unpurchasedItems:', unpurchasedItems);
-    console.log('calculateStats: unpurchasedItems prices:', unpurchasedItems.map(i => ({ name: i.itemName, price: i.price, wasPurchased: i.wasPurchased })));
+    const unpurchasedItems = allItems.filter((item) => !item.wasPurchased);
+    console.log("calculateStats: unpurchasedItems:", unpurchasedItems);
+    console.log(
+      "calculateStats: unpurchasedItems prices:",
+      unpurchasedItems.map((i) => ({
+        name: i.itemName,
+        price: i.price,
+        wasPurchased: i.wasPurchased,
+      }))
+    );
 
-    totalSaved.value = unpurchasedItems.reduce((sum, item) => sum + (item.price || 0), 0);
-    console.log('calculateStats: totalSaved:', totalSaved.value);
+    totalSaved.value = unpurchasedItems.reduce(
+      (sum, item) => sum + (item.price || 0),
+      0
+    );
+    console.log("calculateStats: totalSaved:", totalSaved.value);
 
     // 3. Calculate total bought and items bought
     const purchasedItems = allItems.filter((item) => item.wasPurchased);
@@ -664,7 +690,7 @@ const calculateStats = async () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ session }),
+        body: JSON.stringify({ userId: currentUser.value.uid }),
       }
     );
 
@@ -673,29 +699,36 @@ const calculateStats = async () => {
       itemsReviewed.value = swipeCountData.count || 0;
     }
 
-    // 5. Calculate rejection rate based on user's swipe decisions
-    const swipeStatsResponse = await fetch(
-      `${API_BASE_URL}/SwipeSystem/_getUserSwipeStatistics`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ session }),
-      }
-    );
+    // 5. Calculate rejection rate
+    let totalSum = 0;
+    let approvalSum = 0;
 
-    const swipeStatsData = await swipeStatsResponse.json();
-    if (!swipeStatsData.error) {
-      const buyCount = swipeStatsData.buyCount || 0;
-      const dontBuyCount = swipeStatsData.dontBuyCount || 0;
-      const totalSwipes = buyCount + dontBuyCount;
+    for (const item of allItems) {
+      const statsResponse = await fetch(
+        `${API_BASE_URL}/SwipeSystem/_getSwipeStats`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            session: session,
+            itemId: item._id,
+          }),
+        }
+      );
 
-      if (totalSwipes > 0) {
-        rejectionRate.value = Math.round((dontBuyCount / totalSwipes) * 100);
-      } else {
-        rejectionRate.value = 0;
+      const statsData = await statsResponse.json();
+      if (!statsData.error) {
+        totalSum += statsData.total || 0;
+        approvalSum += statsData.approval || 0;
       }
+    }
+
+    if (totalSum > 0) {
+      rejectionRate.value = Math.round(
+        ((totalSum - approvalSum) / totalSum) * 100
+      );
     } else {
       rejectionRate.value = 0;
     }
@@ -1221,7 +1254,7 @@ const downloadImage = () => {
   font-family: var(--font-primary);
   font-size: 2rem;
   font-weight: 700;
-  color: var(--color-accent-green);
+  color: var(--color-accent-red);
   letter-spacing: -0.02em;
 }
 
@@ -1248,14 +1281,14 @@ const downloadImage = () => {
 
 .graph-line {
   fill: none;
-  stroke: var(--color-accent-green);
+  stroke: var(--color-accent-red);
   stroke-width: 3;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .graph-area {
-  fill: var(--color-accent-green);
+  fill: var(--color-accent-red);
   opacity: 0.1;
 }
 
@@ -1272,7 +1305,7 @@ const downloadImage = () => {
 }
 
 .graph-point {
-  fill: var(--color-accent-green);
+  fill: var(--color-accent-red);
   stroke: var(--color-bg);
   stroke-width: 2;
   cursor: pointer;
@@ -1714,7 +1747,7 @@ const downloadImage = () => {
   font-family: var(--font-primary);
   font-size: 80px;
   font-weight: 700;
-  color: var(--color-accent-green);
+  color: var(--color-accent-red);
   letter-spacing: -0.02em;
   margin-bottom: 10px;
 }
@@ -1732,7 +1765,7 @@ const downloadImage = () => {
 
 .poster-graph-line {
   fill: none;
-  stroke: var(--color-accent-green);
+  stroke: var(--color-accent-red);
   stroke-width: 6;
   stroke-linecap: round;
   stroke-linejoin: round;

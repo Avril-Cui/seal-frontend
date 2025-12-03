@@ -37,14 +37,6 @@
           >
             ×
           </button>
-          <button
-            v-if="!item.wasPurchased"
-            @click.stop="openPurchaseModal(item)"
-            class="purchased-button"
-          >
-            Mark as Purchased
-          </button>
-          <div v-else class="purchased-label">Purchased</div>
           <div class="item-image">
             <img
               v-if="item.photo"
@@ -71,13 +63,23 @@
 
             <!-- AI Insight Section -->
             <div class="ai-insight-section">
-              <button
-                v-if="!item.aiInsight && !item.isLoadingAI"
-                @click.stop="getAIInsight(item)"
-                class="ai-insight-button"
-              >
-                🤖 Get AI Insight
-              </button>
+              <div class="action-buttons">
+                <button
+                  v-if="!item.wasPurchased"
+                  @click.stop="openPurchaseModal(item)"
+                  class="purchased-button"
+                >
+                  Mark as Purchased
+                </button>
+                <div v-else class="purchased-label">Purchased</div>
+                <button
+                  v-if="!item.aiInsight && !item.isLoadingAI"
+                  @click.stop="getAIInsight(item)"
+                  class="ai-insight-button"
+                >
+                  🤖 Get AI Insight
+                </button>
+              </div>
               <div v-if="item.isLoadingAI" class="ai-loading">
                 <span class="loading-spinner">⏳</span> Analyzing purchase...
               </div>
@@ -97,19 +99,11 @@
 
                 <!-- Structured Display -->
                 <div v-if="item.aiStructured" class="ai-structured">
-                  <div class="ai-verdict-row">
-                    <div
-                      class="ai-score"
-                      :class="getScoreClass(item.aiStructured.impulseScore)"
-                    >
-                      {{ item.aiStructured.impulseScore }}/10
-                    </div>
-                    <div
-                      class="ai-verdict"
-                      :class="getVerdictClass(item.aiStructured.verdict)"
-                    >
-                      {{ item.aiStructured.verdict }}
-                    </div>
+                  <div
+                    class="ai-score"
+                    :class="getScoreClass(item.aiStructured.impulseScore)"
+                  >
+                    {{ getScoreLabel(item.aiStructured.impulseScore) }}
                   </div>
 
                   <div class="ai-insight-item">
@@ -1215,19 +1209,22 @@ const confirmPurchase = async () => {
     // Convert date string to timestamp (milliseconds)
     const purchaseTimestamp = new Date(purchaseDate.value).getTime();
 
-    const response = await fetch(`${API_BASE_URL}/ItemCollection/setPurchased`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        session: session,
-        item: purchasingItem.value._id,
-        quantity: purchaseQuantity.value,
-        purchaseTime: purchaseTimestamp,
-        actualPrice: parseFloat(purchasePrice.value),
-      }),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/ItemCollection/setPurchased`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          session: session,
+          item: purchasingItem.value._id,
+          quantity: purchaseQuantity.value,
+          purchaseTime: purchaseTimestamp,
+          actualPrice: parseFloat(purchasePrice.value),
+        }),
+      }
+    );
 
     const data = await response.json();
 
@@ -1321,10 +1318,20 @@ const getAIInsight = async (item) => {
 };
 
 // Helper functions for AI insight styling
+const getScoreLabel = (score) => {
+  if (score >= 1 && score <= 2) return "REASONABLE";
+  if (score >= 3 && score <= 4) return "SOMEWHAT REASONABLE";
+  if (score >= 5 && score <= 6) return "UNCERTAIN";
+  if (score >= 7 && score <= 8) return "SOMEWHAT IMPULSIVE";
+  if (score >= 9 && score <= 10) return "IMPULSIVE";
+  return "UNKNOWN";
+};
+
 const getScoreClass = (score) => {
-  if (score <= 3) return "score-low";
-  if (score <= 6) return "score-medium";
-  return "score-high";
+  if (score >= 1 && score <= 4) return "score-reasonable"; // Green
+  if (score >= 5 && score <= 6) return "score-uncertain"; // Yellow
+  if (score >= 7 && score <= 10) return "score-impulsive"; // Red
+  return "score-unknown";
 };
 
 const getVerdictClass = (verdict) => {
@@ -1345,7 +1352,7 @@ const getApprovalPercentage = (stats) => {
 const getApprovalClass = (stats) => {
   const percentage = getApprovalPercentage(stats);
   if (percentage >= 70) return "high-approval";
-  if (percentage >= 50) return "medium-approval";
+  if (percentage >= 40) return "medium-approval";
   return "low-approval";
 };
 </script>
@@ -1537,28 +1544,26 @@ const getApprovalClass = (stats) => {
   box-shadow: 0 4px 16px rgba(255, 82, 82, 0.3);
 }
 
-.purchased-button {
-  position: absolute;
-  top: 1rem;
-  right: 4rem;
-  padding: 0.625rem 1.25rem;
-  border: 2px solid var(--color-text-primary);
-  border-radius: 10px;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 1) 0%,
-    rgba(250, 250, 250, 1) 100%
-  );
-  color: var(--color-text-primary);
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  cursor: pointer;
+.action-buttons {
   display: flex;
+  gap: 0.5rem;
   align-items: center;
-  justify-content: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-wrap: wrap;
+}
+
+.purchased-button {
+  padding: 0.5rem 1rem;
+  font-family: var(--font-primary);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
   white-space: nowrap;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   font-family: var(--font-primary);
@@ -1566,31 +1571,23 @@ const getApprovalClass = (stats) => {
 }
 
 .purchased-button:hover {
-  background: var(--color-accent-green);
+  background-color: var(--color-accent-red);
   color: var(--color-bg);
-  border-color: var(--color-accent-green);
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.25);
+  border-color: var(--color-accent-red);
 }
 
 .purchased-label {
-  position: absolute;
-  top: 1rem;
-  right: 4rem;
-  padding: 0.625rem 1.25rem;
-  border: 2px solid #4caf50;
-  border-radius: 10px;
-  background: linear-gradient(
-    135deg,
-    #4caf50 0%,
-    #45a049 100%
-  );
-  color: #fff;
-  font-size: 0.7rem;
-  font-weight: 700;
+  padding: 0.5rem 1rem;
+  font-family: var(--font-primary);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  display: flex;
+  background-color: var(--color-accent-red);
+  color: var(--color-bg);
+  border: 1px solid var(--color-accent-red);
+  border-radius: 6px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
@@ -2194,33 +2191,27 @@ const getApprovalClass = (stats) => {
   gap: 0.75rem;
 }
 
-.ai-verdict-row {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-}
-
 .ai-score {
-  font-family: var(--font-primary);
-  font-size: 1.25rem;
-  font-weight: 700;
-  padding: 0.25rem 0.75rem;
-  border-radius: 6px;
+  font-family: var(--font-secondary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: inline-block;
 }
 
-.score-low {
-  background-color: var(--color-accent-green);
-  color: var(--color-text-primary);
+.score-reasonable {
+  color: var(--color-accent-green);
 }
 
-.score-medium {
-  background-color: var(--color-accent-pink);
-  color: var(--color-text-primary);
+.score-uncertain {
+  color: #d4a574;
 }
 
-.score-high {
-  background-color: #ffcccc;
-  color: #8b0000;
+.score-impulsive {
+  color: var(--color-accent-red);
+}
+
+.score-unknown {
+  color: var(--color-text-secondary);
 }
 
 .ai-verdict {
