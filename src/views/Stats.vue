@@ -445,6 +445,7 @@ const fetchAIInsights = async () => {
   console.log("Stats: Fetching wishlist for uid:", currentUser.value.uid);
 
   isLoadingInsights.value = true;
+  const session = getSession();
   try {
     // Get session token for authentication
     const session = getSession();
@@ -490,7 +491,7 @@ const fetchAIInsights = async () => {
     const prompt = buildInsightPrompt(wishlistItems, swipeDataMap);
 
     // 4. Get AI response
-    const response = await getAIWishListInsight(currentUser.value.uid, prompt);
+    const response = await getAIWishListInsight(session, prompt);
 
     if (!response) {
       console.error("No AI response received");
@@ -535,6 +536,7 @@ const fetchPurchasedItems = async () => {
   }
 
   isLoadingPurchases.value = true;
+  const session = getSession();
   try {
     // Get session token for authentication
     const session = getSession();
@@ -619,6 +621,7 @@ const calculateStats = async () => {
     return;
   }
 
+  const session = getSession();
   try {
     // Get session token for authentication
     const session = getSession();
@@ -720,7 +723,7 @@ const calculateStats = async () => {
         totalSum += statsData.total || 0;
         approvalSum += statsData.approval || 0;
       }
-    }
+    );
 
     if (totalSum > 0) {
       rejectionRate.value = Math.round(
