@@ -28,7 +28,11 @@
   "web_accessible_resources": [
     {
       "resources": ["dist/pig_icon.png"],
-      "matches": ["*://*.amazon.com/*", "*://*.amazon.ca/*", "*://*.amazon.co.uk/*"]
+      "matches": [
+        "*://*.amazon.com/*",
+        "*://*.amazon.ca/*",
+        "*://*.amazon.co.uk/*"
+      ]
     }
   ]
 }
