@@ -371,13 +371,7 @@ import Navbar from "../components/Navbar.vue";
 
 const router = useRouter();
 const { currentUser, getSession } = useAuth();
-const {
-  fetchWishlist,
-  getSwipeStats,
-  getSwipeComments,
-  getAIWishListInsight,
-  buildInsightPrompt,
-} = useStatsAPI();
+const { fetchWishlist, getSwipeStats, getSwipeComments, getAIWishListInsight, buildInsightPrompt } = useStatsAPI();
 
 const exportSection = ref(null);
 const posterTemplate = ref(null);
@@ -441,11 +435,24 @@ const fetchAIInsights = async () => {
     return;
   }
 
+  console.log('Stats: fetchAIInsights called with user:', currentUser.value);
+  console.log('Stats: Fetching wishlist for uid:', currentUser.value.uid);
+
   isLoadingInsights.value = true;
   const session = getSession();
   try {
+    // Get session token for authentication
+    const session = getSession();
+    if (!session) {
+      console.error('No session token available');
+      throw new Error('Authentication required. Please log in again.');
+    }
+
     // 1. Fetch user's wishlist
-    const wishlistItems = await fetchWishlist(session);
+    const wishlistItems = await fetchWishlist(currentUser.value.uid, session);
+
+    console.log('Stats: fetchWishlist returned:', wishlistItems.length, 'items');
+    console.log('Stats: wishlistItems:', wishlistItems);
 
     if (wishlistItems.length === 0) {
       console.log("No wishlist items found");
@@ -466,7 +473,7 @@ const fetchAIInsights = async () => {
     const swipeDataMap = {};
     for (const item of wishlistItems) {
       const stats = await getSwipeStats(session, item._id);
-      const comments = await getSwipeComments(currentUser.value.uid, item._id); // Public route, uses ownerUserId
+      const comments = await getSwipeComments(currentUser.value.uid, item._id);
       swipeDataMap[item._id] = { stats, comments };
     }
 
@@ -521,29 +528,40 @@ const fetchPurchasedItems = async () => {
   isLoadingPurchases.value = true;
   const session = getSession();
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/ItemCollection/_getPurchasedItems`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ session }),
-      }
-    );
+    // Get session token for authentication
+    const session = getSession();
+    if (!session) {
+      console.error('No session token available for fetching purchases');
+      recentPurchases.value = [];
+      isLoadingPurchases.value = false;
+      return;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/ItemCollection/_getPurchasedItems`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ session }),
+    });
 
     const data = await response.json();
+
+    console.log('Purchased items response:', data);
 
     if (data.error) {
       console.log("Error fetching purchased items:", data.error);
       recentPurchases.value = [];
-    } else if (Array.isArray(data)) {
+    } else if (data.items && Array.isArray(data.items)) {
+      // Data comes back as { items: [{ item: {...} }] } from the sync
+      // Unwrap the nested item structure
+      const unwrappedItems = data.items.map(obj => obj.item || obj);
+      console.log('Unwrapped purchased items:', unwrappedItems);
+
       // Sort by purchase date (most recent first)
-      const items = data
-        .map((obj) => obj.item)
-        .sort((a, b) => {
-          return (b.PurchasedTime || 0) - (a.PurchasedTime || 0);
-        });
+      const items = unwrappedItems.sort((a, b) => {
+        return (b.PurchasedTime || 0) - (a.PurchasedTime || 0);
+      });
       recentPurchases.value = items;
     } else {
       recentPurchases.value = [];
@@ -592,31 +610,42 @@ const calculateStats = async () => {
 
   const session = getSession();
   try {
-    // 1. Fetch all items for this user
-    const wishlistResponse = await fetch(
-      `${API_BASE_URL}/ItemCollection/_getWishListItems`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ session }),
-      }
-    );
-
-    const wishlistData = await wishlistResponse.json();
-
-    if (wishlistData.error || !Array.isArray(wishlistData)) {
-      console.log("Error fetching wishlist for stats:", wishlistData.error);
+    // Get session token for authentication
+    const session = getSession();
+    if (!session) {
+      console.error('No session token available for calculateStats');
       return;
     }
 
-    const allItems = wishlistData.map((obj) => obj.item);
+    // 1. Fetch all items for this user
+    const wishlistResponse = await fetch(`${API_BASE_URL}/ItemCollection/_getWishListItems`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ session }),
+    });
+
+    const wishlistData = await wishlistResponse.json();
+
+    if (wishlistData.error) {
+      console.log('Error fetching wishlist for stats:', wishlistData.error);
+      return;
+    }
+
+    // Data comes back as { items: [...] } from the sync
+    // Each element is { item: {...} }, so we need to unwrap
+    const allItems = (wishlistData.items || []).map(obj => obj.item || obj);
+    console.log('calculateStats: allItems:', allItems);
+    console.log('calculateStats: allItems length:', allItems.length);
 
     // 2. Calculate total saved (sum of prices of unpurchased items)
-    totalSaved.value = allItems
-      .filter((item) => !item.wasPurchased)
-      .reduce((sum, item) => sum + (item.price || 0), 0);
+    const unpurchasedItems = allItems.filter(item => !item.wasPurchased);
+    console.log('calculateStats: unpurchasedItems:', unpurchasedItems);
+    console.log('calculateStats: unpurchasedItems prices:', unpurchasedItems.map(i => ({ name: i.itemName, price: i.price, wasPurchased: i.wasPurchased })));
+
+    totalSaved.value = unpurchasedItems.reduce((sum, item) => sum + (item.price || 0), 0);
+    console.log('calculateStats: totalSaved:', totalSaved.value);
 
     // 3. Calculate total bought and items bought
     const purchasedItems = allItems.filter((item) => item.wasPurchased);
@@ -649,19 +678,16 @@ const calculateStats = async () => {
     let approvalSum = 0;
 
     for (const item of allItems) {
-      const statsResponse = await fetch(
-        `${API_BASE_URL}/SwipeSystem/_getSwipeStats`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            session,
-            itemId: item._id,
-          }),
-        }
-      );
+      const statsResponse = await fetch(`${API_BASE_URL}/SwipeSystem/_getSwipeStats`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          session: session,
+          itemId: item._id
+        }),
+      });
 
       const statsData = await statsResponse.json();
       if (!statsData.error) {
