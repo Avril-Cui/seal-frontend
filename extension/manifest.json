@@ -24,5 +24,11 @@
       "js": ["dist/content.js"],
       "css": ["dist/content.css"]
     }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["dist/pig_icon.png"],
+      "matches": ["*://*.amazon.com/*", "*://*.amazon.ca/*", "*://*.amazon.co.uk/*"]
+    }
   ]
 }

@@ -1,3 +1,18 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Reset Amazon's CSS bleeding into our extension */
+#byebuy-wishlist-root input,
+#byebuy-wishlist-root select,
+#byebuy-wishlist-root textarea,
+#byebuy-wishlist-root button {
+  margin: 0 !important;
+  font-family: inherit;
+}
+
+#byebuy-wishlist-root input,
+#byebuy-wishlist-root select,
+#byebuy-wishlist-root textarea {
+  padding: 0.5rem 0.75rem !important;
+}

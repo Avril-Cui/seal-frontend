@@ -1,15 +1,101 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import { config } from "./config.js";
 import "./styles.css";
 
+function LoginForm({ onLogin }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    chrome.runtime.sendMessage(
+      { action: "login", email, password },
+      (response) => {
+        setIsLoading(false);
+        if (response.success) {
+          onLogin(response.user);
+        } else {
+          setError(response.error || "Login failed");
+        }
+      }
+    );
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-2 w-full">
+      <div className="text-sm font-medium text-gray-800">ByeBuy Login</div>
+      <input
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        style={{ width: "100%", boxSizing: "border-box", margin: 0 }}
+        className="h-9 px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-orange-500"
+        required
+      />
+      <input
+        type="password"
+        placeholder="Password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        style={{ width: "100%", boxSizing: "border-box", margin: 0 }}
+        className="h-9 px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-orange-500"
+        required
+      />
+      {error && <div className="text-xs text-red-600">{error}</div>}
+      <button
+        type="submit"
+        disabled={isLoading}
+        className="w-full px-3 py-1.5 text-sm text-white bg-orange-600 rounded hover:bg-orange-700 disabled:opacity-50"
+      >
+        {isLoading ? "Logging in..." : "Login"}
+      </button>
+    </form>
+  );
+}
+
 function AddToWishlistButton() {
+  const [user, setUser] = useState(null);
   const [isAdded, setIsAdded] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [isDisabled, setIsDisabled] = useState(false);
   const [error, setError] = useState(null);
+  const [showLogin, setShowLogin] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
+
+  // Reflection questions
+  const [reason, setReason] = useState("");
+  const [isNeed, setIsNeed] = useState("");
+  const [isFutureApprove, setIsFutureApprove] = useState("");
+
+  const pigIconUrl = chrome.runtime.getURL("dist/pig_icon.png");
+
+  useEffect(() => {
+    // Check if user is already logged in
+    chrome.runtime.sendMessage({ action: "getUser" }, (response) => {
+      if (response?.user) setUser(response.user);
+    });
+  }, []);
+
+  const handleLogout = () => {
+    chrome.runtime.sendMessage({ action: "logout" }, () => {
+      setUser(null);
+      setShowLogin(false);
+    });
+  };
 
   const handleClick = async () => {
+    if (!user) {
+      setShowLogin(true);
+      return;
+    }
+
+    setIsLoading(true);
     setIsDisabled(true);
     setError(null);
 
@@ -17,64 +103,191 @@ function AddToWishlistButton() {
       const productData = fetchAmazonProduct();
 
       const payload = {
-        owner: config.userId,
+        owner: user._id,
         itemName: productData.title,
         photo: productData.mainImage,
         price: productData.price,
         description: productData.description,
-        reason: "Added from browser extension",
-        isNeed: "not specified",
-        isFutureApprove: "not specified",
+        reason,
+        isNeed,
+        isFutureApprove,
       };
 
-      // Send message to background script to bypass CORS
       chrome.runtime.sendMessage(
         { action: "addToWishlist", payload },
         (response) => {
-          if (response.success && response.data.item) {
+          setIsLoading(false);
+          if (response?.success && !response?.data?.error) {
             setIsAdded(true);
+            setReason("");
+            setIsNeed("");
+            setIsFutureApprove("");
             setTimeout(() => {
               setIsAdded(false);
               setIsDisabled(false);
             }, 2000);
-          } else if (response.data?.error || !response.success) {
+          } else {
             const errorMsg =
-              response.data?.error || response.error || "Failed to add item";
+              response?.data?.error || response?.error || "Failed to add item";
             setError(errorMsg);
             setIsDisabled(false);
           }
         }
       );
     } catch (err) {
+      setIsLoading(false);
       setError("Failed to connect to server");
       setIsDisabled(false);
     }
   };
 
-  return (
-    <div className="fixed bottom-2 right-2 z-[10000] flex flex-col items-end gap-2">
-      <button
-        onClick={handleClick}
-        onMouseEnter={() => !isDisabled && setIsHovered(true)}
-        onMouseLeave={() => !isDisabled && setIsHovered(false)}
-        className={`
-          px-5 py-3 rounded-lg
-          text-white text-sm
-          transition-all duration-300
-          disabled:cursor-not-allowed
-          ${error ? "bg-red-600" : isAdded ? "bg-green-600" : "bg-orange-600"}
-        `}
-        style={{ opacity: isHovered || isAdded || error ? 1 : 0.5 }}
-        disabled={isDisabled}
-      >
-        {error ? "Error!" : isAdded ? "Added!" : "Add to ByeBuy Wishlist"}
-      </button>
+  if (isCollapsed) {
+    return (
+      <div className="fixed bottom-4 right-4 z-[10000]">
+        <button
+          onClick={() => setIsCollapsed(false)}
+          className="w-14 h-14 rounded-full bg-white flex items-center justify-center cursor-pointer transition-transform hover:scale-110"
+          style={{
+            boxShadow:
+              "0 4px 20px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.1)",
+          }}
+        >
+          <img
+            src={pigIconUrl}
+            alt="ByeBuy"
+            className="w-10 h-10 rounded-full"
+          />
+        </button>
+      </div>
+    );
+  }
 
-      {error && (
-        <div className="px-3 py-2 bg-red-100 text-red-800 text-xs rounded-lg shadow-lg">
-          {error}
+  return (
+    <div className="fixed bottom-2 right-2 z-[10000]">
+      <div
+        className="flex flex-col gap-3 p-4 bg-white rounded-xl w-72"
+        style={{
+          boxShadow:
+            "0 8px 30px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.1)",
+        }}
+      >
+        {/* Header with collapse button */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <img
+              src={pigIconUrl}
+              alt="ByeBuy"
+              className="w-6 h-6 rounded-full"
+            />
+            <span className="text-sm font-medium text-gray-800">ByeBuy</span>
+          </div>
+          <button
+            onClick={() => setIsCollapsed(true)}
+            className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+          >
+            ×
+          </button>
         </div>
-      )}
+
+        {showLogin && !user ? (
+          <LoginForm
+            onLogin={(u) => {
+              setUser(u);
+              setShowLogin(false);
+            }}
+          />
+        ) : (
+          <>
+            {user && (
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-medium text-gray-700">
+                  Why do you want this item? *
+                </label>
+                <textarea
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="Enter your reason..."
+                  style={{ width: "100%", boxSizing: "border-box" }}
+                  className="h-16 px-3 py-2 text-sm border border-gray-300 rounded resize-none focus:outline-none focus:ring-1 focus:ring-orange-500"
+                />
+
+                <label className="text-xs font-medium text-gray-700">
+                  Is this a need or a want? *
+                </label>
+                <select
+                  value={isNeed}
+                  onChange={(e) => setIsNeed(e.target.value)}
+                  style={{ width: "100%", boxSizing: "border-box" }}
+                  className="h-9 px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-orange-500"
+                >
+                  <option value="">Select...</option>
+                  <option value="need">Need</option>
+                  <option value="want">Want</option>
+                </select>
+
+                <label className="text-xs font-medium text-gray-700">
+                  Would Future-You approve? *
+                </label>
+                <select
+                  value={isFutureApprove}
+                  onChange={(e) => setIsFutureApprove(e.target.value)}
+                  style={{ width: "100%", boxSizing: "border-box" }}
+                  className="h-9 px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-orange-500"
+                >
+                  <option value="">Select...</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="maybe">Maybe</option>
+                </select>
+              </div>
+            )}
+
+            <button
+              onClick={handleClick}
+              className={`
+                w-full px-4 py-2.5 rounded-lg
+                text-white text-sm font-medium
+                transition-all duration-300
+                disabled:cursor-not-allowed disabled:opacity-50
+                ${
+                  error
+                    ? "bg-red-600"
+                    : isAdded
+                    ? "bg-green-600"
+                    : "bg-orange-600 hover:bg-orange-700"
+                }
+              `}
+              disabled={
+                isDisabled || (user && (!reason || !isNeed || !isFutureApprove))
+              }
+            >
+              {isLoading
+                ? "Adding..."
+                : error
+                ? "Error!"
+                : isAdded
+                ? "Added!"
+                : user
+                ? "Add to ByeBuy Wishlist"
+                : "Login to Add"}
+            </button>
+
+            {error && <div className="text-xs text-red-600">{error}</div>}
+
+            {user && (
+              <div className="flex items-center justify-between text-xs text-gray-500 pt-1 border-t">
+                <span className="truncate">{user.email}</span>
+                <button
+                  onClick={handleLogout}
+                  className="text-orange-600 hover:underline ml-2 shrink-0"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -129,7 +342,6 @@ function fetchAmazonProduct() {
   let description = null;
 
   // First try to get feature bullets (most common format)
-  // Be very specific to avoid cart/other page elements - only look within product details
   const bulletSelectors = [
     "#centerCol #feature-bullets ul",
     "#centerCol #feature-bullets-btf ul",
@@ -214,10 +426,8 @@ function fetchAmazonProduct() {
   for (const selector of mainImageSelectors) {
     const imgElement = document.querySelector(selector);
     if (imgElement) {
-      // Get the highest quality image URL
       const src = imgElement.src || imgElement.dataset.src;
       if (src && src.startsWith("http")) {
-        // Remove size restrictions to get full-size image
         mainImage = src.split("._")[0] + ".jpg";
         break;
       }
