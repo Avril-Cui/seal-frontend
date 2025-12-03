@@ -771,10 +771,15 @@ const fetchWishlist = async () => {
     console.log("First extracted item _id:", items[0]?._id);
 
     // Fetch community stats for each item if queue is completed
+    console.log("hasCompletedQueue:", hasCompletedQueue.value);
+    console.log("currentUser.uid:", currentUser.value.uid);
+
     if (hasCompletedQueue.value && items.length > 0) {
       const itemsWithStats = await Promise.all(
         items.map(async (item) => {
           try {
+            console.log(`Fetching stats for item ${item._id}, excluding user ${currentUser.value.uid}`);
+
             const statsResponse = await fetch(
               `${API_BASE_URL}/SwipeSystem/_getCommunitySwipeStats`,
               {
@@ -790,15 +795,24 @@ const fetchWishlist = async () => {
             );
 
             const statsData = await statsResponse.json();
+            console.log(`Stats response for item ${item._id}:`, statsData);
 
-            if (!statsData.error) {
+            // Backend returns data as an array [{ total, approval }] or [{ error }]
+            // We need to unwrap the array
+            const unwrappedData = Array.isArray(statsData) ? statsData[0] : statsData;
+            console.log(`Unwrapped stats for item ${item._id}:`, unwrappedData);
+
+            if (unwrappedData && !unwrappedData.error) {
+              console.log(`Adding stats to item ${item._id}: total=${unwrappedData.total}, approval=${unwrappedData.approval}`);
               return {
                 ...item,
                 communityStats: {
-                  total: statsData.total,
-                  approval: statsData.approval,
+                  total: unwrappedData.total,
+                  approval: unwrappedData.approval,
                 },
               };
+            } else {
+              console.log(`No stats for item ${item._id}: ${unwrappedData?.error || 'unknown error'}`);
             }
             return item;
           } catch (err) {
@@ -810,6 +824,7 @@ const fetchWishlist = async () => {
 
       wishlistItems.value = itemsWithStats;
     } else {
+      console.log("Not fetching stats - hasCompletedQueue:", hasCompletedQueue.value, "items.length:", items.length);
       wishlistItems.value = items;
     }
     
@@ -1418,35 +1433,73 @@ const getApprovalClass = (stats) => {
   display: flex;
   gap: 1.5rem;
   border: 1px solid var(--color-border);
-  border-radius: 12px;
-  padding: 1.25rem;
-  background-color: var(--color-bg);
+  border-radius: 16px;
+  padding: 1.5rem;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 1) 0%,
+    rgba(250, 250, 250, 1) 100%
+  );
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.wishlist-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--color-accent-pink) 0%,
+    var(--color-accent-green) 50%,
+    var(--color-text-primary) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .wishlist-item:hover {
   border-color: var(--color-border-dark);
-  box-shadow: 0 4px 20px rgba(26, 26, 26, 0.04);
-  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+  transform: translateY(-4px);
+}
+
+.wishlist-item:hover::before {
+  opacity: 1;
 }
 
 .wishlist-item.purchased-item {
-  opacity: 0.7;
-  background-color: #f0f0f0;
+  background: linear-gradient(
+    135deg,
+    rgba(245, 245, 245, 1) 0%,
+    rgba(238, 238, 238, 1) 100%
+  );
+  opacity: 0.8;
+  border-color: var(--color-border);
+}
+
+.wishlist-item.purchased-item::before {
+  background: #4caf50;
+  opacity: 1;
 }
 
 .wishlist-item.purchased-item:hover {
-  opacity: 0.85;
+  opacity: 0.9;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
 }
 
 .remove-button {
   position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--color-border);
+  top: 1rem;
+  right: 1rem;
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--color-border);
   border-radius: 50%;
   background-color: var(--color-bg);
   color: var(--color-text-primary);
@@ -1458,8 +1511,10 @@ const getApprovalClass = (stats) => {
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  z-index: 10;
 }
 
 .wishlist-item:hover .remove-button {
@@ -1470,91 +1525,127 @@ const getApprovalClass = (stats) => {
   background-color: var(--color-accent-red);
   color: var(--color-bg);
   border-color: var(--color-accent-red);
-  transform: scale(1.1);
+  transform: scale(1.15) rotate(90deg);
+  box-shadow: 0 4px 16px rgba(255, 82, 82, 0.3);
 }
 
 .purchased-button {
   position: absolute;
-  top: 0.75rem;
-  right: 3.5rem;
-  padding: 0.5rem 1rem;
-  border: 2px solid #2d0000;
-  border-radius: 8px;
-  background-color: #f5f0e1;
-  color: #2d0000;
-  font-size: 0.75rem;
-  font-weight: 600;
+  top: 1rem;
+  right: 4rem;
+  padding: 0.625rem 1.25rem;
+  border: 2px solid var(--color-text-primary);
+  border-radius: 10px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 1) 0%,
+    rgba(250, 250, 250, 1) 100%
+  );
+  color: var(--color-text-primary);
+  font-size: 0.7rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.08em;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  font-family: var(--font-primary);
+  z-index: 10;
 }
 
 .purchased-button:hover {
-  background-color: #4caf50;
-  color: #f5f0e1;
-  border-color: #4caf50;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+  background: var(--color-accent-green);
+  color: var(--color-bg);
+  border-color: var(--color-accent-green);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.25);
 }
 
 .purchased-label {
   position: absolute;
-  top: 0.75rem;
-  right: 3.5rem;
-  padding: 0.5rem 1rem;
+  top: 1rem;
+  right: 4rem;
+  padding: 0.625rem 1.25rem;
   border: 2px solid #4caf50;
-  border-radius: 8px;
-  background-color: #4caf50;
+  border-radius: 10px;
+  background: linear-gradient(
+    135deg,
+    #4caf50 0%,
+    #45a049 100%
+  );
   color: #fff;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.7rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.08em;
   display: flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+  font-family: var(--font-primary);
+  z-index: 10;
 }
 
 .item-image {
-  width: 120px;
-  height: 120px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
+  width: 140px;
+  height: 140px;
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--color-bg-secondary);
+  background: linear-gradient(
+    135deg,
+    var(--color-bg-tertiary) 0%,
+    var(--color-bg-secondary) 100%
+  );
   flex-shrink: 0;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+}
+
+.wishlist-item:hover .item-image {
+  transform: scale(1.02);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.item-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .image-placeholder {
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   color: var(--color-text-tertiary);
   font-family: var(--font-primary);
+  text-transform: uppercase;
 }
 
 .item-details {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.625rem;
+  min-width: 0;
 }
 
 .item-name {
   font-family: var(--font-primary);
-  font-size: 1rem;
+  font-size: 1.125rem;
   font-weight: 700;
   margin: 0;
   color: var(--color-text-primary);
   letter-spacing: -0.02em;
+  line-height: 1.3;
 }
 
 .item-desc {
@@ -1562,7 +1653,11 @@ const getApprovalClass = (stats) => {
   font-size: 0.875rem;
   margin: 0;
   line-height: 1.6;
-  color: var(--color-text-primary);
+  color: var(--color-text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .approval-badge {
@@ -1879,37 +1974,58 @@ const getApprovalClass = (stats) => {
 
 .item-price {
   font-family: var(--font-primary);
-  font-size: 1rem;
-  font-weight: 700;
-  margin: 0.5rem 0 0 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 0.25rem 0;
   color: var(--color-text-primary);
   letter-spacing: -0.02em;
+  background: linear-gradient(
+    135deg,
+    var(--color-text-primary) 0%,
+    var(--color-text-secondary) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .amazon-link {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
-  padding: 0.5rem 1rem;
+  padding: 0.625rem 1.125rem;
   font-family: var(--font-primary);
-  font-size: 0.625rem;
+  font-size: 0.675rem;
   font-weight: 600;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   text-decoration: none;
-  background-color: #fff8f0;
+  background: linear-gradient(
+    135deg,
+    #fff8f0 0%,
+    #fff3e6 100%
+  );
   color: #ff9900;
-  border: 1px solid #ff9900;
-  border-radius: 6px;
+  border: 2px solid #ff9900;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(255, 153, 0, 0.1);
 }
 
 .amazon-link:hover {
-  background-color: #ff9900;
+  background: linear-gradient(
+    135deg,
+    #ff9900 0%,
+    #ff8800 100%
+  );
   color: #fff;
   border-color: #ff9900;
   text-decoration: none;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(255, 153, 0, 0.25);
 }
 
 .loading-message,
@@ -2182,9 +2298,9 @@ const getApprovalClass = (stats) => {
 }
 
 .community-stats {
-  margin-top: 1rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--color-border);
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 2px solid var(--color-border);
 }
 
 .locked-stats {
@@ -2192,10 +2308,14 @@ const getApprovalClass = (stats) => {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 1rem;
-  background-color: var(--color-bg);
-  border-radius: 8px;
-  border: 1px dashed var(--color-border);
+  padding: 1.25rem;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(250, 250, 250, 0.5) 100%
+  );
+  border-radius: 10px;
+  border: 2px dashed var(--color-border);
 }
 
 .lock-icon {
@@ -2219,31 +2339,45 @@ const getApprovalClass = (stats) => {
 
 .stat-badge {
   display: inline-block;
-  padding: 0.25rem 0.625rem;
-  border-radius: 12px;
-  font-size: 0.625rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  margin-bottom: 0.5rem;
-  border: 1px solid var(--color-border);
+  padding: 0.5rem 1rem;
+  border-radius: 16px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.625rem;
+  border: 2px solid var(--color-border);
   font-family: var(--font-primary);
   text-transform: uppercase;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
 }
 
 .stat-badge.high-approval {
-  background-color: var(--color-accent-green);
+  background: linear-gradient(
+    135deg,
+    var(--color-accent-green) 0%,
+    #7dda89 100%
+  );
   color: var(--color-text-primary);
   border-color: var(--color-accent-green);
 }
 
 .stat-badge.medium-approval {
-  background-color: var(--color-accent-pink);
+  background: linear-gradient(
+    135deg,
+    var(--color-accent-pink) 0%,
+    #ffa8d8 100%
+  );
   color: var(--color-text-primary);
   border-color: var(--color-accent-pink);
 }
 
 .stat-badge.low-approval {
-  background-color: var(--color-accent-pink);
+  background: linear-gradient(
+    135deg,
+    var(--color-accent-pink) 0%,
+    #ff9999 100%
+  );
   color: var(--color-text-primary);
   border-color: var(--color-accent-red);
 }
@@ -2258,11 +2392,35 @@ const getApprovalClass = (stats) => {
 @media (max-width: 768px) {
   .wishlist-item {
     flex-direction: column;
+    padding: 1.25rem;
   }
 
   .item-image {
     width: 100%;
-    height: 200px;
+    height: 220px;
+    margin-bottom: 0.5rem;
+  }
+
+  .remove-button {
+    top: 0.875rem;
+    right: 0.875rem;
+    opacity: 1;
+  }
+
+  .purchased-button,
+  .purchased-label {
+    top: 0.875rem;
+    right: 3.25rem;
+    font-size: 0.65rem;
+    padding: 0.5rem 0.875rem;
+  }
+
+  .item-name {
+    font-size: 1rem;
+  }
+
+  .item-price {
+    font-size: 1.125rem;
   }
 }
 
