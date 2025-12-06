@@ -19,13 +19,13 @@
         @click="goToWishlist"
         :class="['nav-link', { active: currentRoute === '/wishlist' }]"
       >
-        PAUSE CART
+        PAUSECART
       </button>
       <button
         @click="goToStats"
         :class="['nav-link', { active: currentRoute === '/stats' }]"
       >
-        STATS
+        MY STATS
       </button>
       <button
         @click="goToSettings"

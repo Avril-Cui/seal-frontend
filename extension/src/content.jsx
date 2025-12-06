@@ -102,6 +102,13 @@ function AddToWishlistButton() {
     try {
       const productData = fetchAmazonProduct();
 
+      // Always include the current page URL as amazonUrl (we're on an Amazon page)
+      // Use window.location.href as the primary source, fallback to productData.url
+      // Ensure it's always a string (never undefined/null) for sync pattern matching
+      const amazonUrl = String(
+        window.location.href || productData.url || ""
+      ).trim();
+
       const payload = {
         owner: user._id,
         itemName: productData.title,
@@ -111,6 +118,7 @@ function AddToWishlistButton() {
         reason,
         isNeed,
         isFutureApprove,
+        amazonUrl: amazonUrl, // Always a string (empty if missing, but should always be present on Amazon page)
       };
 
       chrome.runtime.sendMessage(

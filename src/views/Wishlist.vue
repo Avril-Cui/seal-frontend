@@ -13,7 +13,9 @@
 
       <div class="add-item-section">
         <div v-if="addItemError" class="error-message">{{ addItemError }}</div>
-        <button @click="openAddModal" class="add-item-button">ADD ITEM</button>
+        <button @click="openAddModal" class="add-item-button">
+          ＋ Add Item
+        </button>
       </div>
 
       <div v-if="isLoading" class="loading-message">Loading your items...</div>
@@ -37,14 +39,9 @@
           >
             ×
           </button>
-          <button
-            v-if="!item.wasPurchased"
-            @click.stop="openPurchaseModal(item)"
-            class="purchased-button"
-          >
-            Mark as Purchased
-          </button>
-          <div v-else class="purchased-label">Purchased</div>
+          <!-- Purchased badge at top-right (only when purchased) -->
+          <div v-if="item.wasPurchased" class="purchased-badge">PURCHASED</div>
+
           <div class="item-image">
             <img
               v-if="item.photo"
@@ -70,18 +67,8 @@
             </a>
 
             <!-- AI Insight Section -->
-            <div class="ai-insight-section">
-              <button
-                v-if="!item.aiInsight && !item.isLoadingAI"
-                @click.stop="getAIInsight(item)"
-                class="ai-insight-button"
-              >
-                🤖 Get AI Insight
-              </button>
-              <div v-if="item.isLoadingAI" class="ai-loading">
-                <span class="loading-spinner">⏳</span> Analyzing purchase...
-              </div>
-              <div v-if="item.aiInsight" class="ai-insight-content">
+            <div v-if="item.aiInsight" class="ai-insight-section">
+              <div class="ai-insight-content">
                 <div class="ai-header">
                   <span>🤖 AI Analysis</span>
                   <button
@@ -97,15 +84,30 @@
 
                 <!-- Structured Display -->
                 <div v-if="item.aiStructured" class="ai-structured">
-                  <div class="ai-verdict-row">
-                    <div
-                      class="ai-score"
-                      :class="getScoreClass(item.aiStructured.impulseScore)"
-                    >
-                      {{ item.aiStructured.impulseScore }}/10
+                  <div class="ai-top-row">
+                    <div class="ai-score-block">
+                      <div class="ai-score-label">Impulse score</div>
+                      <div class="ai-score-bar-wrapper">
+                        <div class="ai-score-bar-bg">
+                          <div
+                            class="ai-score-bar-fill"
+                            :style="{
+                              width: item.aiStructured.impulseScore * 10 + '%',
+                            }"
+                          ></div>
+                        </div>
+                        <div class="ai-score-text">
+                          {{ item.aiStructured.impulseScore }}/10 ·
+                          <span class="ai-score-level">
+                            {{
+                              scoreLevelLabel(item.aiStructured.impulseScore)
+                            }}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                     <div
-                      class="ai-verdict"
+                      class="ai-verdict-chip"
                       :class="getVerdictClass(item.aiStructured.verdict)"
                     >
                       {{ item.aiStructured.verdict }}
@@ -134,6 +136,27 @@
                 <p v-else class="ai-text">{{ item.aiInsight }}</p>
               </div>
             </div>
+          </div>
+
+          <!-- Actions Row at Bottom -->
+          <div class="item-actions">
+            <div v-if="item.isLoadingAI" class="ai-loading">
+              <span class="loading-spinner">⏳</span> Analyzing purchase...
+            </div>
+            <button
+              v-else-if="!item.aiInsight"
+              @click.stop="getAIInsight(item)"
+              class="action-button ai-action"
+            >
+              🧠 Get AI Insight
+            </button>
+            <button
+              v-if="!item.wasPurchased"
+              @click.stop="openPurchaseModal(item)"
+              class="action-button purchase-action"
+            >
+              ✅ Mark as Purchased
+            </button>
           </div>
         </div>
       </div>
@@ -192,9 +215,13 @@
               :class="{
                 'input-error':
                   submissionAttempted &&
-                  (!newItemPhoto || !newItemPhoto.trim()),
+                  (!newItemPhoto ||
+                    !newItemPhoto.trim() ||
+                    !isValidImageUrl(newItemPhoto)),
               }"
             />
+
+            <!-- empty field error -->
             <p
               v-if="
                 submissionAttempted && (!newItemPhoto || !newItemPhoto.trim())
@@ -203,14 +230,23 @@
             >
               ⚠️ Image URL is required
             </p>
-            <div class="modal-image">
-              <img
-                v-if="newItemPhoto"
-                :src="newItemPhoto"
-                :alt="newItemName"
-                class="modal-photo"
-              />
-              <div v-else class="image-placeholder">PIC</div>
+
+            <!-- looks like a non-image URL -->
+            <p
+              v-else-if="
+                submissionAttempted &&
+                newItemPhoto &&
+                !isValidImageUrl(newItemPhoto)
+              "
+              class="price-warning"
+            >
+              ⚠️ This doesn’t look like an image URL (try a link ending in .jpg,
+              .png, etc.)
+            </p>
+
+            <!-- only show preview box when URL looks like an image -->
+            <div v-if="isValidImageUrl(newItemPhoto)" class="modal-image">
+              <img :src="newItemPhoto" :alt="newItemName" class="modal-photo" />
             </div>
           </div>
 
@@ -329,17 +365,19 @@
                 >Is this a need or a want?
                 <span class="required-asterisk">*</span></label
               >
-              <textarea
+              <select
                 v-model="isNeedAnswer"
-                placeholder="Enter your answer..."
-                class="modal-textarea"
-                rows="2"
+                class="modal-input modal-select"
                 :class="{
                   'input-error':
                     submissionAttempted &&
                     (!isNeedAnswer || !isNeedAnswer.trim()),
                 }"
-              ></textarea>
+              >
+                <option value="">Select...</option>
+                <option value="Need">Need</option>
+                <option value="Want">Want</option>
+              </select>
               <p
                 v-if="
                   submissionAttempted && (!isNeedAnswer || !isNeedAnswer.trim())
@@ -355,17 +393,20 @@
                 >Would Future-You approve?
                 <span class="required-asterisk">*</span></label
               >
-              <textarea
+              <select
                 v-model="futureApproveAnswer"
-                placeholder="Enter your answer..."
-                class="modal-textarea"
-                rows="2"
+                class="modal-input modal-select"
                 :class="{
                   'input-error':
                     submissionAttempted &&
                     (!futureApproveAnswer || !futureApproveAnswer.trim()),
                 }"
-              ></textarea>
+              >
+                <option value="">Select...</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+                <option value="Maybe">Maybe</option>
+              </select>
               <p
                 v-if="
                   submissionAttempted &&
@@ -492,10 +533,16 @@
 import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "../composables/useAuth";
+import { useColors } from "../composables/useColors";
 import Navbar from "../components/Navbar.vue";
 
 const router = useRouter();
 const { currentUser, getSession } = useAuth();
+const { palette } = useColors();
+
+// Extract colors from palette for use in CSS
+const paletteRed = computed(() => palette.value.red);
+const paletteGreen = computed(() => palette.value.green);
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
@@ -582,7 +629,10 @@ const hasValidationErrors = computed(() => {
 
   const hasNameError = !newItemName.value || !newItemName.value.trim();
   const hasDescError = !newItemDesc.value || !newItemDesc.value.trim();
-  const hasPhotoError = !newItemPhoto.value || !newItemPhoto.value.trim();
+  const hasPhotoError =
+    !newItemPhoto.value ||
+    !newItemPhoto.value.trim() ||
+    !isValidImageUrl(newItemPhoto.value);
   const hasPriceError = isPriceInvalid(newItemPrice.value);
   const hasReasonError = !reasonAnswer.value || !reasonAnswer.value.trim();
   const hasNeedError = !isNeedAnswer.value || !isNeedAnswer.value.trim();
@@ -738,13 +788,17 @@ const fetchWishlist = async () => {
       return;
     }
 
-    console.log("Extracted items:", items);
-    console.log("First extracted item _id:", items[0]?._id);
-
     // Community stats removed - AI insight doesn't need swipe stats
+    // Sort items: unpurchased first, then purchased
+    items.sort((a, b) => {
+      const aPurchased = a.wasPurchased || false;
+      const bPurchased = b.wasPurchased || false;
+      // If both are purchased or both are unpurchased, maintain original order
+      if (aPurchased === bPurchased) return 0;
+      // Unpurchased items (false) come before purchased items (true)
+      return aPurchased ? 1 : -1;
+    });
     wishlistItems.value = items;
-
-    console.log("Final wishlistItems:", wishlistItems.value);
   } catch (err) {
     error.value = "Failed to load your items. Please try again.";
     console.error("Error fetching wishlist:", err);
@@ -833,6 +887,11 @@ const openEditModal = (item) => {
   showAddModal.value = true;
 };
 
+const isValidImageUrl = (url) => {
+  if (!url) return false;
+  return /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(url.trim());
+};
+
 const addItem = async () => {
   console.log("addItem called!");
   console.log("currentUser:", currentUser.value);
@@ -891,28 +950,64 @@ const addItem = async () => {
     reason: reasonAnswer.value,
     isNeed: isNeedAnswer.value,
     isFutureApprove: futureApproveAnswer.value,
-    amazonUrl: amazonUrl.value || undefined, // Include Amazon URL if present
+    amazonUrl: amazonUrl.value || null, // Always include amazonUrl (null if not provided)
   };
 
   console.log("Payload:", payload);
 
   try {
     // Call the new addItem endpoint with all item details
-    const response = await fetch(`${API_BASE_URL}/ItemCollection/addItem`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+    // Add timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+    let response;
+    try {
+      response = await fetch(`${API_BASE_URL}/ItemCollection/addItem`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === "AbortError") {
+        addItemError.value =
+          "Request timed out. The server may be slow or unavailable. Please try again.";
+        return;
+      }
+      throw fetchError;
+    }
 
     console.log("Response status:", response.status);
+
+    // Check if response is ok before parsing JSON
+    if (!response.ok) {
+      if (response.status === 504) {
+        addItemError.value =
+          "Request timed out on the server. Please try again.";
+        return;
+      }
+      addItemError.value = `Server error (${response.status}). Please try again.`;
+      return;
+    }
+
     const data = await response.json();
     console.log("Response data:", data);
 
     if (data.error) {
       addItemError.value =
         data.error || "Failed to save item. Please try again.";
+      return;
+    }
+
+    // Verify we got an item in the response
+    if (!data.item) {
+      console.error("Unexpected response format:", data);
+      addItemError.value = "Unexpected response from server. Please try again.";
       return;
     }
 
@@ -1130,19 +1225,22 @@ const confirmPurchase = async () => {
     // Convert date string to timestamp (milliseconds)
     const purchaseTimestamp = new Date(purchaseDate.value).getTime();
 
-    const response = await fetch(`${API_BASE_URL}/ItemCollection/setPurchased`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        session: session,
-        item: purchasingItem.value._id,
-        quantity: purchaseQuantity.value,
-        purchaseTime: purchaseTimestamp,
-        actualPrice: parseFloat(purchasePrice.value),
-      }),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/ItemCollection/setPurchased`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          session: session,
+          item: purchasingItem.value._id,
+          quantity: purchaseQuantity.value,
+          purchaseTime: purchaseTimestamp,
+          actualPrice: parseFloat(purchasePrice.value),
+        }),
+      }
+    );
 
     const data = await response.json();
 
@@ -1236,6 +1334,12 @@ const getAIInsight = async (item) => {
 };
 
 // Helper functions for AI insight styling
+const scoreLevelLabel = (score) => {
+  if (score <= 3) return "Low impulse (good)";
+  if (score <= 6) return "Medium impulse (be mindful)";
+  return "High impulse (risky)";
+};
+
 const getScoreClass = (score) => {
   if (score <= 3) return "score-low";
   if (score <= 6) return "score-medium";
@@ -1309,40 +1413,40 @@ const getVerdictClass = (verdict) => {
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 2rem;
+  margin: 1.5rem 0 2.5rem;
 }
 
 .add-item-button {
-  padding: 0.75rem 1.5rem;
-  font-family: var(--font-primary);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  padding: 1.1rem 3.25rem;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
-  border: none;
-  border-radius: 8px;
+  border-radius: 999px;
+  border: 2px solid var(--color-text-primary);
   background-color: var(--color-text-primary);
   color: var(--color-bg);
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 4px 16px rgba(26, 26, 26, 0.2);
 }
 
 .add-item-button:hover {
-  background-color: var(--color-text-primary);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(26, 26, 26, 0.15);
+  box-shadow: 0 8px 24px rgba(26, 26, 26, 0.3);
 }
 
 .items-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 1.5rem;
 }
 
 .wishlist-item {
   position: relative;
   display: flex;
-  gap: 1.5rem;
+  flex-direction: column;
+  gap: 1rem;
   border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 1.5rem;
@@ -1355,10 +1459,11 @@ const getVerdictClass = (verdict) => {
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  padding-bottom: 1.5rem;
 }
 
 .wishlist-item::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -1440,71 +1545,33 @@ const getVerdictClass = (verdict) => {
   box-shadow: 0 4px 16px rgba(255, 82, 82, 0.3);
 }
 
-.purchased-button {
+.purchased-badge {
   position: absolute;
-  top: 1rem;
-  right: 4rem;
-  padding: 0.625rem 1.25rem;
-  border: 2px solid var(--color-text-primary);
-  border-radius: 10px;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 1) 0%,
-    rgba(250, 250, 250, 1) 100%
-  );
-  color: var(--color-text-primary);
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  font-family: var(--font-primary);
-  z-index: 10;
-}
 
-.purchased-button:hover {
-  background: var(--color-accent-green);
-  color: var(--color-bg);
-  border-color: var(--color-accent-green);
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.25);
-}
-
-.purchased-label {
-  position: absolute;
-  top: 1rem;
-  right: 4rem;
-  padding: 0.625rem 1.25rem;
-  border: 2px solid #4caf50;
-  border-radius: 10px;
-  background: linear-gradient(
-    135deg,
-    #4caf50 0%,
-    #45a049 100%
-  );
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border-radius: 0;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  border-bottom: 1.5px solid #4caf50;
+  background: rgba(76, 175, 80);
   color: #fff;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
   display: flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
   font-family: var(--font-primary);
   z-index: 10;
 }
 
 .item-image {
-  width: 140px;
-  height: 140px;
+  width: 100%;
+  height: 200px;
   border: 2px solid var(--color-border);
   border-radius: 12px;
   display: flex;
@@ -1608,12 +1675,17 @@ const getVerdictClass = (verdict) => {
 .modal-content {
   background-color: var(--color-bg);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
-  max-width: 500px;
-  width: 100%;
+  border-radius: 16px;
+  max-width: 840px; /* was 500px */
+  width: min(96vw, 840px); /* let it stretch with screen */
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(26, 26, 26, 0.3);
+}
+
+/* Purchase modal should also be wider */
+.purchase-modal {
+  max-width: 640px; /* was 500px */
 }
 
 .modal-header {
@@ -1662,15 +1734,25 @@ const getVerdictClass = (verdict) => {
   gap: 1rem;
 }
 
+@media (min-width: 768px) {
+  .modal-body {
+    padding: 2rem 2.25rem 1.75rem;
+    gap: 1.25rem;
+  }
+}
+
 .modal-image {
-  width: 100%;
-  aspect-ratio: 1;
+  width: 180px; /* small preview instead of full width */
+  height: 180px;
+  margin-top: 0.75rem;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   background-color: var(--color-bg-secondary);
+  overflow: hidden;
+  align-self: flex-start; /* don't stretch horizontally */
 }
 
 .modal-input {
@@ -1687,6 +1769,24 @@ const getVerdictClass = (verdict) => {
 
 .modal-input:focus {
   outline: none;
+  border-color: var(--color-border-dark);
+}
+
+.modal-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%232d0000' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 12px;
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
+.modal-select:hover {
+  border-color: var(--color-border-dark);
+}
+
+.modal-select:focus {
   border-color: var(--color-border-dark);
 }
 
@@ -1862,19 +1962,15 @@ const getVerdictClass = (verdict) => {
 }
 
 .reflection-section {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--color-border);
+  margin-top: 2rem;
+  padding: 1.5rem 1.25rem;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-secondary);
 }
 
-.reflection-title {
-  font-family: var(--font-primary);
-  font-size: 0.75rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-primary);
+.reflection-section .form-group {
+  margin-bottom: 1.5rem; /* extra space between questions */
 }
 
 .item-photo {
@@ -1906,37 +2002,24 @@ const getVerdictClass = (verdict) => {
   gap: 0.375rem;
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
-  padding: 0.625rem 1.125rem;
+  padding: 0.5rem 1rem;
   font-family: var(--font-primary);
-  font-size: 0.675rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  font-size: 0.875rem;
+  font-weight: 500;
   text-decoration: none;
-  background: linear-gradient(
-    135deg,
-    #fff8f0 0%,
-    #fff3e6 100%
-  );
-  color: #ff9900;
-  border: 2px solid #ff9900;
+  background-color: #fff;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 8px rgba(255, 153, 0, 0.1);
+  transition: all 0.3s ease;
+  width: fit-content;
 }
 
 .amazon-link:hover {
-  background: linear-gradient(
-    135deg,
-    #ff9900 0%,
-    #ff8800 100%
-  );
-  color: #fff;
-  border-color: #ff9900;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
   text-decoration: none;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(255, 153, 0, 0.25);
 }
 
 .loading-message,
@@ -2010,28 +2093,60 @@ const getVerdictClass = (verdict) => {
 .ai-insight-section {
   margin-top: 0.75rem;
   padding-top: 0.75rem;
-  border-top: 1px solid var(--color-border);
 }
 
-.ai-insight-button {
+/* Actions Row at Bottom */
+.item-actions {
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  margin-top: 1rem;
+  border-top: 1px solid var(--color-border);
+  align-items: center;
+}
+
+.action-button {
   padding: 0.5rem 1rem;
   font-family: var(--font-primary);
-  font-size: 0.625rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  background-color: var(--color-bg-secondary);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  border: none;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.75rem;
+  white-space: nowrap;
 }
 
-.ai-insight-button:hover {
+.action-button.ai-action {
   background-color: var(--color-text-primary);
-  color: var(--color-bg);
-  border-color: var(--color-text-primary);
+  color: #fff;
+  border: 1px solid var(--color-text-primary);
+  font-weight: 700;
+}
+
+.action-button.ai-action:hover {
+  background-color: #4f7a4c;
+  border-color: #4f7a4c;
+  color: #fff;
+}
+
+.action-button.purchase-action {
+  background-color: var(--color-text-primary);
+  color: #fff;
+  border: 1px solid var(--color-text-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.action-button.purchase-action:hover {
+  background-color: #a34747;
+  border-color: #a34747;
+  color: #fff;
 }
 
 .ai-loading {
@@ -2094,46 +2209,72 @@ const getVerdictClass = (verdict) => {
 .ai-structured {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
-.ai-verdict-row {
+.ai-top-row {
   display: flex;
-  gap: 0.75rem;
+  justify-content: space-between;
   align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
 }
 
-.ai-score {
+.ai-score-block {
+  flex: 1;
+}
+
+.ai-score-label {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-tertiary);
   font-family: var(--font-primary);
-  font-size: 1.25rem;
-  font-weight: 700;
-  padding: 0.25rem 0.75rem;
-  border-radius: 6px;
+  font-weight: 600;
 }
 
-.score-low {
-  background-color: var(--color-accent-green);
-  color: var(--color-text-primary);
+.ai-score-bar-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
 }
 
-.score-medium {
-  background-color: var(--color-accent-pink);
-  color: var(--color-text-primary);
+.ai-score-bar-bg {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: #f1f1f1;
+  overflow: hidden;
 }
 
-.score-high {
-  background-color: #ffcccc;
-  color: #8b0000;
+.ai-score-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #22c55e, #eab308, #ef4444);
+  transition: width 0.3s ease;
 }
 
-.ai-verdict {
-  font-family: var(--font-primary);
+.ai-score-text {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  font-family: var(--font-secondary);
+}
+
+.ai-score-level {
+  font-weight: 600;
+}
+
+.ai-verdict-chip {
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.375rem 0.75rem;
-  border-radius: 6px;
+  letter-spacing: 0.06em;
+  font-family: var(--font-primary);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .verdict-buy {
@@ -2142,19 +2283,19 @@ const getVerdictClass = (verdict) => {
 }
 
 .verdict-wait {
-  background-color: var(--color-accent-pink);
+  background-color: #eab308;
   color: var(--color-text-primary);
 }
 
 .verdict-skip {
-  background-color: #ffcccc;
-  color: #8b0000;
+  background-color: #fecaca;
+  color: #991b1b;
 }
 
 .ai-insight-item {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.2rem;
 }
 
 .ai-label {
@@ -2164,6 +2305,7 @@ const getVerdictClass = (verdict) => {
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--color-text-tertiary);
+  margin-bottom: 0.1rem;
 }
 
 .ai-value {
@@ -2171,6 +2313,18 @@ const getVerdictClass = (verdict) => {
   font-size: 0.8rem;
   line-height: 1.4;
   color: var(--color-text-primary);
+}
+
+@media (max-width: 480px) {
+  .ai-top-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .ai-verdict-chip {
+    align-self: flex-start;
+  }
 }
 
 .ai-advice {
@@ -2301,15 +2455,16 @@ const getVerdictClass = (verdict) => {
 }
 
 @media (max-width: 768px) {
+  .items-list {
+    grid-template-columns: 1fr;
+  }
+
   .wishlist-item {
-    flex-direction: column;
     padding: 1.25rem;
   }
 
   .item-image {
-    width: 100%;
     height: 220px;
-    margin-bottom: 0.5rem;
   }
 
   .remove-button {
@@ -2318,12 +2473,18 @@ const getVerdictClass = (verdict) => {
     opacity: 1;
   }
 
-  .purchased-button,
-  .purchased-label {
-    top: 0.875rem;
-    right: 3.25rem;
-    font-size: 0.65rem;
-    padding: 0.5rem 0.875rem;
+  .purchased-badge {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.7rem;
+  }
+
+  .item-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .action-button {
+    width: 100%;
   }
 
   .item-name {
