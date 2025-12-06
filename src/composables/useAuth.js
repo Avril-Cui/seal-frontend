@@ -56,6 +56,16 @@ const login = async (email, password) => {
     // Store session token from backend
     console.log("data.session value:", data.session);
     if (data.session) {
+      // Clear previous user's cache when new session starts
+      const previousSession = sessionToken.value;
+      if (previousSession && previousSession !== data.session) {
+        localStorage.removeItem("completed_queue_status");
+        localStorage.removeItem("completed_queue_session");
+        localStorage.removeItem("wishlist_cache");
+        localStorage.removeItem("stats_cache");
+        localStorage.removeItem("ai_insights_cache");
+      }
+
       sessionToken.value = data.session;
       localStorage.setItem("sessionToken", data.session);
       console.log("Session token saved to localStorage:", data.session);
@@ -76,7 +86,10 @@ const login = async (email, password) => {
     localStorage.setItem("currentUser", JSON.stringify(userData));
 
     console.log("Login completed. sessionToken.value:", sessionToken.value);
-    console.log("localStorage sessionToken:", localStorage.getItem("sessionToken"));
+    console.log(
+      "localStorage sessionToken:",
+      localStorage.getItem("sessionToken")
+    );
 
     return { success: true, user: userData, session: data.session };
   } catch (error) {
@@ -106,6 +119,13 @@ const logout = async () => {
     localStorage.removeItem("isAuthenticated");
     localStorage.removeItem("currentUser");
     localStorage.removeItem("sessionToken");
+
+    // Clear user-specific cache data
+    localStorage.removeItem("completed_queue_status");
+    localStorage.removeItem("completed_queue_session");
+    localStorage.removeItem("wishlist_cache");
+    localStorage.removeItem("stats_cache");
+    localStorage.removeItem("ai_insights_cache");
   }
 };
 
@@ -137,6 +157,16 @@ const register = async (email, password, name = "") => {
 
     // Store session token from backend
     if (data.session) {
+      // Clear any previous user's cache when new session starts
+      const previousSession = sessionToken.value;
+      if (previousSession && previousSession !== data.session) {
+        localStorage.removeItem("completed_queue_status");
+        localStorage.removeItem("completed_queue_session");
+        localStorage.removeItem("wishlist_cache");
+        localStorage.removeItem("stats_cache");
+        localStorage.removeItem("ai_insights_cache");
+      }
+
       sessionToken.value = data.session;
       localStorage.setItem("sessionToken", data.session);
     }

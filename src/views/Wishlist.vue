@@ -48,7 +48,13 @@
         </div>
       </div>
 
-      <div v-if="isLoading" class="loading-message">Loading your items...</div>
+      <!-- Only show loading message if we have no cached items to display -->
+      <div
+        v-if="isLoading && wishlistItems.length === 0"
+        class="loading-message"
+      >
+        Loading your items...
+      </div>
       <div v-else-if="error" class="error-message">{{ error }}</div>
       <div
         v-else-if="filteredAndSortedItems.length === 0"
@@ -921,7 +927,12 @@ const fetchWishlist = async () => {
     return;
   }
 
-  isLoading.value = true;
+  // Only show loading if we don't have cached items to display
+  // This prevents flashing when refreshing with cached data
+  const hasCachedItems = wishlistItems.value.length > 0;
+  if (!hasCachedItems) {
+    isLoading.value = true;
+  }
   error.value = "";
 
   console.log("Fetching wishlist with session");
@@ -1017,6 +1028,7 @@ const fetchWishlist = async () => {
     error.value = "Failed to load your items. Please try again.";
     console.error("Error fetching wishlist:", err);
   } finally {
+    // Always reset loading state, even if we had cached items
     isLoading.value = false;
   }
 };
