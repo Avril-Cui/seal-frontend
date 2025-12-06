@@ -1424,9 +1424,23 @@ const confirmPurchase = async () => {
       return;
     }
 
-    // Success! Close modal and refresh wishlist
+    // Success! Update the local item state instead of reloading
+    const itemIndex = wishlistItems.value.findIndex(
+      (i) => i._id === purchasingItem.value._id
+    );
+    if (itemIndex !== -1) {
+      wishlistItems.value[itemIndex].wasPurchased = true;
+      wishlistItems.value[itemIndex].actualPrice = parseFloat(
+        purchasePrice.value
+      );
+      wishlistItems.value[itemIndex].quantity = purchaseQuantity.value;
+      wishlistItems.value[itemIndex].PurchasedTime = new Date(
+        purchaseDate.value
+      ).getTime();
+    }
+
+    // Close modal
     closePurchaseModal();
-    await fetchWishlist();
   } catch (err) {
     purchaseError.value = "Failed to mark item as purchased. Please try again.";
     console.error("Error marking as purchased:", err);
@@ -1469,8 +1483,15 @@ const undoPurchase = async (item) => {
       return;
     }
 
-    // Success! Refresh the wishlist
-    await fetchWishlist();
+    // Success! Update the local item state instead of reloading
+    const itemIndex = wishlistItems.value.findIndex((i) => i._id === item._id);
+    if (itemIndex !== -1) {
+      wishlistItems.value[itemIndex].wasPurchased = false;
+      // Optionally clear purchase-related fields
+      wishlistItems.value[itemIndex].actualPrice = undefined;
+      wishlistItems.value[itemIndex].quantity = undefined;
+      wishlistItems.value[itemIndex].PurchasedTime = undefined;
+    }
   } catch (err) {
     error.value = "Failed to undo purchase. Please try again.";
     console.error("Error undoing purchase:", err);
