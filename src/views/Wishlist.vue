@@ -18,15 +18,38 @@
         </button>
       </div>
 
+      <!-- Filter and Sort Controls -->
+      <div v-if="!isLoading && wishlistItems.length > 0" class="filter-controls">
+        <div class="filter-group">
+          <label class="filter-label">Sort by:</label>
+          <div class="custom-select-wrapper">
+            <select v-model="sortBy" class="filter-select" @change="saveFilters">
+              <option value="date-recent">Date Added (Recent)</option>
+              <option value="date-oldest">Date Added (Oldest)</option>
+              <option value="price-low">Price (Low to High)</option>
+              <option value="price-high">Price (High to Low)</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-group">
+          <button
+            @click="togglePurchased"
+            :class="['filter-toggle-btn', { active: showPurchased }]"
+          >
+            {{ showPurchased ? "Hide" : "Show" }} Purchased
+          </button>
+        </div>
+      </div>
+
       <div v-if="isLoading" class="loading-message">Loading your items...</div>
       <div v-else-if="error" class="error-message">{{ error }}</div>
-      <div v-else-if="wishlistItems.length === 0" class="empty-message">
+      <div v-else-if="filteredAndSortedItems.length === 0" class="empty-message">
         Your pause cart is empty. Click the "ADD ITEM" button above to get
         started!
       </div>
       <div v-else class="items-list">
         <div
-          v-for="item in wishlistItems"
+          v-for="item in filteredAndSortedItems"
           :key="item._id"
           class="wishlist-item"
           :class="{ 'purchased-item': item.wasPurchased }"
@@ -685,6 +708,72 @@ const addItemError = ref("");
 const hasCompletedQueue = ref(false);
 const isCheckingQueue = ref(false);
 
+// Filter and sort state
+const sortBy = ref("date-recent");
+const showPurchased = ref(true);
+
+// Load filters from localStorage
+const loadFilters = () => {
+  const savedSortBy = localStorage.getItem("wishlistSortBy");
+  const savedShowPurchased = localStorage.getItem("wishlistShowPurchased");
+
+  if (savedSortBy) {
+    sortBy.value = savedSortBy;
+  }
+  if (savedShowPurchased !== null) {
+    showPurchased.value = savedShowPurchased === "true";
+  }
+};
+
+// Save filters to localStorage
+const saveFilters = () => {
+  localStorage.setItem("wishlistSortBy", sortBy.value);
+  localStorage.setItem("wishlistShowPurchased", showPurchased.value.toString());
+};
+
+// Toggle purchased items visibility
+const togglePurchased = () => {
+  showPurchased.value = !showPurchased.value;
+  saveFilters();
+};
+
+// Computed property for filtered and sorted items
+const filteredAndSortedItems = computed(() => {
+  let items = [...wishlistItems.value];
+
+  // Filter out purchased items if needed
+  if (!showPurchased.value) {
+    items = items.filter((item) => !item.wasPurchased);
+  }
+
+  // Sort items based on selected option
+  items.sort((a, b) => {
+    switch (sortBy.value) {
+      case "price-low":
+        return (a.price || 0) - (b.price || 0);
+      case "price-high":
+        return (b.price || 0) - (a.price || 0);
+      case "date-oldest":
+        // Oldest first - smaller _id means older
+        const aIdOld = a._id || a.id || "";
+        const bIdOld = b._id || b.id || "";
+        if (aIdOld < bIdOld) return -1;
+        if (aIdOld > bIdOld) return 1;
+        return 0;
+      case "date-recent":
+      default:
+        // Most recent first - larger _id means newer
+        const aId = a._id || a.id || "";
+        const bId = b._id || b.id || "";
+        if (aId > bId) return -1;
+        if (aId < bId) return 1;
+        return 0;
+    }
+  });
+
+  return items;
+});
+
 // Purchase modal state
 const showPurchaseModal = ref(false);
 const purchasingItem = ref(null);
@@ -791,27 +880,7 @@ const fetchWishlist = async () => {
       return;
     }
 
-    // Community stats removed - AI insight doesn't need swipe stats
-    // Sort items: unpurchased first, then purchased, and within each group by most recently added
-    items.sort((a, b) => {
-      const aPurchased = a.wasPurchased || false;
-      const bPurchased = b.wasPurchased || false;
-
-      // First, sort by purchased status (unpurchased first)
-      if (aPurchased !== bPurchased) {
-        return aPurchased ? 1 : -1;
-      }
-
-      // Within the same purchased status, sort by most recently added (using _id timestamp)
-      // MongoDB ObjectIds contain a timestamp - newer items have "larger" _ids
-      const aId = a._id || a.id || "";
-      const bId = b._id || b.id || "";
-
-      // Compare as strings (ObjectIds are sortable as strings)
-      if (aId > bId) return -1; // a is more recent
-      if (aId < bId) return 1;  // b is more recent
-      return 0;
-    });
+    // Store raw items - sorting and filtering will be done in computed property
     wishlistItems.value = items;
   } catch (err) {
     error.value = "Failed to load your items. Please try again.";
@@ -1337,6 +1406,7 @@ const undoPurchase = async (item) => {
 };
 
 onMounted(async () => {
+  loadFilters();
   await checkQueueCompletion();
   await fetchWishlist();
 });
@@ -1496,6 +1566,108 @@ const getVerdictClass = (verdict) => {
   align-items: center;
   gap: 1rem;
   margin: 1.5rem 0 2.5rem;
+}
+
+.filter-controls {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.filter-label {
+  font-family: var(--font-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.custom-select-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.custom-select-wrapper::after {
+  content: "▼";
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+  transition: transform 0.2s ease;
+}
+
+.custom-select-wrapper:hover::after {
+  color: var(--color-text-primary);
+}
+
+.filter-select {
+  padding: 0.5rem 2.5rem 0.5rem 1rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 6px;
+  font-family: var(--font-secondary);
+  font-size: 0.875rem;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 200px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: none;
+}
+
+.filter-select:hover {
+  border-color: var(--color-border-dark);
+  background-color: var(--color-bg-secondary);
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--color-text-primary);
+  background-color: var(--color-bg);
+}
+
+.filter-toggle-btn {
+  padding: 0.5rem 1.25rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 6px;
+  font-family: var(--font-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.filter-toggle-btn:hover {
+  border-color: var(--color-border-dark);
+  background-color: var(--color-bg-secondary);
+}
+
+.filter-toggle-btn.active {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-dark);
+}
+
+.filter-toggle-btn.active:hover {
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-border-dark);
 }
 
 .add-item-button {
