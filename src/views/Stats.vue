@@ -35,13 +35,13 @@
           </div>
           <div class="stat-box">
             <div class="stat-value">
-              {{ rejectionRate === null ? "Loading..." : rejectionRate + "%" }}
+              {{ (rejectionRate ?? 0) + "%" }}
             </div>
             <div class="stat-label">Rejection Rate</div>
           </div>
           <div class="stat-box">
             <div class="stat-value">
-              {{ itemsReviewed === null ? "Loading..." : itemsReviewed }}
+              {{ itemsReviewed ?? 0 }}
             </div>
             <div class="stat-label">Items Reviewed</div>
           </div>
@@ -79,7 +79,13 @@
                 <div class="graph-metric">
                   ${{ currentGraphTotal.toFixed(2) }}
                 </div>
-                <div class="graph-metric-label">total purchased</div>
+                <div class="graph-metric-label">
+                  {{
+                    viewMode === "day"
+                      ? "total purchased (past 7 days)"
+                      : "total purchased (past month)"
+                  }}
+                </div>
               </div>
             </div>
 
@@ -459,15 +465,92 @@ const isLoadingPurchases = ref(false);
 const totalSaved = ref(0);
 const totalBought = ref(0);
 const itemsBought = ref(0);
-const rejectionRate = ref(null);
-const itemsReviewed = ref(null);
+const rejectionRate = ref(0);
+const itemsReviewed = ref(0);
+
+// Cached graph totals (separate for daily and monthly views)
+const cachedGraphTotalDaily = ref(0);
+const cachedGraphTotalMonthly = ref(0);
+// Current graph total (will be updated when data loads)
+const currentGraphTotalValue = ref(0);
+
+// Cache key for stats
+const STATS_CACHE_KEY = "stats_cache";
+const VIEW_MODE_CACHE_KEY = "stats_view_mode";
+
+// Load stats from cache
+const loadStatsFromCache = () => {
+  try {
+    const cached = localStorage.getItem(STATS_CACHE_KEY);
+    if (cached) {
+      const stats = JSON.parse(cached);
+      totalSaved.value = stats.totalSaved ?? 0;
+      totalBought.value = stats.totalBought ?? 0;
+      itemsBought.value = stats.itemsBought ?? 0;
+      rejectionRate.value = stats.rejectionRate ?? 0;
+      itemsReviewed.value = stats.itemsReviewed ?? 0;
+      cachedGraphTotalDaily.value = stats.cachedGraphTotalDaily ?? 0;
+      cachedGraphTotalMonthly.value = stats.cachedGraphTotalMonthly ?? 0;
+      // Initialize current graph total from cache based on current view mode
+      currentGraphTotalValue.value =
+        viewMode.value === "day"
+          ? cachedGraphTotalDaily.value
+          : cachedGraphTotalMonthly.value;
+      console.log("Loaded stats from cache:", stats);
+    }
+  } catch (error) {
+    console.error("Error loading stats from cache:", error);
+  }
+};
+
+// Save stats to cache
+const saveStatsToCache = () => {
+  try {
+    const stats = {
+      totalSaved: totalSaved.value,
+      totalBought: totalBought.value,
+      itemsBought: itemsBought.value,
+      rejectionRate: rejectionRate.value,
+      itemsReviewed: itemsReviewed.value,
+      cachedGraphTotalDaily: cachedGraphTotalDaily.value,
+      cachedGraphTotalMonthly: cachedGraphTotalMonthly.value,
+    };
+    localStorage.setItem(STATS_CACHE_KEY, JSON.stringify(stats));
+    console.log("Saved stats to cache:", stats);
+  } catch (error) {
+    console.error("Error saving stats to cache:", error);
+  }
+};
 
 // Graph state
-const viewMode = ref("day"); // 'day' or 'month'
+// Load view mode from cache, default to 'day' if not found
+const loadViewModeFromCache = () => {
+  try {
+    const cached = localStorage.getItem(VIEW_MODE_CACHE_KEY);
+    if (cached && (cached === "day" || cached === "month")) {
+      return cached;
+    }
+  } catch (error) {
+    console.error("Error loading view mode from cache:", error);
+  }
+  return "day"; // Default to 'day'
+};
+
+const viewMode = ref(loadViewModeFromCache()); // 'day' or 'month'
 const offset = ref(0); // Offset for navigation (0 = most recent)
 const selectedPoint = ref(null);
 const graphData = ref([]);
 const touchStartX = ref(0);
+
+// Save view mode to cache
+const saveViewModeToCache = () => {
+  try {
+    localStorage.setItem(VIEW_MODE_CACHE_KEY, viewMode.value);
+    console.log("Saved view mode to cache:", viewMode.value);
+  } catch (error) {
+    console.error("Error saving view mode to cache:", error);
+  }
+};
 
 const currentDate = computed(() => {
   const date = new Date();
@@ -741,8 +824,60 @@ const calculateStats = async () => {
 
     // 5. Rejection rate - set to 0 (swipe system removed)
     rejectionRate.value = 0;
+
+    // Save stats to cache after calculation
+    saveStatsToCache();
   } catch (error) {
     console.error("Error calculating stats:", error);
+    // Still save current stats to cache even on error
+    saveStatsToCache();
+  }
+};
+
+// Calculate the actual total for the time period (past 7 days for daily, past month for monthly)
+const calculateGraphTotal = () => {
+  const now = new Date();
+
+  if (viewMode.value === "day") {
+    // Calculate total for past 7 days
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    const total = recentPurchases.value
+      .filter((item) => {
+        const purchaseDate = new Date(item.PurchasedTime);
+        return purchaseDate >= sevenDaysAgo;
+      })
+      .reduce((sum, item) => {
+        const price = item.actualPrice || item.price || 0;
+        const quantity = item.quantity || 1;
+        return sum + price * quantity;
+      }, 0);
+
+    cachedGraphTotalDaily.value = total;
+    currentGraphTotalValue.value = total;
+    saveStatsToCache();
+  } else {
+    // Calculate total for past month
+    const oneMonthAgo = new Date(now);
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    oneMonthAgo.setHours(0, 0, 0, 0);
+
+    const total = recentPurchases.value
+      .filter((item) => {
+        const purchaseDate = new Date(item.PurchasedTime);
+        return purchaseDate >= oneMonthAgo;
+      })
+      .reduce((sum, item) => {
+        const price = item.actualPrice || item.price || 0;
+        const quantity = item.quantity || 1;
+        return sum + price * quantity;
+      }, 0);
+
+    cachedGraphTotalMonthly.value = total;
+    currentGraphTotalValue.value = total;
+    saveStatsToCache();
   }
 };
 
@@ -820,7 +955,7 @@ const processGraphData = () => {
 
 // Computed properties for graph
 const currentGraphTotal = computed(() => {
-  return graphData.value.reduce((sum, point) => sum + point.value, 0);
+  return currentGraphTotalValue.value;
 });
 
 const dateRangeLabel = computed(() => {
@@ -1017,8 +1152,31 @@ const handleTouchEnd = (e) => {
 watch(viewMode, () => {
   offset.value = 0;
   selectedPoint.value = null;
+  // Save view mode to cache
+  saveViewModeToCache();
+  // Update current graph total from cache for the new view mode
+  currentGraphTotalValue.value =
+    viewMode.value === "day"
+      ? cachedGraphTotalDaily.value
+      : cachedGraphTotalMonthly.value;
   processGraphData();
+  // Recalculate if we have purchases
+  if (recentPurchases.value.length > 0) {
+    calculateGraphTotal();
+  }
 });
+
+// Watch for changes to recentPurchases to update graph total
+watch(
+  recentPurchases,
+  () => {
+    if (recentPurchases.value.length > 0) {
+      processGraphData();
+      calculateGraphTotal();
+    }
+  },
+  { deep: true }
+);
 
 // Watch for route changes to recalculate stats when navigating to this page
 watch(
@@ -1037,6 +1195,9 @@ watch(
 
 // Fetch AI insights on component mount
 onMounted(() => {
+  // Load cached stats first for immediate display
+  loadStatsFromCache();
+
   fetchAIInsights();
   fetchPurchasedItems().then(() => {
     processGraphData();
@@ -1047,6 +1208,11 @@ onMounted(() => {
 // Also recalculate when component is activated (if using keep-alive)
 onActivated(() => {
   console.log("Stats component activated, recalculating stats");
+  // Load cached stats first for immediate display
+  loadStatsFromCache();
+  fetchPurchasedItems().then(() => {
+    processGraphData();
+  });
   calculateStats();
 });
 
