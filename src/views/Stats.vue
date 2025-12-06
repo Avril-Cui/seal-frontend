@@ -477,6 +477,7 @@ const currentGraphTotalValue = ref(0);
 // Cache key for stats
 const STATS_CACHE_KEY = "stats_cache";
 const VIEW_MODE_CACHE_KEY = "stats_view_mode";
+const AI_INSIGHTS_CACHE_KEY = "ai_insights_cache";
 
 // Load stats from cache
 const loadStatsFromCache = () => {
@@ -519,6 +520,39 @@ const saveStatsToCache = () => {
     console.log("Saved stats to cache:", stats);
   } catch (error) {
     console.error("Error saving stats to cache:", error);
+  }
+};
+
+// Load AI insights from cache
+const loadAIInsightsFromCache = () => {
+  try {
+    const cached = localStorage.getItem(AI_INSIGHTS_CACHE_KEY);
+    if (cached) {
+      const insights = JSON.parse(cached);
+      if (insights.aiTrendAlert) {
+        aiTrendAlert.value = insights.aiTrendAlert;
+      }
+      if (insights.aiSuggestions && Array.isArray(insights.aiSuggestions)) {
+        aiSuggestions.value = insights.aiSuggestions;
+      }
+      console.log("Loaded AI insights from cache:", insights);
+    }
+  } catch (error) {
+    console.error("Error loading AI insights from cache:", error);
+  }
+};
+
+// Save AI insights to cache
+const saveAIInsightsToCache = () => {
+  try {
+    const insights = {
+      aiTrendAlert: aiTrendAlert.value,
+      aiSuggestions: aiSuggestions.value,
+    };
+    localStorage.setItem(AI_INSIGHTS_CACHE_KEY, JSON.stringify(insights));
+    console.log("Saved AI insights to cache:", insights);
+  } catch (error) {
+    console.error("Error saving AI insights to cache:", error);
   }
 };
 
@@ -617,6 +651,8 @@ const fetchAIInsights = async () => {
       if (parsed.trendAlert && parsed.improvementSuggestions) {
         aiTrendAlert.value = parsed.trendAlert;
         aiSuggestions.value = parsed.improvementSuggestions;
+        // Save to cache after successful fetch
+        saveAIInsightsToCache();
       } else {
         console.error("Invalid AI response format:", parsed);
       }
@@ -1195,8 +1231,9 @@ watch(
 
 // Fetch AI insights on component mount
 onMounted(() => {
-  // Load cached stats first for immediate display
+  // Load cached stats and AI insights first for immediate display
   loadStatsFromCache();
+  loadAIInsightsFromCache();
 
   fetchAIInsights();
   fetchPurchasedItems().then(() => {
@@ -1208,8 +1245,9 @@ onMounted(() => {
 // Also recalculate when component is activated (if using keep-alive)
 onActivated(() => {
   console.log("Stats component activated, recalculating stats");
-  // Load cached stats first for immediate display
+  // Load cached stats and AI insights first for immediate display
   loadStatsFromCache();
+  loadAIInsightsFromCache();
   fetchPurchasedItems().then(() => {
     processGraphData();
   });
