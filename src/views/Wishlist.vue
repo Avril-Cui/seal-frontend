@@ -136,6 +136,49 @@
                 <p v-else class="ai-text">{{ item.aiInsight }}</p>
               </div>
             </div>
+
+            <!-- Community Insights Section -->
+            <div class="community-stats">
+              <div v-if="!hasCompletedQueue" class="locked-stats">
+                <div class="lock-icon">🔒</div>
+                <p class="locked-text">
+                  Complete your daily queue to see community insights for your
+                  items
+                </p>
+              </div>
+              <div v-else-if="item.communityStats" class="unlocked-stats">
+                <div class="community-header">
+                  <span>👥 Community Insights</span>
+                </div>
+                <div class="community-metrics">
+                  <div class="community-metric">
+                    <span class="metric-label">Total Votes:</span>
+                    <span class="metric-value">{{
+                      item.communityStats.total
+                    }}</span>
+                  </div>
+                  <div class="community-metric">
+                    <span class="metric-label">Approval Rate:</span>
+                    <span class="metric-value">
+                      {{
+                        item.communityStats.total > 0
+                          ? Math.round(
+                              (item.communityStats.approval /
+                                item.communityStats.total) *
+                                100
+                            )
+                          : 0
+                      }}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div v-else-if="hasCompletedQueue" class="no-stats-message">
+                <p class="no-stats-text">
+                  No community feedback yet for this item
+                </p>
+              </div>
+            </div>
           </div>
 
           <!-- Actions Row at Bottom -->
@@ -772,23 +815,38 @@ const fetchWishlist = async () => {
       // Format: { items: [{item: {...}}, ...] } or { items: [{...}, ...] }
       console.log("Found data.items array with length:", data.items.length);
       console.log("First raw item from data.items:", data.items[0]);
-      items = data.items.map((obj) => {
-        const extracted = obj.item ? obj.item : obj;
-        console.log("Extracted item from obj:", extracted);
-        console.log("Extracted item._id:", extracted._id);
-        return extracted;
-      });
+      items = data.items
+        .filter((obj) => obj != null) // Filter out null/undefined items
+        .map((obj) => {
+          const extracted = obj.item ? obj.item : obj;
+          console.log("Extracted item from obj:", extracted);
+          console.log("Extracted item._id:", extracted._id);
+          console.log(
+            "Extracted item.communityStats:",
+            extracted.communityStats
+          );
+          return extracted;
+        });
     } else if (Array.isArray(data)) {
       // Format: [{item: {...}}, ...] or [{...}, ...]
       console.log("Found direct array with length:", data.length);
-      items = data.map((obj) => (obj.item ? obj.item : obj));
+      items = data
+        .filter((obj) => obj != null) // Filter out null/undefined items
+        .map((obj) => (obj.item ? obj.item : obj));
     } else {
       console.log("Unexpected format, keys:", Object.keys(data));
       wishlistItems.value = [];
       return;
     }
 
-    // Community stats removed - AI insight doesn't need swipe stats
+    // Extract hasCompletedQueue from response if available
+    if (data.hasCompletedQueue !== undefined) {
+      hasCompletedQueue.value = data.hasCompletedQueue;
+      console.log("hasCompletedQueue from response:", data.hasCompletedQueue);
+    } else {
+      console.log("hasCompletedQueue not found in response");
+    }
+
     // Sort items: unpurchased first, then purchased
     items.sort((a, b) => {
       const aPurchased = a.wasPurchased || false;
@@ -1354,7 +1412,7 @@ const getVerdictClass = (verdict) => {
   return "verdict-skip";
 };
 
-// Community stats functions removed - AI insight doesn't need swipe stats
+// Community stats are now automatically fetched by the backend
 </script>
 
 <style scoped>
@@ -2386,6 +2444,97 @@ const getVerdictClass = (verdict) => {
 .lock-icon {
   font-size: 2rem;
   margin-bottom: 0.5rem;
+}
+
+.locked-text {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.unlocked-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.community-header {
+  font-family: var(--font-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.community-metrics {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.community-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.metric-label {
+  font-family: var(--font-primary);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-tertiary);
+  font-weight: 600;
+}
+
+.metric-value {
+  font-family: var(--font-primary);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.community-comments {
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.comments-label {
+  font-family: var(--font-primary);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-tertiary);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.comment-item {
+  font-family: var(--font-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  background-color: var(--color-bg-secondary);
+  border-radius: 6px;
+  border-left: 3px solid var(--color-accent-green);
+}
+
+.no-stats-message {
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.no-stats-text {
+  font-size: 0.875rem;
+  color: var(--color-text-tertiary);
+  margin: 0;
+  font-style: italic;
   filter: grayscale(20%);
 }
 
