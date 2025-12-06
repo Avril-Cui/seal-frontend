@@ -48,7 +48,13 @@
         </div>
       </div>
 
-      <div v-if="isLoading" class="loading-message">Loading your items...</div>
+      <!-- Only show loading message if we have no cached items to display -->
+      <div
+        v-if="isLoading && wishlistItems.length === 0"
+        class="loading-message"
+      >
+        Loading your items...
+      </div>
       <div v-else-if="error" class="error-message">{{ error }}</div>
       <div
         v-else-if="filteredAndSortedItems.length === 0"
@@ -769,6 +775,42 @@ const isCheckingQueue = ref(false);
 const sortBy = ref("date-recent");
 const showPurchased = ref(true);
 
+// Cache key for wishlist
+const WISHLIST_CACHE_KEY = "wishlist_cache";
+
+// Load wishlist from cache
+const loadWishlistFromCache = () => {
+  try {
+    const cached = localStorage.getItem(WISHLIST_CACHE_KEY);
+    if (cached) {
+      const data = JSON.parse(cached);
+      if (data.items && Array.isArray(data.items)) {
+        wishlistItems.value = data.items;
+        console.log("Loaded wishlist from cache:", data.items.length, "items");
+      }
+      if (data.hasCompletedQueue !== undefined) {
+        hasCompletedQueue.value = data.hasCompletedQueue;
+      }
+    }
+  } catch (error) {
+    console.error("Error loading wishlist from cache:", error);
+  }
+};
+
+// Save wishlist to cache
+const saveWishlistToCache = () => {
+  try {
+    const data = {
+      items: wishlistItems.value,
+      hasCompletedQueue: hasCompletedQueue.value,
+    };
+    localStorage.setItem(WISHLIST_CACHE_KEY, JSON.stringify(data));
+    console.log("Saved wishlist to cache:", data.items.length, "items");
+  } catch (error) {
+    console.error("Error saving wishlist to cache:", error);
+  }
+};
+
 // Load filters from localStorage
 const loadFilters = () => {
   const savedSortBy = localStorage.getItem("wishlistSortBy");
@@ -885,7 +927,12 @@ const fetchWishlist = async () => {
     return;
   }
 
-  isLoading.value = true;
+  // Only show loading if we don't have cached items to display
+  // This prevents flashing when refreshing with cached data
+  const hasCachedItems = wishlistItems.value.length > 0;
+  if (!hasCachedItems) {
+    isLoading.value = true;
+  }
   error.value = "";
 
   console.log("Fetching wishlist with session");
@@ -974,10 +1021,14 @@ const fetchWishlist = async () => {
       return 0;
     });
     wishlistItems.value = items;
+
+    // Save to cache after successful fetch
+    saveWishlistToCache();
   } catch (err) {
     error.value = "Failed to load your items. Please try again.";
     console.error("Error fetching wishlist:", err);
   } finally {
+    // Always reset loading state, even if we had cached items
     isLoading.value = false;
   }
 };
@@ -1439,6 +1490,9 @@ const confirmPurchase = async () => {
       ).getTime();
     }
 
+    // Update cache after local state change
+    saveWishlistToCache();
+
     // Close modal
     closePurchaseModal();
   } catch (err) {
@@ -1492,6 +1546,9 @@ const undoPurchase = async (item) => {
       wishlistItems.value[itemIndex].quantity = undefined;
       wishlistItems.value[itemIndex].PurchasedTime = undefined;
     }
+
+    // Update cache after local state change
+    saveWishlistToCache();
   } catch (err) {
     error.value = "Failed to undo purchase. Please try again.";
     console.error("Error undoing purchase:", err);
@@ -1500,7 +1557,10 @@ const undoPurchase = async (item) => {
 
 onMounted(async () => {
   loadFilters();
+  // Load cached wishlist first for immediate display
+  loadWishlistFromCache();
   await checkQueueCompletion();
+  // Fetch fresh data in background (will update cache)
   await fetchWishlist();
 });
 

@@ -56,6 +56,16 @@ const login = async (email, password) => {
     // Store session token from backend
     console.log("data.session value:", data.session);
     if (data.session) {
+      // Clear previous user's cache when new session starts
+      const previousSession = sessionToken.value;
+      if (previousSession && previousSession !== data.session) {
+        localStorage.removeItem("completed_queue_status");
+        localStorage.removeItem("completed_queue_session");
+        localStorage.removeItem("wishlist_cache");
+        localStorage.removeItem("stats_cache");
+        localStorage.removeItem("ai_insights_cache");
+      }
+
       sessionToken.value = data.session;
       localStorage.setItem("sessionToken", data.session);
       console.log("Session token saved to localStorage:", data.session);
@@ -113,8 +123,12 @@ const logout = async () => {
     // Clear all cached data
     localStorage.removeItem("stats_cache");
     localStorage.removeItem("stats_view_mode");
+    localStorage.removeItem("wishlist_cache");
     localStorage.removeItem("wishlistSortBy");
     localStorage.removeItem("wishlistShowPurchased");
+    localStorage.removeItem("completed_queue_status");
+    localStorage.removeItem("completed_queue_session");
+    localStorage.removeItem("ai_insights_cache");
   }
 };
 
@@ -146,6 +160,16 @@ const register = async (email, password, name = "") => {
 
     // Store session token from backend
     if (data.session) {
+      // Clear any previous user's cache when new session starts
+      const previousSession = sessionToken.value;
+      if (previousSession && previousSession !== data.session) {
+        localStorage.removeItem("completed_queue_status");
+        localStorage.removeItem("completed_queue_session");
+        localStorage.removeItem("wishlist_cache");
+        localStorage.removeItem("stats_cache");
+        localStorage.removeItem("ai_insights_cache");
+      }
+
       sessionToken.value = data.session;
       localStorage.setItem("sessionToken", data.session);
     }

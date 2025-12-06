@@ -92,9 +92,13 @@
         </div>
       </div>
 
-      <div v-else class="finished-message">
+      <div v-else-if="hasCompletedQueue" class="finished-message">
         <p>You've finished your queue for today!</p>
         <p class="anti-capitalist">🎉</p>
+      </div>
+      <div v-else class="loading-message">
+        <p>Generating queue for you...</p>
+        <div class="loading-spinner"></div>
       </div>
     </div>
 
@@ -142,6 +146,64 @@ const dragCurrentX = ref(0);
 const dragOffset = ref(0);
 
 const queueItems = ref([]);
+const hasCompletedQueue = ref(false);
+
+// Cache key for completed queue status (includes session to prevent cross-user cache)
+const COMPLETED_QUEUE_CACHE_KEY = "completed_queue_status";
+const COMPLETED_QUEUE_SESSION_KEY = "completed_queue_session";
+
+// Load completed queue status from cache (only if session matches)
+const loadCompletedQueueFromCache = () => {
+  try {
+    const session = getSession();
+    if (!session) {
+      // No session, clear any cached data
+      localStorage.removeItem(COMPLETED_QUEUE_CACHE_KEY);
+      localStorage.removeItem(COMPLETED_QUEUE_SESSION_KEY);
+      return;
+    }
+
+    const cachedSession = localStorage.getItem(COMPLETED_QUEUE_SESSION_KEY);
+    const cached = localStorage.getItem(COMPLETED_QUEUE_CACHE_KEY);
+
+    // Only use cache if session matches
+    if (cached !== null && cachedSession === session) {
+      hasCompletedQueue.value = cached === "true";
+      console.log(
+        "Loaded completed queue status from cache:",
+        hasCompletedQueue.value
+      );
+    } else {
+      // Session mismatch or no cache, clear it
+      if (cachedSession && cachedSession !== session) {
+        console.log("Session changed, clearing completed queue cache");
+        localStorage.removeItem(COMPLETED_QUEUE_CACHE_KEY);
+        localStorage.removeItem(COMPLETED_QUEUE_SESSION_KEY);
+      }
+      hasCompletedQueue.value = false;
+    }
+  } catch (error) {
+    console.error("Error loading completed queue status from cache:", error);
+    hasCompletedQueue.value = false;
+  }
+};
+
+// Save completed queue status to cache (with session)
+const saveCompletedQueueToCache = (completed) => {
+  try {
+    const session = getSession();
+    if (!session) {
+      // No session, don't cache
+      return;
+    }
+
+    localStorage.setItem(COMPLETED_QUEUE_CACHE_KEY, completed.toString());
+    localStorage.setItem(COMPLETED_QUEUE_SESSION_KEY, session);
+    console.log("Saved completed queue status to cache:", completed);
+  } catch (error) {
+    console.error("Error saving completed queue status to cache:", error);
+  }
+};
 
 const currentItem = computed(() => {
   if (currentItemIndex.value < queueItems.value.length) {
@@ -162,7 +224,18 @@ const loadQueue = async () => {
     return;
   }
 
+  // Set loading state immediately to show loading message
   isLoading.value = true;
+
+  // Load cached completed status first
+  loadCompletedQueueFromCache();
+
+  // If cached as completed, show finished message immediately
+  if (hasCompletedQueue.value) {
+    queueItems.value = [];
+    isLoading.value = false;
+    return;
+  }
 
   try {
     // First, try to get today's queue
@@ -183,16 +256,26 @@ const loadQueue = async () => {
     let completed = 0;
 
     // Check if queue is completed (empty itemIdSet but has completedQueue)
-    if (!queueData.error && queueData.completedQueue > 0 && (!queueData.itemIdSet || queueData.itemIdSet.length === 0)) {
+    if (
+      !queueData.error &&
+      queueData.completedQueue > 0 &&
+      (!queueData.itemIdSet || queueData.itemIdSet.length === 0)
+    ) {
       // Queue exists but all items have been completed
       console.log("Today's queue is complete! All items have been swiped.");
       queueItems.value = [];
       completedSwipes.value = queueData.completedQueue;
       totalSwipes.value = queueData.completedQueue;
+      hasCompletedQueue.value = true;
+      saveCompletedQueueToCache(true);
       return;
     }
 
-    if (queueData.error || !queueData.itemIdSet || queueData.itemIdSet.length === 0) {
+    if (
+      queueData.error ||
+      !queueData.itemIdSet ||
+      queueData.itemIdSet.length === 0
+    ) {
       // No queue exists for today, generate one
       console.log("No queue found, generating new queue...");
 
@@ -303,6 +386,12 @@ const loadQueue = async () => {
       .filter((item) => item !== null);
 
     queueItems.value = items;
+
+    // If we successfully loaded items, queue is not completed
+    if (items.length > 0) {
+      hasCompletedQueue.value = false;
+      saveCompletedQueueToCache(false);
+    }
   } catch (error) {
     console.error("Error loading queue:", error);
   } finally {
@@ -386,6 +475,13 @@ const performSwipe = async (direction) => {
   setTimeout(() => {
     completedSwipes.value++;
     currentItemIndex.value++;
+
+    // Check if queue is completed after this swipe
+    if (currentItemIndex.value >= queueItems.value.length) {
+      hasCompletedQueue.value = true;
+      saveCompletedQueueToCache(true);
+    }
+
     swipeDirection.value = null;
     isSwipingLeft.value = false;
     isSwipingRight.value = false;
@@ -818,6 +914,39 @@ onMounted(() => {
   line-height: 1.6;
   color: var(--color-text-primary);
   margin: 0;
+}
+
+.loading-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 3rem;
+  text-align: center;
+}
+
+.loading-message p {
+  font-family: var(--font-primary);
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--color-border);
+  border-top-color: var(--color-text-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .finished-message {
