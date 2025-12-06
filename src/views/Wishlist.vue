@@ -39,9 +39,6 @@
           >
             ×
           </button>
-          <!-- Purchased badge at top-right (only when purchased) -->
-          <div v-if="item.wasPurchased" class="purchased-badge">PURCHASED</div>
-
           <div class="item-image">
             <img
               v-if="item.photo"
@@ -52,7 +49,11 @@
             <div v-else class="image-placeholder">PIC</div>
           </div>
           <div class="item-details">
-            <h3 class="item-name">{{ item.itemName }}</h3>
+            <div class="item-name-row">
+              <h3 class="item-name">{{ item.itemName }}</h3>
+              <!-- Purchased badge (only when purchased) -->
+              <div v-if="item.wasPurchased" class="purchased-badge">PURCHASED</div>
+            </div>
             <p class="item-desc">{{ item.description }}</p>
             <p class="item-price">${{ item.price.toFixed(2) }}</p>
             <a
@@ -93,6 +94,7 @@
                             class="ai-score-bar-fill"
                             :style="{
                               width: item.aiStructured.impulseScore * 10 + '%',
+                              backgroundColor: getScoreColor(item.aiStructured.impulseScore),
                             }"
                           ></div>
                         </div>
@@ -106,28 +108,22 @@
                         </div>
                       </div>
                     </div>
-                    <div
-                      class="ai-verdict-chip"
-                      :class="getVerdictClass(item.aiStructured.verdict)"
-                    >
-                      {{ item.aiStructured.verdict }}
-                    </div>
                   </div>
 
                   <div class="ai-insight-item">
-                    <span class="ai-label">💡 Insight:</span>
+                    <span class="ai-label">Insight:</span>
                     <span class="ai-value">{{
                       item.aiStructured.keyInsight
                     }}</span>
                   </div>
 
                   <div class="ai-insight-item">
-                    <span class="ai-label">📊 Fact:</span>
+                    <span class="ai-label">Fact:</span>
                     <span class="ai-value">{{ item.aiStructured.fact }}</span>
                   </div>
 
                   <div class="ai-insight-item ai-advice">
-                    <span class="ai-label">✅ Advice:</span>
+                    <span class="ai-label">Advice:</span>
                     <span class="ai-value">{{ item.aiStructured.advice }}</span>
                   </div>
                 </div>
@@ -148,14 +144,21 @@
               @click.stop="getAIInsight(item)"
               class="action-button ai-action"
             >
-              🧠 Get AI Insight
+              Get AI Insight
             </button>
             <button
               v-if="!item.wasPurchased"
               @click.stop="openPurchaseModal(item)"
               class="action-button purchase-action"
             >
-              ✅ Mark as Purchased
+              Mark as Purchased
+            </button>
+            <button
+              v-if="item.wasPurchased"
+              @click.stop="undoPurchase(item)"
+              class="action-button undo-action"
+            >
+              Undo Purchase
             </button>
           </div>
         </div>
@@ -789,14 +792,25 @@ const fetchWishlist = async () => {
     }
 
     // Community stats removed - AI insight doesn't need swipe stats
-    // Sort items: unpurchased first, then purchased
+    // Sort items: unpurchased first, then purchased, and within each group by most recently added
     items.sort((a, b) => {
       const aPurchased = a.wasPurchased || false;
       const bPurchased = b.wasPurchased || false;
-      // If both are purchased or both are unpurchased, maintain original order
-      if (aPurchased === bPurchased) return 0;
-      // Unpurchased items (false) come before purchased items (true)
-      return aPurchased ? 1 : -1;
+
+      // First, sort by purchased status (unpurchased first)
+      if (aPurchased !== bPurchased) {
+        return aPurchased ? 1 : -1;
+      }
+
+      // Within the same purchased status, sort by most recently added (using _id timestamp)
+      // MongoDB ObjectIds contain a timestamp - newer items have "larger" _ids
+      const aId = a._id || a.id || "";
+      const bId = b._id || b.id || "";
+
+      // Compare as strings (ObjectIds are sortable as strings)
+      if (aId > bId) return -1; // a is more recent
+      if (aId < bId) return 1;  // b is more recent
+      return 0;
     });
     wishlistItems.value = items;
   } catch (err) {
@@ -1260,6 +1274,68 @@ const confirmPurchase = async () => {
   }
 };
 
+// Undo purchase
+const undoPurchase = async (item) => {
+  if (!confirm("Are you sure you want to undo this purchase?")) {
+    return;
+  }
+
+  const session = getSession();
+  if (!session) {
+    error.value = "You must be logged in to undo purchases.";
+    return;
+  }
+
+  try {
+    // Try unsetPurchased endpoint first, fallback to updateItem
+    let response = await fetch(`${API_BASE_URL}/ItemCollection/unsetPurchased`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        session,
+        item: item._id,
+      }),
+    });
+
+    // If unsetPurchased doesn't exist, try updateItem
+    if (!response.ok) {
+      response = await fetch(`${API_BASE_URL}/ItemCollection/updateItem`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          session,
+          itemId: item._id,
+          itemName: item.itemName,
+          description: item.description,
+          photo: item.photo,
+          price: item.price,
+          reason: item.reason,
+          isNeed: item.isNeed,
+          isFutureApprove: item.isFutureApprove,
+          wasPurchased: false,
+        }),
+      });
+    }
+
+    const data = await response.json();
+
+    if (data.error) {
+      error.value = data.error || "Failed to undo purchase. Please try again.";
+      return;
+    }
+
+    // Success! Refresh the wishlist
+    await fetchWishlist();
+  } catch (err) {
+    error.value = "Failed to undo purchase. Please try again.";
+    console.error("Error undoing purchase:", err);
+  }
+};
+
 onMounted(async () => {
   await checkQueueCompletion();
   await fetchWishlist();
@@ -1344,6 +1420,12 @@ const getScoreClass = (score) => {
   if (score <= 3) return "score-low";
   if (score <= 6) return "score-medium";
   return "score-high";
+};
+
+const getScoreColor = (score) => {
+  if (score <= 3) return "#22c55e"; // green
+  if (score <= 6) return "#eab308"; // yellow
+  return "#ef4444"; // red
 };
 
 const getVerdictClass = (verdict) => {
@@ -1492,21 +1574,22 @@ const getVerdictClass = (verdict) => {
 .wishlist-item.purchased-item {
   background: linear-gradient(
     135deg,
-    rgba(245, 245, 245, 1) 0%,
-    rgba(238, 238, 238, 1) 100%
+    rgba(255, 255, 255, 1) 0%,
+    rgba(250, 250, 250, 1) 100%
   );
-  opacity: 0.8;
+  opacity: 0.6;
   border-color: var(--color-border);
+  filter: grayscale(0.3);
 }
 
 .wishlist-item.purchased-item::before {
-  background: #4caf50;
-  opacity: 1;
+  display: none;
 }
 
 .wishlist-item.purchased-item:hover {
-  opacity: 0.9;
+  opacity: 0.7;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  transform: translateY(-2px);
 }
 
 .remove-button {
@@ -1546,27 +1629,21 @@ const getVerdictClass = (verdict) => {
 }
 
 .purchased-badge {
-  position: absolute;
-
-  top: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  padding: 0.5rem 1rem;
-  border-radius: 0;
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
-  border-bottom: 1.5px solid #4caf50;
-  background: rgba(76, 175, 80);
-  color: #fff;
-  font-size: 0.75rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  background: rgba(76, 175, 80, 0.15);
+  color: #4caf50;
+  font-size: 0.65rem;
   font-weight: 700;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
   font-family: var(--font-primary);
-  z-index: 10;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
 }
 
 .item-image {
@@ -1616,6 +1693,13 @@ const getVerdictClass = (verdict) => {
   min-width: 0;
 }
 
+.item-name-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
 .item-name {
   font-family: var(--font-primary);
   font-size: 1.125rem;
@@ -1624,6 +1708,8 @@ const getVerdictClass = (verdict) => {
   color: var(--color-text-primary);
   letter-spacing: -0.02em;
   line-height: 1.3;
+  flex: 1;
+  min-width: 0;
 }
 
 .item-desc {
@@ -2001,7 +2087,7 @@ const getVerdictClass = (verdict) => {
   align-items: center;
   gap: 0.375rem;
   margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.125rem;
   padding: 0.5rem 1rem;
   font-family: var(--font-primary);
   font-size: 0.875rem;
@@ -2103,6 +2189,7 @@ const getVerdictClass = (verdict) => {
   margin-top: 1rem;
   border-top: 1px solid var(--color-border);
   align-items: center;
+  justify-content: center;
 }
 
 .action-button {
@@ -2120,33 +2207,48 @@ const getVerdictClass = (verdict) => {
   justify-content: center;
   height: 2.75rem;
   white-space: nowrap;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .action-button.ai-action {
-  background-color: var(--color-text-primary);
-  color: #fff;
-  border: 1px solid var(--color-text-primary);
-  font-weight: 700;
+  background-color: transparent;
+  color: var(--color-text-primary);
+  border: 1.5px solid var(--color-text-primary);
+  font-weight: 600;
 }
 
 .action-button.ai-action:hover {
-  background-color: #4f7a4c;
-  border-color: #4f7a4c;
-  color: #fff;
+  background-color: rgba(26, 26, 26, 0.05);
+  border-color: var(--color-text-primary);
+  color: var(--color-text-primary);
 }
 
 .action-button.purchase-action {
-  background-color: var(--color-text-primary);
-  color: #fff;
-  border: 1px solid var(--color-text-primary);
+  background-color: transparent;
+  color: var(--color-text-primary);
+  border: 1.5px solid var(--color-text-primary);
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .action-button.purchase-action:hover {
-  background-color: #a34747;
-  border-color: #a34747;
-  color: #fff;
+  background-color: rgba(26, 26, 26, 0.05);
+  border-color: var(--color-text-primary);
+  color: var(--color-text-primary);
+}
+
+.action-button.undo-action {
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  border: 1.5px solid var(--color-border);
+  font-weight: 600;
+}
+
+.action-button.undo-action:hover {
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-border-dark);
+  color: var(--color-text-primary);
 }
 
 .ai-loading {
@@ -2214,9 +2316,8 @@ const getVerdictClass = (verdict) => {
 
 .ai-top-row {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.75rem;
   margin-bottom: 0.25rem;
 }
 
@@ -2251,8 +2352,7 @@ const getVerdictClass = (verdict) => {
 .ai-score-bar-fill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #22c55e, #eab308, #ef4444);
-  transition: width 0.3s ease;
+  transition: width 0.3s ease, background-color 0.3s ease;
 }
 
 .ai-score-text {
@@ -2265,32 +2365,6 @@ const getVerdictClass = (verdict) => {
   font-weight: 600;
 }
 
-.ai-verdict-chip {
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-family: var(--font-primary);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.verdict-buy {
-  background-color: var(--color-accent-green);
-  color: var(--color-text-primary);
-}
-
-.verdict-wait {
-  background-color: #eab308;
-  color: var(--color-text-primary);
-}
-
-.verdict-skip {
-  background-color: #fecaca;
-  color: #991b1b;
-}
 
 .ai-insight-item {
   display: flex;
@@ -2315,17 +2389,6 @@ const getVerdictClass = (verdict) => {
   color: var(--color-text-primary);
 }
 
-@media (max-width: 480px) {
-  .ai-top-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-  }
-
-  .ai-verdict-chip {
-    align-self: flex-start;
-  }
-}
 
 .ai-advice {
   padding-top: 0.5rem;

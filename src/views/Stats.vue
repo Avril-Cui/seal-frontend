@@ -55,10 +55,20 @@
               <div>
                 <div class="graph-controls">
                   <h2 class="card-title">Purchase Progress</h2>
-                  <select v-model="viewMode" class="view-select">
-                    <option value="day">Daily View</option>
-                    <option value="month">Monthly View</option>
-                  </select>
+                  <div class="view-toggle">
+                    <button
+                      @click="viewMode = 'day'"
+                      :class="['view-toggle-btn', { active: viewMode === 'day' }]"
+                    >
+                      Daily
+                    </button>
+                    <button
+                      @click="viewMode = 'month'"
+                      :class="['view-toggle-btn', { active: viewMode === 'month' }]"
+                    >
+                      Monthly
+                    </button>
+                  </div>
                 </div>
                 <div class="graph-metric">
                   ${{ currentGraphTotal.toFixed(2) }}
@@ -85,44 +95,84 @@
               @touchmove="handleTouchMove"
               @touchend="handleTouchEnd"
             >
-              <svg
-                class="graph-svg"
-                viewBox="0 0 400 200"
-                preserveAspectRatio="none"
-              >
-                <!-- Grid lines -->
-                <line class="graph-grid" x1="0" y1="50" x2="400" y2="50" />
-                <line class="graph-grid" x1="0" y1="100" x2="400" y2="100" />
-                <line class="graph-grid" x1="0" y1="150" x2="400" y2="150" />
+              <div class="graph-wrapper">
+                <!-- Y-axis labels -->
+                <div class="y-axis-labels">
+                  <div
+                    v-for="(label, index) in yAxisLabels"
+                    :key="index"
+                    class="y-axis-label"
+                    :style="{ top: label.position + '%' }"
+                  >
+                    ${{ label.value }}
+                  </div>
+                </div>
 
-                <!-- Data points and line -->
-                <path v-if="graphPath" class="graph-area" :d="graphAreaPath" />
-                <path v-if="graphPath" class="graph-line" :d="graphPath" />
-
-                <!-- Interactive points -->
-                <g v-for="(point, index) in graphPoints" :key="index">
-                  <circle
-                    :cx="point.x"
-                    :cy="point.y"
-                    r="5"
-                    class="graph-point"
-                    @mouseenter="selectPoint(index)"
-                    @mouseleave="selectedPoint = null"
-                    :class="{ active: selectedPoint === index }"
-                  />
-                </g>
-
-                <!-- Labels -->
-                <text
-                  v-for="(label, index) in xAxisLabels"
-                  :key="index"
-                  class="graph-label"
-                  :x="label.x"
-                  y="195"
+                <svg
+                  class="graph-svg"
+                  viewBox="0 0 500 300"
+                  preserveAspectRatio="xMidYMid meet"
                 >
-                  {{ label.text }}
-                </text>
-              </svg>
+                  <!-- Grid lines -->
+                  <line
+                    v-for="(label, index) in yAxisLabels"
+                    :key="'grid-' + index"
+                    class="graph-grid"
+                    :x1="0"
+                    :y1="label.y"
+                    :x2="500"
+                    :y2="label.y"
+                  />
+
+                  <!-- Y-axis line -->
+                  <line
+                    class="axis-line"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="280"
+                  />
+
+                  <!-- X-axis line -->
+                  <line
+                    class="axis-line"
+                    x1="0"
+                    y1="280"
+                    x2="500"
+                    y2="280"
+                  />
+
+                  <!-- Data points and line -->
+                  <path v-if="graphPath" class="graph-area" :d="graphAreaPath" />
+                  <path v-if="graphPath" class="graph-line" :d="graphPath" />
+
+                  <!-- Interactive points -->
+                  <g v-for="(point, index) in graphPoints" :key="index">
+                    <circle
+                      :cx="point.x"
+                      :cy="point.y"
+                      r="5"
+                      class="graph-point"
+                      @mouseenter="selectPoint(index)"
+                      @mouseleave="selectedPoint = null"
+                      :class="{ active: selectedPoint === index }"
+                    />
+                  </g>
+
+                  <!-- X-axis labels -->
+                  <text
+                    v-for="(label, index) in xAxisLabels"
+                    :key="index"
+                    class="graph-label"
+                    :x="label.x"
+                    y="295"
+                    text-anchor="middle"
+                  >
+                    {{ label.text }}
+                  </text>
+                </svg>
+              </div>
+
 
               <!-- Tooltip -->
               <div
@@ -750,8 +800,8 @@ const dateRangeLabel = computed(() => {
 
 const graphPoints = computed(() => {
   const maxValue = Math.max(...graphData.value.map((d) => d.value), 1);
-  const width = 400;
-  const height = 200;
+  const width = 500;
+  const height = 280;
   const padding = 20;
 
   return graphData.value.map((point, index) => {
@@ -779,24 +829,68 @@ const graphAreaPath = computed(() => {
   if (graphPoints.value.length === 0) return "";
 
   const points = graphPoints.value;
-  let path = `M ${points[0].x} 200 L ${points[0].x} ${points[0].y}`;
+  let path = `M ${points[0].x} 280 L ${points[0].x} ${points[0].y}`;
 
   for (let i = 1; i < points.length; i++) {
     path += ` L ${points[i].x} ${points[i].y}`;
   }
 
-  path += ` L ${points[points.length - 1].x} 200 Z`;
+  path += ` L ${points[points.length - 1].x} 280 Z`;
   return path;
 });
 
 const xAxisLabels = computed(() => {
-  return graphData.value.map((point, index) => ({
-    x: (index / (graphData.value.length - 1)) * 400,
-    text:
-      viewMode.value === "day"
-        ? point.label.split(" ")[1]
-        : point.label.split(" ")[0],
-  }));
+  const width = 500;
+
+  return graphData.value.map((point, index) => {
+    let text;
+    if (viewMode.value === "day") {
+      // Format as MM/DD (e.g., "11/30", "12/1")
+      const date = new Date(point.date + "T00:00:00");
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      text = `${month}/${day}`;
+    } else {
+      // For monthly view, use the month abbreviation
+      text = point.label.split(" ")[0];
+    }
+
+    // Keep centered alignment but position labels within safe bounds
+    const x = (index / (graphData.value.length - 1)) * width;
+
+    return {
+      x: x,
+      text: text,
+    };
+  });
+});
+
+const yAxisLabels = computed(() => {
+  const maxValue = Math.max(...graphData.value.map((d) => d.value), 1);
+  const height = 280;
+  const padding = 20;
+  const chartHeight = height - padding * 2;
+
+  // Calculate nice round numbers for Y-axis ticks
+  const niceMax = Math.ceil(maxValue / 10) * 10 || 10;
+  const numTicks = 4;
+  const tickStep = niceMax / numTicks;
+
+  const labels = [];
+  for (let i = 0; i <= numTicks; i++) {
+    const value = niceMax - i * tickStep;
+    // Calculate y position matching graphPoints calculation
+    const y = height - padding - (value / niceMax) * chartHeight;
+    // Convert to percentage from top for CSS positioning
+    const position = (y / height) * 100;
+    labels.push({
+      value: value.toFixed(0),
+      y: y,
+      position: position,
+    });
+  }
+
+  return labels;
 });
 
 const tooltipStyle = computed(() => {
@@ -1197,13 +1291,43 @@ const downloadImage = () => {
   min-height: 180px;
   background-color: var(--color-bg-secondary);
   border-radius: 8px;
-  padding: 1.25rem;
+  padding: 1.25rem 1.75rem 1.25rem 1.25rem;
   margin-bottom: 1rem;
 }
 
-.graph-svg {
+.graph-wrapper {
+  position: relative;
+  display: flex;
   width: 100%;
-  height: 100%;
+  height: 300px;
+}
+
+.y-axis-labels {
+  position: relative;
+  width: 30px;
+  height: 300px;
+  flex-shrink: 0;
+  padding-right: 0.125rem;
+  z-index: 1;
+}
+
+.y-axis-label {
+  position: absolute;
+  font-size: 0.7rem;
+  font-family: var(--font-primary);
+  color: var(--color-text-tertiary);
+  font-weight: 500;
+  text-align: right;
+  right: 0.125rem;
+  transform: translateY(-50%);
+}
+
+.graph-svg {
+  flex: 1;
+  min-width: 500px;
+  height: 300px;
+  margin-left: 30px;
+  overflow: visible;
 }
 
 .graph-line {
@@ -1222,8 +1346,15 @@ const downloadImage = () => {
 .graph-grid {
   stroke: var(--color-border);
   stroke-width: 1;
-  opacity: 0.5;
+  opacity: 0.3;
 }
+
+.axis-line {
+  stroke: var(--color-border);
+  stroke-width: 1.5;
+  opacity: 0.6;
+}
+
 
 .graph-label {
   font-size: 0.75rem;
@@ -1258,40 +1389,55 @@ const downloadImage = () => {
   margin-bottom: 0;
 }
 
-.view-select {
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--color-border);
+.view-toggle {
+  display: flex;
+  gap: 0.25rem;
+  background-color: var(--color-bg-secondary);
   border-radius: 6px;
-  font-family: var(--font-secondary);
+  padding: 0.25rem;
+}
+
+.view-toggle-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  font-family: var(--font-primary);
   font-size: 0.75rem;
-  background-color: var(--color-bg);
-  color: var(--color-text-primary);
+  font-weight: 500;
+  background-color: transparent;
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.view-select:hover {
-  border-color: var(--color-border-dark);
+.view-toggle-btn:hover {
+  color: var(--color-text-primary);
+}
+
+.view-toggle-btn.active {
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  font-weight: 600;
 }
 
 .graph-navigation {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  padding: 0.75rem;
-  background-color: var(--color-bg-secondary);
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding: 0.25rem;
+  background-color: var(--color-bg);
   border-radius: 8px;
 }
 
 .nav-btn {
-  width: 36px;
-  height: 36px;
+  width: 24px;
+  height: 24px;
   border: 1px solid var(--color-border);
   background-color: var(--color-bg);
-  border-radius: 6px;
-  font-size: 1.25rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
