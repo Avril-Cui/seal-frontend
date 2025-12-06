@@ -1448,8 +1448,7 @@ const undoPurchase = async (item) => {
   }
 
   try {
-    // Try unsetPurchased endpoint first, fallback to updateItem
-    let response = await fetch(
+    const response = await fetch(
       `${API_BASE_URL}/ItemCollection/unsetPurchased`,
       {
         method: "POST",
@@ -1462,28 +1461,6 @@ const undoPurchase = async (item) => {
         }),
       }
     );
-
-    // If unsetPurchased doesn't exist, try updateItem
-    if (!response.ok) {
-      response = await fetch(`${API_BASE_URL}/ItemCollection/updateItem`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          session,
-          itemId: item._id,
-          itemName: item.itemName,
-          description: item.description,
-          photo: item.photo,
-          price: item.price,
-          reason: item.reason,
-          isNeed: item.isNeed,
-          isFutureApprove: item.isFutureApprove,
-          wasPurchased: false,
-        }),
-      });
-    }
 
     const data = await response.json();
 

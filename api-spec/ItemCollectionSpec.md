@@ -12,20 +12,20 @@ Adhere to the following rules for the API structure and the documentation format
 
 1.  **Base URL:** Assume a base URL of `/api`.
 2.  **Endpoint Naming:** Each concept action or query maps to an endpoint. The URL structure is: `/{conceptName}/{actionOrQueryName}`.
-    *   For a concept named `Labeling` and an action `createLabel`, the endpoint is `/api/Labeling/createLabel`.
+    - For a concept named `Labeling` and an action `createLabel`, the endpoint is `/api/Labeling/createLabel`.
 3.  **HTTP Method:** All endpoints use the `POST` method.
 4.  **Data Format:** All requests and responses use the `application/json` content type.
 5.  **Request Body:** The request body is always a single JSON object. The keys of this object correspond to the input arguments defined in the action's signature.
 6.  **Response Body:**
-    *   **Actions:** A successful call to an action returns a single JSON object. The keys correspond to the results defined in the action's signature. If there are no results, an empty object `{}` is returned.
-    *   **Queries:** A successful call to a query (a method name starting with `_`) returns a JSON **array** of objects.
-    *   **Errors:** If an action fails to meet its `requires` condition or encounters another error, it returns a single JSON object with a single key: `{ "error": "A descriptive error message." }`.
+    - **Actions:** A successful call to an action returns a single JSON object. The keys correspond to the results defined in the action's signature. If there are no results, an empty object `{}` is returned.
+    - **Queries:** A successful call to a query (a method name starting with `_`) returns a JSON **array** of objects.
+    - **Errors:** If an action fails to meet its `requires` condition or encounters another error, it returns a single JSON object with a single key: `{ "error": "A descriptive error message." }`.
 
 **Documentation Format Rules:**
 
 Generate the output in Markdown using the following template. For each action and query in the specification, create a dedicated endpoint section.
 
-~~~markdown
+````markdown
 # API Specification: {Concept Name}
 
 **Purpose:** {The concept's purpose.}
@@ -39,12 +39,15 @@ Generate the output in Markdown using the following template. For each action an
 **Description:** {A brief, one-sentence description of what this action does.}
 
 **Requirements:**
+
 - {List each point from the 'requires' section of the specification.}
 
 **Effects:**
+
 - {List each point from the 'effects' section of the specification.}
 
 **Request Body:**
+
 ```json
 {
   "argument1": "{type}",
@@ -53,6 +56,7 @@ Generate the output in Markdown using the following template. For each action an
 ```
 
 **Success Response Body (Action):**
+
 ```json
 {
   "result1": "{type}",
@@ -61,6 +65,7 @@ Generate the output in Markdown using the following template. For each action an
 ```
 
 **Success Response Body (Query):**
+
 ```json
 [
   {
@@ -71,25 +76,29 @@ Generate the output in Markdown using the following template. For each action an
 ```
 
 **Error Response Body:**
+
 ```json
 {
   "error": "string"
 }
 ```
+
 ---
-*(Repeat for each action and query)*
-~~~
+
+_(Repeat for each action and query)_
+````
 
 # prompt:
 
 Now, analyze the following Concept Specification and generate the API documentation based on these instructions. Your API documentation should be generated to based exactly on how I defined my concepts:
 
 [@ItemCollection](../concepts/ItemCollection/ItemCollection.md)
-# response:
 
 # response:
 
-# API Specification: 
+# response:
+
+# API Specification:
 
 **Purpose:** Tracks and manage items that users are considering for purchase.
 
@@ -107,18 +116,21 @@ Now, analyze the following Concept Specification and generate the API documentat
 
 ## API Endpoints
 
-### POST /api/ItemCollection/_getTenRandomItems
+### POST /api/ItemCollection/\_getTenRandomItems
 
 **Description:** Retrieves a set of ten random item IDs owned by users other than the given owner.
 
 **Requirements:**
+
 - Exists at least ten items with owner not matching the given owner.
 
 **Effects:**
+
 - Select by random ten items with owner not matching the given owner.
 - Return an itemIdSet containing the itemIds of these ten items.
 
 **Request Body:**
+
 ```json
 {
   "owner": "string"
@@ -126,6 +138,7 @@ Now, analyze the following Concept Specification and generate the API documentat
 ```
 
 **Success Response Body (Query):**
+
 ```json
 [
   {
@@ -135,6 +148,7 @@ Now, analyze the following Concept Specification and generate the API documentat
 ```
 
 **Error Response Body:**
+
 ```json
 {
   "error": "string"
@@ -148,9 +162,11 @@ Now, analyze the following Concept Specification and generate the API documentat
 **Description:** Adds a new item to the user's wishlist, fetching its metadata and prompting for reflection questions.
 
 **Requirements:**
+
 - None.
 
 **Effects:**
+
 - Fetch item's itemName, description, photo, and price with amazonAPI.
 - Generate a new unique itemId.
 - Create a new item with (owner, itemId, itemName, description, photo, price, reason, isNeed, isFutureApprove, wasPurchased=False).
@@ -158,6 +174,7 @@ Now, analyze the following Concept Specification and generate the API documentat
 - Return the added item.
 
 **Request Body:**
+
 ```json
 {
   "owner": "string",
@@ -169,6 +186,7 @@ Now, analyze the following Concept Specification and generate the API documentat
 ```
 
 **Success Response Body (Action):**
+
 ```json
 {
   "item": {
@@ -188,6 +206,7 @@ Now, analyze the following Concept Specification and generate the API documentat
 ```
 
 **Error Response Body:**
+
 ```json
 {
   "error": "string"
@@ -201,13 +220,16 @@ Now, analyze the following Concept Specification and generate the API documentat
 **Description:** Removes a specified item from the user's wishlist.
 
 **Requirements:**
+
 - Exists a wishlist $w$ with this user.
 - itemId exists in $w$'s itemIdSet.
 
 **Effects:**
+
 - Remove itemId from the itemIdSet.
 
 **Request Body:**
+
 ```json
 {
   "owner": "string",
@@ -216,11 +238,13 @@ Now, analyze the following Concept Specification and generate the API documentat
 ```
 
 **Success Response Body (Action):**
+
 ```json
 {}
 ```
 
 **Error Response Body:**
+
 ```json
 {
   "error": "string"
@@ -234,13 +258,16 @@ Now, analyze the following Concept Specification and generate the API documentat
 **Description:** Updates the name of an item in the user's wishlist.
 
 **Requirements:**
+
 - Exists a wishlist $w$ with this user.
 - item.itemId exists in $w$'s itemIdSet.
 
 **Effects:**
+
 - Update the itemName attribute of this item.
 
 **Request Body:**
+
 ```json
 {
   "owner": "string",
@@ -250,11 +277,13 @@ Now, analyze the following Concept Specification and generate the API documentat
 ```
 
 **Success Response Body (Action):**
+
 ```json
 {}
 ```
 
 **Error Response Body:**
+
 ```json
 {
   "error": "string"
@@ -268,13 +297,16 @@ Now, analyze the following Concept Specification and generate the API documentat
 **Description:** Updates the description of an item in the user's wishlist.
 
 **Requirements:**
+
 - Exists a wishlist $w$ with this user.
 - item.itemId exists in $w$'s itemIdSet.
 
 **Effects:**
+
 - Update the description attribute of this item.
 
 **Request Body:**
+
 ```json
 {
   "owner": "string",
@@ -284,11 +316,13 @@ Now, analyze the following Concept Specification and generate the API documentat
 ```
 
 **Success Response Body (Action):**
+
 ```json
 {}
 ```
 
 **Error Response Body:**
+
 ```json
 {
   "error": "string"
@@ -302,13 +336,16 @@ Now, analyze the following Concept Specification and generate the API documentat
 **Description:** Updates the photo URL of an item in the user's wishlist.
 
 **Requirements:**
+
 - Exists a wishlist $w$ with this user.
 - item.itemId exists in $w$'s itemIdSet.
 
 **Effects:**
+
 - Update the photo attribute of this item.
 
 **Request Body:**
+
 ```json
 {
   "owner": "string",
@@ -318,11 +355,13 @@ Now, analyze the following Concept Specification and generate the API documentat
 ```
 
 **Success Response Body (Action):**
+
 ```json
 {}
 ```
 
 **Error Response Body:**
+
 ```json
 {
   "error": "string"
@@ -336,13 +375,16 @@ Now, analyze the following Concept Specification and generate the API documentat
 **Description:** Updates the price of an item in the user's wishlist.
 
 **Requirements:**
+
 - Exists a wishlist $w$ with this user.
 - item.itemId exists in $w$'s itemIdSet.
 
 **Effects:**
+
 - Update the price attribute of this item.
 
 **Request Body:**
+
 ```json
 {
   "owner": "string",
@@ -352,11 +394,13 @@ Now, analyze the following Concept Specification and generate the API documentat
 ```
 
 **Success Response Body (Action):**
+
 ```json
 {}
 ```
 
 **Error Response Body:**
+
 ```json
 {
   "error": "string"
@@ -370,13 +414,16 @@ Now, analyze the following Concept Specification and generate the API documentat
 **Description:** Updates the reason for wanting an item in the user's wishlist.
 
 **Requirements:**
+
 - Exists a wishlist $w$ with this user.
 - item.itemId exists in $w$'s itemIdSet.
 
 **Effects:**
+
 - Update the reason attribute of this item.
 
 **Request Body:**
+
 ```json
 {
   "owner": "string",
@@ -386,11 +433,13 @@ Now, analyze the following Concept Specification and generate the API documentat
 ```
 
 **Success Response Body (Action):**
+
 ```json
 {}
 ```
 
 **Error Response Body:**
+
 ```json
 {
   "error": "string"
@@ -404,13 +453,16 @@ Now, analyze the following Concept Specification and generate the API documentat
 **Description:** Updates the "is need or want" reflection for an item in the user's wishlist.
 
 **Requirements:**
+
 - Exists a wishlist $w$ with this user.
 - item.itemId exists in $w$'s itemIdSet.
 
 **Effects:**
+
 - Update the isNeed attribute of this item.
 
 **Request Body:**
+
 ```json
 {
   "owner": "string",
@@ -420,11 +472,13 @@ Now, analyze the following Concept Specification and generate the API documentat
 ```
 
 **Success Response Body (Action):**
+
 ```json
 {}
 ```
 
 **Error Response Body:**
+
 ```json
 {
   "error": "string"
@@ -438,13 +492,16 @@ Now, analyze the following Concept Specification and generate the API documentat
 **Description:** Updates the "future-self approval" reflection for an item in the user's wishlist.
 
 **Requirements:**
+
 - Exists a wishlist $w$ with this user.
 - item.itemId exists in $w$'s itemIdSet.
 
 **Effects:**
+
 - Update the isFutureApprove attribute of this item.
 
 **Request Body:**
+
 ```json
 {
   "owner": "string",
@@ -454,11 +511,13 @@ Now, analyze the following Concept Specification and generate the API documentat
 ```
 
 **Success Response Body (Action):**
+
 ```json
 {}
 ```
 
 **Error Response Body:**
+
 ```json
 {
   "error": "string"
@@ -472,15 +531,18 @@ Now, analyze the following Concept Specification and generate the API documentat
 **Description:** Marks an item in the user's wishlist as purchased and records the purchase time.
 
 **Requirements:**
+
 - Exists a wishlist $w$ with this user.
 - item $i$.itemId exists in $w$'s itemIdSet.
 - $i$.wasPurchased is False.
 
 **Effects:**
+
 - Set $i$.wasPurchased as True.
 - Set $i$.PurchasedTime as the current time of this action.
 
 **Request Body:**
+
 ```json
 {
   "owner": "string",
@@ -489,11 +551,53 @@ Now, analyze the following Concept Specification and generate the API documentat
 ```
 
 **Success Response Body (Action):**
+
 ```json
 {}
 ```
 
 **Error Response Body:**
+
+```json
+{
+  "error": "string"
+}
+```
+
+---
+
+### POST /api/ItemCollection/unsetPurchased
+
+**Description:** Unmarks a purchased item in the user's wishlist as unpurchased, effectively undoing a purchase.
+
+**Requirements:**
+
+- Exists a wishlist $w$ with this user.
+- item $i$.itemId exists in $w$'s itemIdSet.
+- $i$.wasPurchased is True.
+
+**Effects:**
+
+- Set $i$.wasPurchased as False.
+- Clear $i$.PurchasedTime, $i$.actualPrice, and $i$.quantity.
+
+**Request Body:**
+
+```json
+{
+  "session": "string",
+  "item": "string"
+}
+```
+
+**Success Response Body (Action):**
+
+```json
+{}
+```
+
+**Error Response Body:**
+
 ```json
 {
   "error": "string"
@@ -507,14 +611,17 @@ Now, analyze the following Concept Specification and generate the API documentat
 **Description:** Requests AI-generated insights on whether an item purchase is impulsive, based on its attributes and a context prompt.
 
 **Requirements:**
+
 - Exists a wishlist $w$ with this user.
 - item.itemId exists in $w$'s itemIdSet.
 
 **Effects:**
+
 - Send context_prompt with the item to geminiLLM (including all the attributes under item, like description, price, reason, isNeed, isFutureApprove) and ask for insights on whether geminiLLM thinks this purchase is impulsive.
 - Return the llm_response.
 
 **Request Body:**
+
 ```json
 {
   "owner": "string",
@@ -524,6 +631,7 @@ Now, analyze the following Concept Specification and generate the API documentat
 ```
 
 **Success Response Body (Action):**
+
 ```json
 {
   "llm_response": "string"
@@ -531,6 +639,7 @@ Now, analyze the following Concept Specification and generate the API documentat
 ```
 
 **Error Response Body:**
+
 ```json
 {
   "error": "string"
