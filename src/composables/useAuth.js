@@ -76,7 +76,10 @@ const login = async (email, password) => {
     localStorage.setItem("currentUser", JSON.stringify(userData));
 
     console.log("Login completed. sessionToken.value:", sessionToken.value);
-    console.log("localStorage sessionToken:", localStorage.getItem("sessionToken"));
+    console.log(
+      "localStorage sessionToken:",
+      localStorage.getItem("sessionToken")
+    );
 
     return { success: true, user: userData, session: data.session };
   } catch (error) {
@@ -106,6 +109,12 @@ const logout = async () => {
     localStorage.removeItem("isAuthenticated");
     localStorage.removeItem("currentUser");
     localStorage.removeItem("sessionToken");
+
+    // Clear all cached data
+    localStorage.removeItem("stats_cache");
+    localStorage.removeItem("stats_view_mode");
+    localStorage.removeItem("wishlistSortBy");
+    localStorage.removeItem("wishlistShowPurchased");
   }
 };
 

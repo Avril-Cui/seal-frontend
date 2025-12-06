@@ -197,6 +197,46 @@ Now, analyze the following Concept Specification and generate the API documentat
 
 ---
 
+### POST /api/SwipeSystem/\_getItemOwnerRejectionRate
+
+**Description:** Returns the rejection rate (percentage of "Buy" swipes) for all items owned by the authenticated user.
+
+**Requirements:**
+
+- None (returns 0 if user has no items or no swipes have been received on their items)
+
+**Effects:**
+
+- get aggregated stats for items owned by the authenticated user
+- return rejectionRate = Math.round((totalBuySwipes / totalSwipes) \* 100) if totalSwipes > 0, else 0
+- Note: This is actually an acceptance rate (percentage of "Buy" swipes), but named rejectionRate per user request
+
+**Request Body:**
+
+```json
+{
+  "session": "string"
+}
+```
+
+**Success Response Body (Query):**
+
+```json
+{
+  "rejectionRate": "number"
+}
+```
+
+**Error Response Body:**
+
+```json
+{
+  "error": "string"
+}
+```
+
+---
+
 ### POST /api/SwipeSystem/\_getSwipeComments
 
 **Description:** Retrieves all non-empty comments associated with a specific user and item.
