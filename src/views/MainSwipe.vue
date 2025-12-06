@@ -604,7 +604,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2.5rem;
+  padding: 0.75rem 2.5rem;
   position: relative;
   z-index: 50;
   overflow: visible;
@@ -626,11 +626,12 @@ onMounted(() => {
   user-select: none;
   touch-action: none;
   box-shadow: 0 2px 8px rgba(26, 26, 26, 0.04);
-  max-height: 80vh;
+  max-height: calc(100vh - 280px);
   position: relative;
   z-index: 100;
   box-sizing: border-box;
   margin: 1px;
+  overflow: hidden;
 }
 
 .swipe-card:hover {
@@ -689,6 +690,7 @@ onMounted(() => {
   flex-shrink: 0;
   height: 100%;
   align-self: stretch;
+  position: relative;
 }
 
 .image-placeholder {
@@ -703,7 +705,7 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  min-height: 100%;
+  object-position: center;
   /* Prevent image from being dragged */
   user-select: none;
   -webkit-user-drag: none;
@@ -711,6 +713,7 @@ onMounted(() => {
   -moz-user-drag: none;
   -o-user-drag: none;
   pointer-events: none;
+  display: block;
 }
 
 .item-photo.placeholder {
@@ -724,7 +727,8 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  max-height: 80vh;
+  min-height: 0;
+  max-height: 100%;
 }
 
 .user-info {

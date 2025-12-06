@@ -58,13 +58,19 @@
                   <div class="view-toggle">
                     <button
                       @click="viewMode = 'day'"
-                      :class="['view-toggle-btn', { active: viewMode === 'day' }]"
+                      :class="[
+                        'view-toggle-btn',
+                        { active: viewMode === 'day' },
+                      ]"
                     >
                       Daily
                     </button>
                     <button
                       @click="viewMode = 'month'"
-                      :class="['view-toggle-btn', { active: viewMode === 'month' }]"
+                      :class="[
+                        'view-toggle-btn',
+                        { active: viewMode === 'month' },
+                      ]"
                     >
                       Monthly
                     </button>
@@ -125,25 +131,17 @@
                   />
 
                   <!-- Y-axis line -->
-                  <line
-                    class="axis-line"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="280"
-                  />
+                  <line class="axis-line" x1="0" y1="0" x2="0" y2="280" />
 
                   <!-- X-axis line -->
-                  <line
-                    class="axis-line"
-                    x1="0"
-                    y1="280"
-                    x2="500"
-                    y2="280"
-                  />
+                  <line class="axis-line" x1="0" y1="280" x2="500" y2="280" />
 
                   <!-- Data points and line -->
-                  <path v-if="graphPath" class="graph-area" :d="graphAreaPath" />
+                  <path
+                    v-if="graphPath"
+                    class="graph-area"
+                    :d="graphAreaPath"
+                  />
                   <path v-if="graphPath" class="graph-line" :d="graphPath" />
 
                   <!-- Interactive points -->
@@ -172,7 +170,6 @@
                   </text>
                 </svg>
               </div>
-
 
               <!-- Tooltip -->
               <div
@@ -416,13 +413,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
-import { useRouter } from "vue-router";
+import { ref, computed, onMounted, onActivated, watch } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "../composables/useAuth";
 import html2canvas from "html2canvas";
 import Navbar from "../components/Navbar.vue";
 
 const router = useRouter();
+const route = useRoute();
 const { currentUser, getSession } = useAuth();
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
@@ -704,8 +702,42 @@ const calculateStats = async () => {
       return sum + price * quantity;
     }, 0);
 
-    // 4. Items reviewed - set to 0 (swipe system removed)
-    itemsReviewed.value = 0;
+    // 4. Fetch items reviewed from SwipeSystem
+    try {
+      console.log("Fetching items reviewed with session:", session);
+      const reviewsResponse = await fetch(
+        `${API_BASE_URL}/SwipeSystem/_getUserSwipeCount`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ session }),
+        }
+      );
+
+      const reviewsData = await reviewsResponse.json();
+      console.log("Items reviewed response:", reviewsData);
+
+      if (reviewsData.error) {
+        console.log("Error fetching items reviewed:", reviewsData.error);
+        itemsReviewed.value = 0;
+      } else {
+        // Response might be an array (if Query) or object - handle both
+        let reviewCount = 0;
+        if (Array.isArray(reviewsData)) {
+          reviewCount =
+            reviewsData[0]?.count || reviewsData[0]?.totalReviews || 0;
+        } else {
+          reviewCount = reviewsData.count || reviewsData.totalReviews || 0;
+        }
+        console.log("Setting items reviewed to:", reviewCount);
+        itemsReviewed.value = reviewCount;
+      }
+    } catch (error) {
+      console.error("Error fetching items reviewed:", error);
+      itemsReviewed.value = 0;
+    }
 
     // 5. Rejection rate - set to 0 (swipe system removed)
     rejectionRate.value = 0;
@@ -988,12 +1020,33 @@ watch(viewMode, () => {
   processGraphData();
 });
 
+// Watch for route changes to recalculate stats when navigating to this page
+watch(
+  () => route.path,
+  (newPath, oldPath) => {
+    if (newPath === "/stats") {
+      console.log(
+        "Route changed to /stats, recalculating stats. Old path:",
+        oldPath
+      );
+      calculateStats();
+    }
+  },
+  { immediate: false }
+);
+
 // Fetch AI insights on component mount
 onMounted(() => {
   fetchAIInsights();
   fetchPurchasedItems().then(() => {
     processGraphData();
   });
+  calculateStats();
+});
+
+// Also recalculate when component is activated (if using keep-alive)
+onActivated(() => {
+  console.log("Stats component activated, recalculating stats");
   calculateStats();
 });
 
@@ -1354,7 +1407,6 @@ const downloadImage = () => {
   stroke-width: 1.5;
   opacity: 0.6;
 }
-
 
 .graph-label {
   font-size: 0.75rem;
