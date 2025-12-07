@@ -99,7 +99,7 @@
             <p class="item-price">${{ item.price.toFixed(2) }}</p>
             <a
               v-if="item.amazonUrl"
-              :href="item.amazonUrl"
+              :href="getAmazonUrl(item.amazonUrl)"
               target="_blank"
               rel="noopener noreferrer"
               class="amazon-link"
@@ -1031,6 +1031,17 @@ const fetchWishlist = async () => {
     // Always reset loading state, even if we had cached items
     isLoading.value = false;
   }
+};
+
+// Helper function to ensure Amazon URL is absolute
+const getAmazonUrl = (url) => {
+  if (!url) return "";
+  // If URL already starts with http:// or https://, return as is
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return url;
+  }
+  // Otherwise, prepend https://
+  return `https://${url}`;
 };
 
 // Fetch product details from Amazon URL
