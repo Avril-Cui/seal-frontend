@@ -120,11 +120,14 @@ const logout = async () => {
     localStorage.removeItem("currentUser");
     localStorage.removeItem("sessionToken");
 
-    // Clear user-specific cache data
+    // Clear all cached data
+    localStorage.removeItem("stats_cache");
+    localStorage.removeItem("stats_view_mode");
+    localStorage.removeItem("wishlist_cache");
+    localStorage.removeItem("wishlistSortBy");
+    localStorage.removeItem("wishlistShowPurchased");
     localStorage.removeItem("completed_queue_status");
     localStorage.removeItem("completed_queue_session");
-    localStorage.removeItem("wishlist_cache");
-    localStorage.removeItem("stats_cache");
     localStorage.removeItem("ai_insights_cache");
   }
 };
