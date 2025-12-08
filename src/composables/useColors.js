@@ -3,8 +3,8 @@ import { ref, computed } from "vue";
 // Color-blind friendly palette
 // Using blue/purple instead of red, and orange/amber instead of green
 const colorBlindPalette = {
-  red: "#5a67d8", // Blue-purple (replaces red)
-  green: "#d69e2e", // Orange-amber (replaces green)
+  red: "#d69e2e", // Orange-amber (replaces red)
+  green: "#5a67d8", // Blue-purple (replaces green)
 };
 
 // Default palette - matches style.css
