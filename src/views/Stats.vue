@@ -21,29 +21,67 @@
 
         <!-- Stats Summary -->
         <div class="stats-summary">
-          <div class="stat-box">
+          <div
+            class="stat-box"
+            @mouseenter="hoveredStat = 'totalSaved'"
+            @mouseleave="hoveredStat = null"
+          >
             <div class="stat-value positive">${{ totalSaved.toFixed(2) }}</div>
             <div class="stat-label">Total Saved</div>
+            <div v-if="hoveredStat === 'totalSaved'" class="stat-tooltip">
+              This is how much is in your PauseCart that you didn't buy!
+            </div>
           </div>
-          <div class="stat-box">
+          <div
+            class="stat-box"
+            @mouseenter="hoveredStat = 'totalBought'"
+            @mouseleave="hoveredStat = null"
+          >
             <div class="stat-value positive">${{ totalBought.toFixed(2) }}</div>
             <div class="stat-label">Total Bought</div>
+            <div v-if="hoveredStat === 'totalBought'" class="stat-tooltip">
+              Total amount you spent on items you actually bought from your
+              PauseCart
+            </div>
           </div>
-          <div class="stat-box">
+          <div
+            class="stat-box"
+            @mouseenter="hoveredStat = 'itemsBought'"
+            @mouseleave="hoveredStat = null"
+          >
             <div class="stat-value">{{ itemsBought }}</div>
             <div class="stat-label">Items Bought</div>
+            <div v-if="hoveredStat === 'itemsBought'" class="stat-tooltip">
+              Number of items you marked as purchased from your PauseCart
+            </div>
           </div>
-          <div class="stat-box">
+          <div
+            class="stat-box"
+            @mouseenter="hoveredStat = 'rejectionRate'"
+            @mouseleave="hoveredStat = null"
+          >
             <div class="stat-value">
               {{ (rejectionRate ?? 0) + "%" }}
             </div>
             <div class="stat-label">Rejection Rate</div>
+            <div v-if="hoveredStat === 'rejectionRate'" class="stat-tooltip">
+              The total percentage across all your items that were swiped that
+              other people told you to not buy
+            </div>
           </div>
-          <div class="stat-box">
+          <div
+            class="stat-box"
+            @mouseenter="hoveredStat = 'itemsReviewed'"
+            @mouseleave="hoveredStat = null"
+          >
             <div class="stat-value">
               {{ itemsReviewed ?? 0 }}
             </div>
             <div class="stat-label">Items Reviewed</div>
+            <div v-if="hoveredStat === 'itemsReviewed'" class="stat-tooltip">
+              How many items you've reviewed in SwipeSense to help others make
+              mindful decisions
+            </div>
           </div>
         </div>
 
@@ -437,32 +475,39 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 const statsFAQs = [
   {
     question: "What does Total Saved mean?",
-    answer: "Total Saved shows the combined price of all items you added to PauseCart but decided not to purchase. This represents money you saved by taking time to reflect before buying."
+    answer:
+      "Total Saved shows the combined price of all items you added to PauseCart but decided not to purchase. This represents money you saved by taking time to reflect before buying.",
   },
   {
     question: "What does Total Bought mean?",
-    answer: "Total Bought is the sum of prices for all items you marked as purchased. This tracks your actual spending on items from your PauseCart."
+    answer:
+      "Total Bought is the sum of prices for all items you marked as purchased. This tracks your actual spending on items from your PauseCart.",
   },
   {
     question: "What does Items Bought mean?",
-    answer: "Items Bought is the count of items you've marked as purchased from your PauseCart. This metric helps you track how many considered purchases you actually made."
+    answer:
+      "Items Bought is the count of items you've marked as purchased from your PauseCart. This metric helps you track how many considered purchases you actually made.",
   },
   {
     question: "What does Rejection Rate mean?",
-    answer: "Rejection Rate shows the percentage of items your community rejected from all items you added to your PauseCart."
+    answer:
+      "Rejection Rate shows the percentage of items your community rejected from all items you added to your PauseCart.",
   },
   {
     question: "What does Items Reviewed mean?",
-    answer: "Items Reviewed shows how many items you've swiped on in your daily SwipeSense queue. This tracks your community participation in helping others make better decisions."
+    answer:
+      "Items Reviewed shows how many items you've swiped on in your daily SwipeSense queue. This tracks your community participation in helping others make better decisions.",
   },
   {
     question: "What are AI Trend Alerts?",
-    answer: "AI analyzes your spending patterns and provides personalized insights to help you identify trends, avoid impulsive purchases, and make more mindful buying decisions."
+    answer:
+      "AI analyzes your spending patterns and provides personalized insights to help you identify trends, avoid impulsive purchases, and make more mindful buying decisions.",
   },
   {
     question: "How do I export my stats?",
-    answer: "Click the 'Export' button to download a visual summary of your stats that you can save or share. This helps you track your progress over time."
-  }
+    answer:
+      "Click the 'Export' button to download a visual summary of your stats that you can save or share. This helps you track your progress over time.",
+  },
 ];
 
 const exportSection = ref(null);
@@ -501,6 +546,9 @@ const totalBought = ref(0);
 const itemsBought = ref(0);
 const rejectionRate = ref(0);
 const itemsReviewed = ref(0);
+
+// Tooltip state
+const hoveredStat = ref(null);
 
 // Cached graph totals (separate for daily and monthly views)
 const cachedGraphTotalDaily = ref(0);
@@ -1914,11 +1962,43 @@ const downloadImage = () => {
   border-radius: 8px;
   text-align: center;
   transition: all 0.2s ease;
+  position: relative;
 }
 
 .stat-box:hover {
   border-color: var(--color-border-dark);
   transform: translateY(-2px);
+}
+
+.stat-tooltip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--color-text-primary);
+  color: var(--color-bg);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.4;
+  white-space: nowrap;
+  max-width: 250px;
+  white-space: normal;
+  text-align: center;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+}
+
+.stat-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--color-text-primary);
 }
 
 .stat-value {
@@ -1972,6 +2052,12 @@ const downloadImage = () => {
 
   .stat-value {
     font-size: 1.75rem;
+  }
+
+  .stat-tooltip {
+    max-width: 200px;
+    font-size: 0.7rem;
+    padding: 0.625rem 0.875rem;
   }
 }
 
