@@ -1,6 +1,10 @@
 <template>
   <div class="faq-container">
-    <button class="faq-button" @click="toggleFAQ" aria-label="Frequently Asked Questions">
+    <button
+      class="faq-button"
+      @click="toggleFAQ"
+      aria-label="Frequently Asked Questions"
+    >
       ?
     </button>
 
@@ -9,7 +13,9 @@
         <div class="faq-modal" @click.stop>
           <div class="faq-header">
             <h2>Frequently Asked Questions</h2>
-            <button class="faq-close" @click="toggleFAQ" aria-label="Close FAQ">×</button>
+            <button class="faq-close" @click="toggleFAQ" aria-label="Close FAQ">
+              ×
+            </button>
           </div>
           <div class="faq-content">
             <div v-for="(faq, index) in faqs" :key="index" class="faq-item">
@@ -24,7 +30,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref } from "vue";
 
 const props = defineProps({
   faqs: {
@@ -53,6 +59,8 @@ const toggleFAQ = () => {
 .faq-button {
   width: 48px;
   height: 48px;
+  min-width: 48px;
+  min-height: 48px;
   border-radius: 50%;
   background-color: var(--color-text-primary, #1a1a1a);
   color: var(--color-bg, #fefefe);
@@ -66,6 +74,8 @@ const toggleFAQ = () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
+  aspect-ratio: 1;
 }
 
 .faq-button:hover {
@@ -188,6 +198,8 @@ const toggleFAQ = () => {
   .faq-button {
     width: 44px;
     height: 44px;
+    min-width: 44px;
+    min-height: 44px;
     font-size: 1.25rem;
   }
 

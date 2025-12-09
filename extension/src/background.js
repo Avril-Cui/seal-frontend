@@ -1,6 +1,6 @@
 // Configuration - change this URL when deploying to production
-// const API_URL = "http://localhost:8000";
-const API_URL = "https://seal-backend-to6f.onrender.com";
+const API_URL = "http://localhost:8000";
+// const API_URL = "https://seal-backend-to6f.onrender.com";
 
 // Background service worker to handle API calls (bypasses CORS)
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {

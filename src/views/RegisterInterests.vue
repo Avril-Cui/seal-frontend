@@ -70,7 +70,7 @@ const toggleInterest = (id) => {
 
 const handleContinue = async () => {
   const session = getSession();
-  
+
   // Save interests to backend if we have a session
   if (session) {
     try {
@@ -117,11 +117,14 @@ const handleContinue = async () => {
   font-family: var(--font-secondary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .interests-content {
   max-width: 600px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .page-title {
