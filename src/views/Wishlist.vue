@@ -615,6 +615,8 @@
         </div>
       </div>
     </div>
+
+    <FAQButton :faqs="wishlistFAQs" />
   </div>
 </template>
 
@@ -624,6 +626,7 @@ import { useRouter } from "vue-router";
 import { useAuth } from "../composables/useAuth";
 import { useColors } from "../composables/useColors";
 import Navbar from "../components/Navbar.vue";
+import FAQButton from "../components/FAQButton.vue";
 
 const router = useRouter();
 const { currentUser, getSession } = useAuth();
@@ -634,6 +637,25 @@ const paletteRed = computed(() => palette.value.red);
 const paletteGreen = computed(() => palette.value.green);
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+
+const wishlistFAQs = [
+  {
+    question: "What is PauseCart?",
+    answer: "PauseCart is your mindful shopping companion. Add items you're considering purchasing and reflect on why you want them. Wait for community feedback before making your decision."
+  },
+  {
+    question: "How do I add items?",
+    answer: "Click the 'Add Item' button, fill in the item details, price, photo, and reflect on why you want it. Your item will be added to the daily SwipeSense queue for community feedback."
+  },
+  {
+    question: "What do the swipe results mean?",
+    answer: "After completing your daily queue, you'll see how many people swiped left (Skip It) or right (Worth It) on your items. This helps you see different perspectives on your purchases."
+  },
+  {
+    question: "Can I mark items as purchased?",
+    answer: "Yes! Click on any item and use the 'Mark as Purchased' button to track what you've bought. This helps you review your spending decisions over time."
+  }
+];
 
 const showAddModal = ref(false);
 const isEditMode = ref(false);

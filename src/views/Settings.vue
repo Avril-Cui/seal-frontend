@@ -108,6 +108,8 @@
         </div>
       </div>
     </div>
+
+    <FAQButton :faqs="settingsFAQs" />
   </div>
 </template>
 
@@ -117,12 +119,32 @@ import { useRouter } from "vue-router";
 import { useColors } from "../composables/useColors";
 import { useAuth } from "../composables/useAuth";
 import Navbar from "../components/Navbar.vue";
+import FAQButton from "../components/FAQButton.vue";
 
 const router = useRouter();
 const { colorBlindMode, toggleColorBlindMode } = useColors();
 const { logout, currentUser, getSession } = useAuth();
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+
+const settingsFAQs = [
+  {
+    question: "What is Color Blind Mode?",
+    answer: "Color Blind Mode adjusts the app's color scheme to be more accessible for users with color vision deficiencies. Toggle it on to see a more distinguishable color palette."
+  },
+  {
+    question: "How do I change my interests?",
+    answer: "Your interests help customize your SwipeSense queue. Click 'Edit' next to your interests to update what types of items you're interested in seeing."
+  },
+  {
+    question: "What happens when I logout?",
+    answer: "Logging out will clear your session and return you to the login screen. Your data is saved and will be available when you log back in."
+  },
+  {
+    question: "How do I update my profile?",
+    answer: "You can update your name and preferences in the Settings page. Your profile information helps personalize your experience across the app."
+  }
+];
 
 // Create a local ref that syncs with the composable
 const isColorBlindMode = computed({

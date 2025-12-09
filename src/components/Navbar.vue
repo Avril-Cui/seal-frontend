@@ -9,24 +9,33 @@
       />
     </div>
     <div class="nav-right">
-      <button
-        @click="goToSwipe"
-        :class="['nav-link', { active: currentRoute === '/swipe' }]"
-      >
-        SWIPESENSE
-      </button>
-      <button
-        @click="goToWishlist"
-        :class="['nav-link', { active: currentRoute === '/wishlist' }]"
-      >
-        PAUSECART
-      </button>
-      <button
-        @click="goToStats"
-        :class="['nav-link', { active: currentRoute === '/stats' }]"
-      >
-        MY STATS
-      </button>
+      <div class="nav-link-wrapper">
+        <button
+          @click="goToSwipe"
+          :class="['nav-link', { active: currentRoute === '/swipe' }]"
+        >
+          SWIPESENSE
+        </button>
+        <div class="nav-tooltip">Swipe through items to make mindful decisions</div>
+      </div>
+      <div class="nav-link-wrapper">
+        <button
+          @click="goToWishlist"
+          :class="['nav-link', { active: currentRoute === '/wishlist' }]"
+        >
+          PAUSECART
+        </button>
+        <div class="nav-tooltip">Save items to consider before buying</div>
+      </div>
+      <div class="nav-link-wrapper">
+        <button
+          @click="goToStats"
+          :class="['nav-link', { active: currentRoute === '/stats' }]"
+        >
+          MY STATS
+        </button>
+        <div class="nav-tooltip">Track your spending insights and habits</div>
+      </div>
       <button
         @click="goToSettings"
         :class="[
@@ -107,6 +116,46 @@ const goToSettings = () => {
   display: flex;
   align-items: center;
   gap: 2.5rem;
+}
+
+.nav-link-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.nav-tooltip {
+  position: absolute;
+  top: calc(100% + 0.75rem);
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--color-text-primary, #1a1a1a);
+  color: var(--color-bg, #fefefe);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 400;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(26, 26, 26, 0.15);
+}
+
+.nav-tooltip::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-bottom-color: var(--color-text-primary, #1a1a1a);
+}
+
+.nav-link-wrapper:hover .nav-tooltip {
+  opacity: 1;
 }
 
 .nav-link {

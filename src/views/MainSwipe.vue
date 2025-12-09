@@ -28,6 +28,14 @@
     </div>
 
     <div class="card-container" ref="cardContainer">
+      <!-- Swipe hint arrows -->
+      <Transition name="hint-fade">
+        <div v-if="showSwipeHint && currentItem" class="swipe-hint-container">
+          <div class="swipe-hint-arrow left-arrow">←</div>
+          <div class="swipe-hint-arrow right-arrow">→</div>
+        </div>
+      </Transition>
+
       <div
         class="swipe-card"
         v-if="currentItem"
@@ -96,6 +104,13 @@
         <p>You've finished your queue for today!</p>
         <p class="anti-capitalist">🎉</p>
       </div>
+      <div v-else-if="hasLoadTimeout" class="timeout-message">
+        <p>Queue loading timed out.</p>
+        <p class="timeout-subtitle">Please logout and try again.</p>
+        <button class="logout-retry-button" @click="handleLogoutAndRetry">
+          Logout and Retry
+        </button>
+      </div>
       <div v-else class="loading-message">
         <p>Generating queue for you...</p>
         <div class="loading-spinner"></div>
@@ -114,6 +129,8 @@
         WORTH IT
       </button>
     </div>
+
+    <FAQButton :faqs="swipeFAQs" />
   </div>
 </template>
 
@@ -123,12 +140,32 @@ import { useRouter } from "vue-router";
 import { useColors } from "../composables/useColors";
 import { useAuth } from "../composables/useAuth";
 import Navbar from "../components/Navbar.vue";
+import FAQButton from "../components/FAQButton.vue";
 
 const router = useRouter();
 const { palette } = useColors();
-const { currentUser, getSession } = useAuth();
+const { currentUser, getSession, logout } = useAuth();
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+
+const swipeFAQs = [
+  {
+    question: "What is SwipeSense?",
+    answer: "SwipeSense helps you make mindful purchasing decisions by swiping through items others are considering. Swipe right (Worth It) if you think they should buy it, left (Skip It) if not."
+  },
+  {
+    question: "How does the daily queue work?",
+    answer: "Every day you get a queue of 10 items to review. Each item includes reflections from the person who added it. Complete your queue to help others make better decisions!"
+  },
+  {
+    question: "What happens when I swipe?",
+    answer: "Your swipes help others see different perspectives on their potential purchases. Swipe right if you think it's worth buying, left if they should skip it."
+  },
+  {
+    question: "How to interact with this page?",
+    answer: "You can either drag and swipe the items, or click the buttons to log your decisions."
+  }
+];
 
 const totalSwipes = ref(10);
 const completedSwipes = ref(0);
@@ -138,6 +175,7 @@ const isAnimating = ref(false);
 const isSwipingLeft = ref(false);
 const isSwipingRight = ref(false);
 const isLoading = ref(false);
+const hasLoadTimeout = ref(false);
 
 // Drag/swipe state
 const isDragging = ref(false);
@@ -147,6 +185,10 @@ const dragOffset = ref(0);
 
 const queueItems = ref([]);
 const hasCompletedQueue = ref(false);
+
+// Inactivity hint animation
+const showSwipeHint = ref(false);
+let inactivityTimer = null;
 
 // Cache key for completed queue status (includes session to prevent cross-user cache)
 const COMPLETED_QUEUE_CACHE_KEY = "completed_queue_status";
@@ -216,6 +258,13 @@ const progressPercentage = computed(() => {
   return (completedSwipes.value / totalSwipes.value) * 100;
 });
 
+// Helper function to create timeout promise
+const createTimeout = (ms) => {
+  return new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Request timeout')), ms);
+  });
+};
+
 // Load or generate today's queue
 const loadQueue = async () => {
   const session = getSession();
@@ -226,6 +275,7 @@ const loadQueue = async () => {
 
   // Set loading state immediately to show loading message
   isLoading.value = true;
+  hasLoadTimeout.value = false;
 
   // Load cached completed status first
   loadCompletedQueueFromCache();
@@ -237,6 +287,25 @@ const loadQueue = async () => {
     return;
   }
 
+  try {
+    // Wrap the entire queue loading process with a 15-second timeout
+    await Promise.race([
+      loadQueueWithTimeout(session),
+      createTimeout(15000)
+    ]);
+  } catch (error) {
+    if (error.message === 'Request timeout') {
+      console.error("Queue loading timed out");
+      hasLoadTimeout.value = true;
+    } else {
+      console.error("Error loading queue:", error);
+    }
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const loadQueueWithTimeout = async (session) => {
   try {
     // First, try to get today's queue
     const queueResponse = await fetch(
@@ -393,10 +462,37 @@ const loadQueue = async () => {
       saveCompletedQueueToCache(false);
     }
   } catch (error) {
-    console.error("Error loading queue:", error);
-  } finally {
-    isLoading.value = false;
+    console.error("Error in loadQueueWithTimeout:", error);
+    throw error;
   }
+};
+
+const handleLogoutAndRetry = async () => {
+  await logout();
+  router.push("/login");
+};
+
+// Inactivity hint functions
+const startInactivityTimer = () => {
+  clearInactivityTimer();
+  if (currentItem.value && !isAnimating.value) {
+    inactivityTimer = setTimeout(() => {
+      showSwipeHint.value = true;
+    }, 5000);
+  }
+};
+
+const clearInactivityTimer = () => {
+  if (inactivityTimer) {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = null;
+  }
+  showSwipeHint.value = false;
+};
+
+const resetInactivityTimer = () => {
+  clearInactivityTimer();
+  startInactivityTimer();
 };
 
 const cardStyle = computed(() => {
@@ -480,6 +576,10 @@ const performSwipe = async (direction) => {
     if (currentItemIndex.value >= queueItems.value.length) {
       hasCompletedQueue.value = true;
       saveCompletedQueueToCache(true);
+      clearInactivityTimer();
+    } else {
+      // Start inactivity timer for next card
+      startInactivityTimer();
     }
 
     swipeDirection.value = null;
@@ -491,6 +591,7 @@ const performSwipe = async (direction) => {
 };
 
 const handleSkip = () => {
+  resetInactivityTimer();
   // Full color expansion on button click
   isSwipingLeft.value = true;
   isSwipingRight.value = false;
@@ -501,6 +602,7 @@ const handleSkip = () => {
 };
 
 const handleWorthIt = () => {
+  resetInactivityTimer();
   // Full color expansion on button click
   isSwipingRight.value = true;
   isSwipingLeft.value = false;
@@ -513,6 +615,7 @@ const handleWorthIt = () => {
 // Touch handlers
 const handleTouchStart = (e) => {
   if (isAnimating.value) return;
+  resetInactivityTimer();
   isDragging.value = true;
   dragStartX.value = e.touches[0].clientX;
   dragCurrentX.value = dragStartX.value;
@@ -557,6 +660,7 @@ const handleTouchEnd = () => {
 // Mouse handlers (for desktop)
 const handleMouseDown = (e) => {
   if (isAnimating.value) return;
+  resetInactivityTimer();
   isDragging.value = true;
   dragStartX.value = e.clientX;
   dragCurrentX.value = dragStartX.value;
@@ -598,8 +702,12 @@ const handleMouseEnd = () => {
   isDragging.value = false;
 };
 
-onMounted(() => {
-  loadQueue();
+onMounted(async () => {
+  await loadQueue();
+  // Start inactivity timer after queue is loaded if there's a current item
+  if (currentItem.value) {
+    startInactivityTimer();
+  }
 });
 </script>
 
@@ -706,6 +814,67 @@ onMounted(() => {
   overflow: visible;
   min-height: 0;
   box-sizing: border-box;
+}
+
+.swipe-hint-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  max-width: 1000px;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 40;
+  padding: 0 1rem;
+}
+
+.swipe-hint-arrow {
+  font-size: 2rem;
+  color: var(--color-text-secondary);
+  opacity: 0.6;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.swipe-hint-arrow.left-arrow {
+  animation: slideLeft 1.5s ease-in-out infinite;
+}
+
+.swipe-hint-arrow.right-arrow {
+  animation: slideRight 1.5s ease-in-out infinite;
+}
+
+@keyframes slideLeft {
+  0%, 100% {
+    transform: translateX(0);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateX(-20px);
+    opacity: 0.3;
+  }
+}
+
+@keyframes slideRight {
+  0%, 100% {
+    transform: translateX(0);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateX(20px);
+    opacity: 0.3;
+  }
+}
+
+.hint-fade-enter-active,
+.hint-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.hint-fade-enter-from,
+.hint-fade-leave-to {
+  opacity: 0;
 }
 
 .swipe-card {
@@ -959,6 +1128,53 @@ onMounted(() => {
 .anti-capitalist {
   font-size: 3rem;
   margin-top: 1rem;
+}
+
+.timeout-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 3rem;
+  text-align: center;
+}
+
+.timeout-message p {
+  font-family: var(--font-primary);
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.timeout-subtitle {
+  font-family: var(--font-secondary);
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
+.logout-retry-button {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  font-family: var(--font-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--color-text-primary);
+  color: var(--color-bg-secondary);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.logout-retry-button:hover {
+  background-color: var(--color-accent-red);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(26, 26, 26, 0.15);
 }
 
 .swipe-actions {

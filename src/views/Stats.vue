@@ -415,6 +415,8 @@
         </div>
       </div>
     </div>
+
+    <FAQButton :faqs="statsFAQs" />
   </div>
 </template>
 
@@ -424,12 +426,44 @@ import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "../composables/useAuth";
 import html2canvas from "html2canvas";
 import Navbar from "../components/Navbar.vue";
+import FAQButton from "../components/FAQButton.vue";
 
 const router = useRouter();
 const route = useRoute();
 const { currentUser, getSession } = useAuth();
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+
+const statsFAQs = [
+  {
+    question: "What does Total Saved mean?",
+    answer: "Total Saved shows the combined price of all items you added to PauseCart but decided not to purchase. This represents money you saved by taking time to reflect before buying."
+  },
+  {
+    question: "What does Total Bought mean?",
+    answer: "Total Bought is the sum of prices for all items you marked as purchased. This tracks your actual spending on items from your PauseCart."
+  },
+  {
+    question: "What does Items Bought mean?",
+    answer: "Items Bought is the count of items you've marked as purchased from your PauseCart. This metric helps you track how many considered purchases you actually made."
+  },
+  {
+    question: "What does Rejection Rate mean?",
+    answer: "Rejection Rate shows the percentage of items your community rejected from all items you added to your PauseCart."
+  },
+  {
+    question: "What does Items Reviewed mean?",
+    answer: "Items Reviewed shows how many items you've swiped on in your daily SwipeSense queue. This tracks your community participation in helping others make better decisions."
+  },
+  {
+    question: "What are AI Trend Alerts?",
+    answer: "AI analyzes your spending patterns and provides personalized insights to help you identify trends, avoid impulsive purchases, and make more mindful buying decisions."
+  },
+  {
+    question: "How do I export my stats?",
+    answer: "Click the 'Export' button to download a visual summary of your stats that you can save or share. This helps you track your progress over time."
+  }
+];
 
 const exportSection = ref(null);
 const posterTemplate = ref(null);
