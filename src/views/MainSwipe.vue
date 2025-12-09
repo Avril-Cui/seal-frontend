@@ -804,7 +804,6 @@ onMounted(async () => {
 }
 
 .card-container {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -812,7 +811,6 @@ onMounted(async () => {
   position: relative;
   z-index: 50;
   overflow: visible;
-  min-height: 0;
   box-sizing: border-box;
 }
 
@@ -885,6 +883,7 @@ onMounted(async () => {
   background-color: var(--color-bg);
   display: flex;
   flex-direction: row;
+  align-items: stretch;
   transition: transform 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease,
     border-color 0.3s ease;
   cursor: grab;
@@ -953,7 +952,6 @@ onMounted(async () => {
   background-color: var(--color-bg-secondary);
   overflow: hidden;
   flex-shrink: 0;
-  height: 100%;
   align-self: stretch;
   position: relative;
 }
@@ -967,10 +965,13 @@ onMounted(async () => {
 }
 
 .item-photo {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center;
+  object-position: center center;
   /* Prevent image from being dragged */
   user-select: none;
   -webkit-user-drag: none;
