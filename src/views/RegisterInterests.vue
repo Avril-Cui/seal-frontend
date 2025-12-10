@@ -71,17 +71,51 @@ const toggleInterest = (id) => {
 const handleContinue = async () => {
   const session = getSession();
 
+  // Convert interest IDs to names for backend
+  const interestNames = selectedInterests.value
+    .map((id) => {
+      const interest = interests.value.find((i) => i.id === id);
+      return interest ? interest.name : null;
+    })
+    .filter(Boolean);
+
   // Save interests to backend if we have a session
   if (session) {
     try {
-      await fetch(`${API_BASE_URL}/UserProfile/updateInterests`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session, interests: selectedInterests.value }),
-      });
+      console.log("RegisterInterests: Saving interests:", interestNames);
+      const response = await fetch(
+        `${API_BASE_URL}/UserProfile/updateInterests`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session, interests: interestNames }),
+        }
+      );
+
+      const data = await response.json();
+      console.log("RegisterInterests: Update interests response:", data);
+
+      if (!response.ok) {
+        console.error(
+          "RegisterInterests: HTTP error:",
+          response.status,
+          response.statusText
+        );
+      }
+
+      if (data.error) {
+        console.error("RegisterInterests: Error from backend:", data.error);
+        alert(`Failed to save interests: ${data.error}`);
+      } else {
+        console.log("RegisterInterests: Interests saved successfully");
+      }
     } catch (error) {
-      console.error("Error saving interests:", error);
+      console.error("RegisterInterests: Error saving interests:", error);
     }
+  } else {
+    console.warn(
+      "RegisterInterests: No session available, cannot save interests"
+    );
   }
 
   if (isEditing.value) {

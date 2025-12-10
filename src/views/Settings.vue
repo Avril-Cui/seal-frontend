@@ -130,20 +130,24 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 const settingsFAQs = [
   {
     question: "What is Color Blind Mode?",
-    answer: "Color Blind Mode adjusts the app's color scheme to be more accessible for users with color vision deficiencies. Toggle it on to see a more distinguishable color palette."
+    answer:
+      "Color Blind Mode adjusts the app's color scheme to be more accessible for users with color vision deficiencies. Toggle it on to see a more distinguishable color palette.",
   },
   {
     question: "How do I change my interests?",
-    answer: "Your interests help customize your SwipeSense queue. Click 'Edit' next to your interests to update what types of items you're interested in seeing."
+    answer:
+      "Your interests help customize your SwipeSense queue. Click 'Edit' next to your interests to update what types of items you're interested in seeing.",
   },
   {
     question: "What happens when I logout?",
-    answer: "Logging out will clear your session and return you to the login screen. Your data is saved and will be available when you log back in."
+    answer:
+      "Logging out will clear your session and return you to the login screen. Your data is saved and will be available when you log back in.",
   },
   {
     question: "How do I update my profile?",
-    answer: "You can update your name and preferences in the Settings page. Your profile information helps personalize your experience across the app."
-  }
+    answer:
+      "You can update your name and preferences in the Settings page. Your profile information helps personalize your experience across the app.",
+  },
 ];
 
 // Create a local ref that syncs with the composable
@@ -173,16 +177,23 @@ const fetchUserProfile = async () => {
     });
 
     const data = await response.json();
+    console.log("Settings: Full profile response:", data);
 
     // Handle both array format [{ profile }] and object format { profile }
     let profile = null;
     if (Array.isArray(data) && data.length > 0) {
+      // Check if first element has a profile property or is the profile itself
       profile = data[0].profile || data[0];
     } else if (data.profile) {
       profile = data.profile;
-    } else if (data.name !== undefined) {
+    } else if (data.name !== undefined || data.email !== undefined) {
+      // Direct profile object
       profile = data;
     }
+
+    console.log("Settings: Extracted profile:", profile);
+    console.log("Settings: fieldOfInterests:", profile?.fieldOfInterests);
+    console.log("Settings: interests:", profile?.interests);
 
     if (profile) {
       // Update name if we got one from backend
@@ -193,16 +204,30 @@ const fetchUserProfile = async () => {
         userEmail.value = profile.email;
       }
 
-      // Update interests
-      if (profile.fieldOfInterests || profile.interests) {
-        updateInterests(profile.fieldOfInterests || profile.interests);
+      // Update interests - check both fieldOfInterests and interests
+      // Also check if it's an array (even if empty) vs undefined/null
+      const interests = profile.fieldOfInterests ?? profile.interests;
+      console.log("Settings: Final interests to update:", interests);
+      if (interests !== undefined && interests !== null) {
+        // interests could be an empty array, which is valid
+        updateInterests(interests);
+      } else {
+        console.warn(
+          "Settings: No interests found in profile, clearing display"
+        );
+        fieldsOfInterest.value = [];
       }
 
       // Update localStorage with fetched data
       if (currentUser.value) {
         if (profile.name) currentUser.value.name = profile.name;
+        if (interests !== undefined && interests !== null) {
+          currentUser.value.interests = interests;
+        }
         localStorage.setItem("currentUser", JSON.stringify(currentUser.value));
       }
+    } else {
+      console.warn("Settings: Could not extract profile from response");
     }
   } catch (error) {
     console.error("Error fetching profile:", error);
