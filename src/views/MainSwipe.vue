@@ -151,20 +151,24 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 const swipeFAQs = [
   {
     question: "What is SwipeSense?",
-    answer: "SwipeSense helps you make mindful purchasing decisions by swiping through items others are considering. Swipe right (Worth It) if you think they should buy it, left (Skip It) if not."
+    answer:
+      "SwipeSense helps you make mindful purchasing decisions by swiping through items others are considering. Swipe right (Worth It) if you think they should buy it, left (Skip It) if not.",
   },
   {
     question: "How does the daily queue work?",
-    answer: "Every day you get a queue of 10 items to review. Each item includes reflections from the person who added it. Complete your queue to help others make better decisions!"
+    answer:
+      "Every day you get a queue of 10 items to review. Each item includes reflections from the person who added it. Complete your queue to help others make better decisions!",
   },
   {
     question: "What happens when I swipe?",
-    answer: "Your swipes help others see different perspectives on their potential purchases. Swipe right if you think it's worth buying, left if they should skip it."
+    answer:
+      "Your swipes help others see different perspectives on their potential purchases. Swipe right if you think it's worth buying, left if they should skip it.",
   },
   {
     question: "How to interact with this page?",
-    answer: "You can either drag and swipe the items, or click the buttons to log your decisions."
-  }
+    answer:
+      "You can either drag and swipe the items, or click the buttons to log your decisions.",
+  },
 ];
 
 const totalSwipes = ref(10);
@@ -261,7 +265,7 @@ const progressPercentage = computed(() => {
 // Helper function to create timeout promise
 const createTimeout = (ms) => {
   return new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('Request timeout')), ms);
+    setTimeout(() => reject(new Error("Request timeout")), ms);
   });
 };
 
@@ -289,12 +293,9 @@ const loadQueue = async () => {
 
   try {
     // Wrap the entire queue loading process with a 15-second timeout
-    await Promise.race([
-      loadQueueWithTimeout(session),
-      createTimeout(15000)
-    ]);
+    await Promise.race([loadQueueWithTimeout(session), createTimeout(15000)]);
   } catch (error) {
-    if (error.message === 'Request timeout') {
+    if (error.message === "Request timeout") {
       console.error("Queue loading timed out");
       hasLoadTimeout.value = true;
     } else {
@@ -844,7 +845,8 @@ onMounted(async () => {
 }
 
 @keyframes slideLeft {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateX(0);
     opacity: 0.6;
   }
@@ -855,7 +857,8 @@ onMounted(async () => {
 }
 
 @keyframes slideRight {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateX(0);
     opacity: 0.6;
   }
@@ -878,6 +881,9 @@ onMounted(async () => {
 .swipe-card {
   max-width: 1000px;
   width: 100%;
+  height: calc(100vh - 280px);
+  min-height: 600px;
+  max-height: calc(100vh - 280px);
   border: 1px solid var(--color-border);
   border-radius: 12px;
   background-color: var(--color-bg);
@@ -890,7 +896,6 @@ onMounted(async () => {
   user-select: none;
   touch-action: none;
   box-shadow: 0 2px 8px rgba(26, 26, 26, 0.04);
-  max-height: calc(100vh - 280px);
   position: relative;
   z-index: 100;
   box-sizing: border-box;
@@ -944,6 +949,7 @@ onMounted(async () => {
 .card-image {
   width: 45%;
   min-width: 300px;
+  height: 100%;
   border-right: 1px solid var(--color-border);
   border-radius: 12px 0 0 12px;
   display: flex;
@@ -970,7 +976,7 @@ onMounted(async () => {
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center center;
   /* Prevent image from being dragged */
   user-select: none;
@@ -1240,6 +1246,19 @@ onMounted(async () => {
 
   .swipe-card {
     max-width: 100%;
+    height: calc(100vh - 320px);
+    min-height: 500px;
+    flex-direction: column;
+  }
+
+  .card-image {
+    width: 100%;
+    min-width: unset;
+    height: 40%;
+    min-height: 200px;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+    border-radius: 12px 12px 0 0;
   }
 
   .swipe-actions {
