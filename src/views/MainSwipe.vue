@@ -955,7 +955,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--color-bg-secondary);
+  background-color: #ffffff;
   overflow: hidden;
   flex-shrink: 0;
   align-self: stretch;
